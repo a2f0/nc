@@ -19,6 +19,7 @@ internal class NoiseEngine {
 
     @Volatile private var type = NoiseType.WHITE
     @Volatile private var fadingOut = false
+    @Volatile private var volumeGain = 1f
 
     fun play(type: NoiseType) = synchronized(lock) {
         this.type = type
@@ -31,6 +32,15 @@ internal class NoiseEngine {
     /** Begins a fade-out; the audio thread releases the track and exits once it's silent. */
     fun stop() = synchronized(lock) {
         if (thread != null) fadingOut = true
+    }
+
+    /**
+     * [volume] runs from 0 to 1. The gain is its square, which tracks perceived loudness
+     * better than a straight line: halfway is about -12 dB.
+     */
+    fun setVolume(volume: Float) {
+        val clamped = volume.coerceIn(0f, 1f)
+        volumeGain = clamped * clamped
     }
 
     private fun run() {
@@ -55,17 +65,25 @@ internal class NoiseEngine {
         val right = NoiseGenerator(seed = System.nanoTime().toInt() xor 0x5bd1e995)
         val buffer = FloatArray(FRAMES_PER_WRITE * 2)
         val gainStep = 1f / (SAMPLE_RATE * FADE_SECONDS)
+        val volumeStep = 1f / (SAMPLE_RATE * VOLUME_RAMP_SECONDS)
         var gain = 0f
+        var volume = volumeGain
 
         track.play()
         try {
             while (true) {
                 val type = type
                 val target = if (fadingOut) 0f else 1f
+                val targetVolume = volumeGain
                 for (frame in 0 until FRAMES_PER_WRITE) {
                     gain = if (gain < target) min(gain + gainStep, target) else max(gain - gainStep, target)
-                    buffer[frame * 2] = left.next(type) * gain
-                    buffer[frame * 2 + 1] = right.next(type) * gain
+                    volume = if (volume < targetVolume) {
+                        min(volume + volumeStep, targetVolume)
+                    } else {
+                        max(volume - volumeStep, targetVolume)
+                    }
+                    buffer[frame * 2] = left.next(type) * gain * volume
+                    buffer[frame * 2 + 1] = right.next(type) * gain * volume
                 }
                 if (track.write(buffer, 0, buffer.size, AudioTrack.WRITE_BLOCKING) < 0) break
 
@@ -101,5 +119,8 @@ internal class NoiseEngine {
         private const val ENCODING = AudioFormat.ENCODING_PCM_FLOAT
         private const val FRAMES_PER_WRITE = 1_024
         private const val FADE_SECONDS = 0.4f
+
+        /** How long a volume change takes to reach its new level, so dragging doesn't crackle. */
+        private const val VOLUME_RAMP_SECONDS = 0.05f
     }
 }

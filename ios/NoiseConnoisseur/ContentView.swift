@@ -16,6 +16,8 @@ struct ContentView: View {
                         player.toggle(type)
                     }
                 }
+                VolumeSlider(volume: Binding(get: { player.volume }, set: { player.setVolume($0) }))
+                    .padding(.top, 8)
             }
             .padding(24)
             .frame(maxWidth: 600, alignment: .leading)
@@ -57,6 +59,24 @@ private struct NoiseCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isPlaying ? "Stop \(type.title)" : "Play \(type.title)")
+    }
+}
+
+private struct VolumeSlider: View {
+    @Binding var volume: Double
+
+    var body: some View {
+        Slider(value: $volume, in: 0...1) {
+            Text("Volume")
+        } minimumValueLabel: {
+            Image(systemName: "speaker.fill")
+                .foregroundStyle(.secondary)
+        } maximumValueLabel: {
+            Image(systemName: "speaker.wave.3.fill")
+                .foregroundStyle(.secondary)
+        }
+        .tint(.primary)
+        .padding(.horizontal, 4)
     }
 }
 

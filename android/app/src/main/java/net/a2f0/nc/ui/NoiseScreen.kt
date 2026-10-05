@@ -16,18 +16,25 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -67,11 +74,22 @@ fun NoiseConnoisseurTheme(content: @Composable () -> Unit) {
 fun NoiseScreen() {
     val context = LocalContext.current
     val nowPlaying by NoisePlayer.nowPlaying.collectAsStateWithLifecycle()
-    NoiseScreen(nowPlaying = nowPlaying, onToggle = { NoisePlayer.toggle(context, it) })
+    val volume by remember { NoisePlayer.volume(context) }.collectAsStateWithLifecycle()
+    NoiseScreen(
+        nowPlaying = nowPlaying,
+        onToggle = { NoisePlayer.toggle(context, it) },
+        volume = volume,
+        onVolumeChange = { NoisePlayer.setVolume(context, it) },
+    )
 }
 
 @Composable
-private fun NoiseScreen(nowPlaying: NoiseType?, onToggle: (NoiseType) -> Unit) {
+private fun NoiseScreen(
+    nowPlaying: NoiseType?,
+    onToggle: (NoiseType) -> Unit,
+    volume: Float,
+    onVolumeChange: (Float) -> Unit,
+) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -94,7 +112,42 @@ private fun NoiseScreen(nowPlaying: NoiseType?, onToggle: (NoiseType) -> Unit) {
             NoiseType.entries.forEach { type ->
                 NoiseCard(type = type, isPlaying = type == nowPlaying, onClick = { onToggle(type) })
             }
+            Spacer(Modifier.height(8.dp))
+            VolumeSlider(volume = volume, onVolumeChange = onVolumeChange)
         }
+    }
+}
+
+@Composable
+private fun VolumeSlider(volume: Float, onVolumeChange: (Float) -> Unit) {
+    val description = stringResource(R.string.volume)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.padding(horizontal = 4.dp),
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_volume_low),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Slider(
+            value = volume,
+            onValueChange = onVolumeChange,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.onSurface,
+                activeTrackColor = MaterialTheme.colorScheme.onSurface,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .semantics { contentDescription = description },
+        )
+        Icon(
+            painterResource(R.drawable.ic_volume_high),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -140,5 +193,7 @@ private fun NoiseCard(type: NoiseType, isPlaying: Boolean, onClick: () -> Unit) 
 @Preview(showBackground = true)
 @Composable
 private fun NoiseScreenPreview() {
-    NoiseConnoisseurTheme { NoiseScreen(nowPlaying = NoiseType.PINK, onToggle = {}) }
+    NoiseConnoisseurTheme {
+        NoiseScreen(nowPlaying = NoiseType.PINK, onToggle = {}, volume = 0.7f, onVolumeChange = {})
+    }
 }

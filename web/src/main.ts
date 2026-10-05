@@ -7,6 +7,8 @@ const STOP_ICON = '<svg class="stop" viewBox="0 0 24 24"><rect x="5.5" y="5.5" w
 const player = new NoisePlayer();
 const status = element("status");
 const sounds = element("sounds");
+const volume = element("volume") as HTMLInputElement;
+volume.addEventListener("input", () => player.setVolume(volume.valueAsNumber));
 
 const cards = new Map<NoiseType, HTMLButtonElement>(NOISE_TYPES.map((type) => [type, card(type)]));
 sounds.append(...cards.values());
@@ -27,6 +29,7 @@ function card(type: NoiseType): HTMLButtonElement {
 }
 
 function render(): void {
+  volume.valueAsNumber = player.volume;
   const playing = player.nowPlaying;
   status.textContent =
     playing !== null

@@ -4,14 +4,29 @@ import type { NoiseCommand, NoiseEvent } from "../src/noiseProtocol";
 
 // A stand-in for the browser audio stack, recording what the player asks of it.
 
+class FakeGainParam {
+  value = 1;
+  readonly targets: [number, number, number][] = [];
+
+  setTargetAtTime(target: number, startTime: number, timeConstant: number) {
+    this.targets.push([target, startTime, timeConstant]);
+  }
+}
+
 class FakeAudioContext {
   static instances: FakeAudioContext[] = [];
   state: AudioContextState = "running";
+  currentTime = 12;
+  readonly volume = { gain: new FakeGainParam(), connect() {} };
   readonly moduleLoad = Promise.withResolvers<void>();
   readonly audioWorklet = { addModule: () => this.moduleLoad.promise };
 
   constructor() {
     FakeAudioContext.instances.push(this);
+  }
+
+  createGain() {
+    return this.volume;
   }
 
   createMediaStreamDestination() {
@@ -81,6 +96,7 @@ class FakeMediaSession {
 }
 
 let mediaSession: FakeMediaSession;
+let storage: Map<string, string> | null;
 
 beforeEach(() => {
   FakeAudioContext.instances = [];
@@ -88,7 +104,18 @@ beforeEach(() => {
   FakeAudio.instances = [];
   FakeAudio.playError = null;
   mediaSession = new FakeMediaSession();
+  storage = new Map();
   Object.assign(globalThis, {
+    localStorage: {
+      getItem: (key: string) => {
+        if (storage === null) throw new DOMException("blocked", "SecurityError");
+        return storage.get(key) ?? null;
+      },
+      setItem: (key: string, value: string) => {
+        if (storage === null) throw new DOMException("blocked", "SecurityError");
+        storage.set(key, value);
+      },
+    },
     AudioContext: FakeAudioContext,
     AudioWorkletNode: FakeWorkletNode,
     Audio: FakeAudio,
@@ -219,5 +246,45 @@ describe("NoisePlayer", () => {
 
     mediaSession.handlers.get("play")!();
     expect(player.nowPlaying).toBe("pink");
+  });
+
+  test("starts at the saved volume", () => {
+    storage!.set("volume", "0.5");
+    const player = new NoisePlayer();
+    expect(player.volume).toBe(0.5);
+    player.play("white");
+    expect(FakeAudioContext.instances[0]!.volume.gain.value).toBe(0.25);
+  });
+
+  test("ramps to a new volume and saves it", async () => {
+    const { player, context } = await loaded();
+    player.setVolume(0.5);
+    expect(context.volume.gain.targets).toEqual([[0.25, 12, 0.015]]);
+    expect(storage!.get("volume")).toBe("0.5");
+  });
+
+  test("keeps the volume between 0 and 1", () => {
+    const player = new NoisePlayer();
+    player.setVolume(2);
+    expect(player.volume).toBe(1);
+    player.setVolume(-1);
+    expect(player.volume).toBe(0);
+    storage!.set("volume", "not a number");
+    expect(new NoisePlayer().volume).toBe(1);
+  });
+
+  test("a volume set before playing applies when it starts", () => {
+    const player = new NoisePlayer();
+    player.setVolume(0.4);
+    player.play("pink");
+    expect(FakeAudioContext.instances[0]!.volume.gain.value).toBeCloseTo(0.16);
+  });
+
+  test("works without storage", () => {
+    storage = null;
+    const player = new NoisePlayer();
+    expect(player.volume).toBe(1);
+    player.setVolume(0.3);
+    expect(player.volume).toBe(0.3);
   });
 });

@@ -8,14 +8,32 @@ import {
 import { NOISE_INFO, type NoiseType } from "./noiseType";
 
 /**
- * The audio graph: noise worklet → MediaStream → <audio>. Playing through a media element
- * rather than the context's own destination makes the browser treat this as media, so
- * media keys and the browser's media controls work.
+ * The audio graph: noise worklet → volume → MediaStream → <audio>. Playing through a media
+ * element rather than the context's own destination makes the browser treat this as media,
+ * so media keys and the browser's media controls work.
  */
 interface Engine {
   context: AudioContext;
+  volume: GainNode;
   audio: HTMLAudioElement;
   node: Promise<AudioWorkletNode>;
+}
+
+const VOLUME_KEY = "volume";
+
+/** Volume changes settle within about 50 ms (three time constants), so dragging doesn't crackle. */
+const VOLUME_TIME_CONSTANT = 0.015;
+
+/**
+ * Volume runs from 0 to 1. The gain is its square, which tracks perceived loudness better
+ * than a straight line: halfway is about -12 dB.
+ */
+function volumeGain(volume: number): number {
+  return volume * volume;
+}
+
+function clampVolume(volume: number): number {
+  return Number.isFinite(volume) ? Math.min(Math.max(volume, 0), 1) : 1;
 }
 
 /** Plays one noise at a time. Starting and stopping fade (see noiseProcessor.ts). */
@@ -24,6 +42,8 @@ export class NoisePlayer {
   lastPlayed: NoiseType = "white";
   /** Set when the browser couldn't start audio; cleared by the next play. */
   failed = false;
+  /** The page's own volume, from 0 to 1, on top of the system volume. Saved in this browser. */
+  volume = loadVolume();
 
   private engine: Engine | null = null;
   private commandId = 0;
@@ -73,9 +93,26 @@ export class NoisePlayer {
     this.publish();
   }
 
+  setVolume(volume: number): void {
+    this.volume = clampVolume(volume);
+    const engine = this.engine;
+    if (engine !== null) {
+      engine.volume.gain.setTargetAtTime(volumeGain(this.volume), engine.context.currentTime, VOLUME_TIME_CONSTANT);
+    }
+    try {
+      localStorage.setItem(VOLUME_KEY, String(this.volume));
+    } catch {
+      // Storage can be unavailable (private windows, blocked site data); the volume still applies.
+    }
+    this.publish();
+  }
+
   private createEngine(): Engine {
     const context = new AudioContext({ latencyHint: "playback" });
+    const volume = context.createGain();
+    volume.gain.value = volumeGain(this.volume);
     const output = context.createMediaStreamDestination();
+    volume.connect(output);
     const audio = new Audio();
     audio.srcObject = output.stream;
 
@@ -91,10 +128,10 @@ export class NoisePlayer {
           processorOptions: { seeds: [seeds[0] ?? 1, seeds[1] ?? 2] } satisfies NoiseOptions,
         });
         node.port.onmessage = (event: MessageEvent<NoiseEvent>) => this.onSilent(engine, event.data.silent);
-        node.connect(output);
+        node.connect(volume);
         return node;
       });
-    const engine: Engine = { context, audio, node };
+    const engine: Engine = { context, volume, audio, node };
     node.catch((error: unknown) => this.fail(engine, error));
     return engine;
   }
@@ -148,5 +185,14 @@ export class NoisePlayer {
     } catch {
       // Not every browser supports every action.
     }
+  }
+}
+
+function loadVolume(): number {
+  try {
+    const saved = localStorage.getItem(VOLUME_KEY);
+    return saved === null ? 1 : clampVolume(Number(saved));
+  } catch {
+    return 1;
   }
 }
