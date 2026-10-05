@@ -10,11 +10,14 @@
     "test": "bun test fastlane web",
     "web:build": "bun web/build.ts",
     "web:check": "tsc -p web",
-    "web:dev": "bun web/serve.ts"
+    "web:dev": "bun web/serve.ts",
+    "web:deploy": "bun run web:build && wrangler deploy --config web/wrangler.jsonc",
+    "web:preview": "bun run web:build && wrangler dev --config web/wrangler.jsonc --local"
   },
   "devDependencies": {
     "@a2f0/agent-tool": "0.1.2",
     "@types/bun": "1.4.2",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "wrangler": "4.147.0"
   }
 }

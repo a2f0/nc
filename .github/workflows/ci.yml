@@ -123,6 +123,9 @@ jobs:
       - name: Build
         run: bun run web:build
 
+      - name: Check deploy config
+        run: bunx --no-install wrangler deploy --config web/wrangler.jsonc --dry-run
+
   # The single required check (see agent-tool.json).
   gate:
     name: CI gate

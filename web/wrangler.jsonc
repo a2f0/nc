@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "nc",
+  "compatibility_date": "2026-10-05",
+  "workers_dev": false,
+  "preview_urls": false,
+  // Terraform in a2f0/a2f0.net owns the custom domain (nc.a2f0.net).
+  "assets": {
+    "directory": "./dist"
+  }
+}

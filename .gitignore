@@ -16,3 +16,6 @@ node_modules/
 
 # Web build output
 web/dist/
+
+# Wrangler local state
+.wrangler/
