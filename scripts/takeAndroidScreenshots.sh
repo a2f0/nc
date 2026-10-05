@@ -21,7 +21,7 @@ require_command magick "Run brew install imagemagick."
 REPO_ROOT=$SCREENSHOTS_REPO_ROOT
 OUTPUT_DIR="$SCREENSHOT_OUTPUT_ROOT/android"
 MAESTRO_OUTPUT_DIR="$OUTPUT_DIR/maestro"
-APP_ID=com.noiseconnoisseur.app
+APP_ID=net.a2f0.nc
 AVD_NAME=NoiseConnoisseur_Screenshots
 SYSTEM_IMAGE="${ANDROID_SCREENSHOT_SYSTEM_IMAGE:-system-images;android-35;google_apis_playstore;arm64-v8a}"
 # Pixel 2 is 1080x1920: Google Play rejects screenshots whose long side is

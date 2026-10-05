@@ -18,7 +18,9 @@ level-matched at about -17 dBFS, in stereo, with fade in/out.
 ## Setup
 
 ```sh
-mise install                        # Java, Gradle, ShellCheck, jq (see .mise.toml)
+mise install                        # Java, Gradle, Ruby, Bun, ShellCheck, jq (see .mise.toml)
+bundle install                      # fastlane
+bun install                         # agent-tool
 brew install imagemagick            # icon and launch image generation
 curl -fsSL https://get.maestro.mobile.dev | bash   # screenshots only
 git init && sh scripts/git/install-hooks.sh
@@ -61,7 +63,17 @@ refuses to run stale).
 - **pre-commit:** branch name is `<type>/<name>` (or `main`); no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
-  ShellCheck; Android debug build and lint; iOS simulator build.
+  ShellCheck; shared agent skills are current; Android debug build and lint; iOS
+  simulator build.
+
+CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
+
+## Agent workflow
+
+[agent-tool](https://github.com/a2f0/agent-tool) (`@a2f0/agent-tool`) provides independent
+reviews, guarded PR opening and squash merging, and the shared `ship-pr`, `open-pr`,
+`cross-agent-review`, `squash-merge`, and `reset` skills in `.claude/skills` and
+`.agents/skills`. Policy is in `agent-tool.json`; agent guidance is in `AGENTS.md`.
 
 ## Screenshots
 
@@ -74,9 +86,25 @@ a headless emulator, with a fixed 9:41 status bar, in light and dark appearance.
 store-sized PNGs (no alpha) to the gitignored `.screenshots/`: iPhone 6.9" (1320x2868),
 iPad 13" (2064x2752), and Android phone (1080x1920, within Google Play's 2:1 limit).
 
-## Before shipping
+## Releasing
 
-- Pick final bundle/application IDs (currently `com.noiseconnoisseur.app`); they're permanent once published.
-- Register the App Group (`group.<bundle id>`) in the Apple Developer portal.
-- Replace the placeholder art in `assets/icon.svg` and `assets/background.svg`.
-- Price: set to Tier 1 / $0.99 in App Store Connect and Play Console; no in-app purchase code is needed.
+IDs: `net.a2f0.nc` (app, both stores), `net.a2f0.nc.widget` (iOS widget), `group.net.a2f0.nc`
+(iOS App Group). Store credentials come from `.secrets/`, a gitignored symlink to
+`../tearleads-shared/.secrets` (`ln -s ../tearleads-shared/.secrets .secrets`): the App Store
+Connect API key, Google Play service account, fastlane match settings, and the Android upload
+key (`nc-upload.keystore`, password in `nc.env`). Back up the upload key.
+
+| Lane | Does |
+|---|---|
+| `fastlane ios register_identifiers` | Registers the bundle IDs with App Groups (API key) |
+| `fastlane ios create_app` | One time, interactive (Apple ID + 2FA): App Store Connect app, App Group, match profiles |
+| `fastlane ios beta` | Signed build to TestFlight |
+| `fastlane android build_release` | Signed release App Bundle |
+| `fastlane android internal` | Signed release App Bundle to the internal track (draft until the app is published) |
+
+Run them with `bundle exec`. One-time store setup that has no API:
+
+- **Google Play:** create the app in Play Console as **Paid** (a free app can never become
+  paid), and upload the first App Bundle by hand; `fastlane android internal` works after that.
+- **App Store:** after `create_app`, set the price ($0.99) and fill in the listing in App Store
+  Connect. Selling paid apps requires an active Paid Apps Agreement.

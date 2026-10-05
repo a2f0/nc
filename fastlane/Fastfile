@@ -1,0 +1,219 @@
+# frozen_string_literal: true
+
+require 'shellwords'
+require_relative 'lib/ios_signing_keychain'
+require_relative 'lib/play_version_code'
+require_relative 'lib/secrets'
+
+REPO_ROOT = File.expand_path('..', __dir__)
+APP_NAME = 'Noise Connoisseur'
+APP_IDENTIFIER = 'net.a2f0.nc'
+WIDGET_IDENTIFIER = "#{APP_IDENTIFIER}.widget".freeze
+APP_GROUP_IDENTIFIER = "group.#{APP_IDENTIFIER}".freeze
+APP_SKU = 'noise-connoisseur'
+
+IOS_PROJECT = File.join(REPO_ROOT, 'ios/NoiseConnoisseur.xcodeproj')
+IOS_SCHEME = 'NoiseConnoisseur'
+IOS_TARGET_IDENTIFIERS = {
+  'NoiseConnoisseur' => APP_IDENTIFIER,
+  'NoiseWidgetExtension' => WIDGET_IDENTIFIER
+}.freeze
+IOS_OUTPUT_DIR = File.join(REPO_ROOT, 'ios/build/release')
+
+ANDROID_DIR = File.join(REPO_ROOT, 'android')
+ANDROID_KEYSTORE_PATH = File.join(SECRETS_DIR, 'nc-upload.keystore')
+ANDROID_OUTPUTS_DIR = File.join(ANDROID_DIR, 'app/build/outputs')
+ANDROID_RELEASE_AAB = File.join(ANDROID_OUTPUTS_DIR, 'bundle/release/app-release.aab')
+ANDROID_RELEASE_MAPPING = File.join(ANDROID_OUTPUTS_DIR, 'mapping/release/mapping.txt')
+GOOGLE_PLAY_TRACKS = %w[production beta alpha internal].freeze
+
+default_platform(:ios)
+skip_docs
+
+# MARK: - iOS
+
+def ios_signing_keychain(&)
+  setup = lambda do |name, password|
+    # Xcode resolves nested (widget) signing through the default keychain.
+    create_keychain(
+      name: name, password: password, default_keychain: true, unlock: true,
+      timeout: 0, lock_when_sleeps: true, add_to_search_list: true, require_create: true
+    )
+  end
+  # delete_keychain also restores the default keychain create_keychain replaced.
+  cleanup = proc { |name| delete_keychain(name: name) if ios_signing_keychain_exists?(name) }
+  IosSigningKeychain.with_temporary(environment: ENV, setup: setup, cleanup: cleanup, &)
+end
+
+# Setup can fail before the keychain exists; deleting it then would mask that error.
+def ios_signing_keychain_exists?(name)
+  base = File.join(Dir.home, 'Library', 'Keychains', name)
+  ["#{base}-db", "#{base}.keychain-db", base, "#{base}.keychain"].any? { |path| File.file?(path) }
+end
+
+def appstore_profile_names
+  IOS_TARGET_IDENTIFIERS.values.to_h do |identifier|
+    [identifier, ENV.fetch("sigh_#{identifier}_appstore_profile-name", "match AppStore #{identifier}")]
+  end
+end
+
+# Pins manual App Store signing on each target's Release configuration for the
+# duration of the block, then restores the project file.
+def with_manual_ios_signing(team_id, profiles)
+  pbxproj = File.join(IOS_PROJECT, 'project.pbxproj')
+  original = File.read(pbxproj)
+  IOS_TARGET_IDENTIFIERS.each do |target, identifier|
+    update_code_signing_settings(
+      path: IOS_PROJECT, use_automatic_signing: false, team_id: team_id,
+      code_sign_identity: 'Apple Distribution', profile_name: profiles.fetch(identifier),
+      targets: [target], build_configurations: ['Release']
+    )
+  end
+  yield
+ensure
+  File.write(pbxproj, original) unless original.nil?
+end
+
+def ios_build_xcargs(build_number, team_id)
+  settings = ["CURRENT_PROJECT_VERSION=#{build_number}", "DEVELOPMENT_TEAM=#{team_id}"]
+  keychain = ENV.fetch('MATCH_KEYCHAIN_NAME', '')
+  unless keychain.empty?
+    settings << "OTHER_CODE_SIGN_FLAGS=#{Shellwords.escape("--keychain #{FastlaneCore::Helper.keychain_path(keychain)}")}"
+  end
+  settings.join(' ')
+end
+
+platform :ios do
+  desc 'Register the app and widget bundle IDs with App Groups enabled (App Store Connect API key)'
+  lane :register_identifiers do
+    load_store_secrets(IOS_SECRETS)
+    app_store_connect_api_key(**app_store_connect_api_key_options)
+    { APP_IDENTIFIER => APP_NAME, WIDGET_IDENTIFIER => "#{APP_NAME} Widget" }.each do |identifier, name|
+      bundle_id = Spaceship::ConnectAPI::BundleId.find(identifier) ||
+                  Spaceship::ConnectAPI::BundleId.create(
+                    name: name, platform: Spaceship::ConnectAPI::Platform::IOS, identifier: identifier
+                  )
+      app_groups = Spaceship::ConnectAPI::BundleIdCapability::Type::APP_GROUPS
+      unless bundle_id.get_capabilities.any? { |capability| capability.capability_type == app_groups }
+        bundle_id.create_capability(app_groups)
+      end
+      UI.success("#{identifier}: registered with App Groups")
+    end
+  end
+
+  # Apple has no API for creating App Store Connect apps or App Groups, and the
+  # shared API key can't create signing profiles, so this lane logs in with your
+  # Apple ID (APPLE_ID) and needs a 2FA code. Run it once, in a terminal.
+  desc 'Create the App Store Connect app, App Group, and App Store profiles (Apple ID login)'
+  lane :create_app do
+    load_store_secrets(IOS_SECRETS)
+    username = required_env('APPLE_ID')
+    team_id = required_env('TEAM_ID')
+
+    produce(
+      username: username, team_id: team_id, itc_team_id: ENV.fetch('ITC_TEAM_ID', nil),
+      app_identifier: APP_IDENTIFIER, app_name: APP_NAME, sku: APP_SKU, language: 'en-US',
+      platforms: ['ios'], enable_services: { app_group: 'on' }
+    )
+    produce(
+      username: username, team_id: team_id,
+      app_identifier: WIDGET_IDENTIFIER, app_name: "#{APP_NAME} Widget",
+      skip_itc: true, enable_services: { app_group: 'on' }
+    )
+
+    # Reuses the session produce just opened.
+    Spaceship::Portal.login(username)
+    Spaceship::Portal.select_team(team_id: team_id)
+    group = Spaceship::Portal.app_group.find(APP_GROUP_IDENTIFIER) ||
+            Spaceship::Portal.app_group.create!(group_id: APP_GROUP_IDENTIFIER, name: APP_NAME)
+    IOS_TARGET_IDENTIFIERS.each_value do |identifier|
+      Spaceship::Portal.app.find(identifier).associate_groups([group])
+      UI.success("#{identifier}: in #{APP_GROUP_IDENTIFIER}")
+    end
+
+    # Profiles embed the App Group, so create them after the association.
+    match(
+      type: 'appstore', app_identifier: IOS_TARGET_IDENTIFIERS.values,
+      username: username, team_id: team_id, readonly: false
+    )
+  end
+
+  desc 'Build, sign (match), and upload to TestFlight'
+  lane :beta do |options|
+    load_store_secrets(IOS_SECRETS)
+    team_id = required_env('TEAM_ID')
+    api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
+    build_number = options[:build_number]&.to_i ||
+                   (latest_testflight_build_number(
+                     api_key: api_key, app_identifier: APP_IDENTIFIER, initial_build_number: 0
+                   ).to_i + 1)
+    UI.message("Building #{APP_IDENTIFIER} build #{build_number}")
+
+    ipa = ios_signing_keychain do
+      match(type: 'appstore', app_identifier: IOS_TARGET_IDENTIFIERS.values, api_key: api_key, readonly: true)
+      profiles = appstore_profile_names
+      with_manual_ios_signing(team_id, profiles) do
+        build_app(
+          project: IOS_PROJECT, scheme: IOS_SCHEME, configuration: 'Release', clean: true,
+          export_method: 'app-store',
+          export_options: {
+            method: 'app-store', signingStyle: 'manual', teamID: team_id,
+            provisioningProfiles: profiles, manageAppVersionAndBuildNumber: false, uploadSymbols: true
+          },
+          output_directory: IOS_OUTPUT_DIR, output_name: 'NoiseConnoisseur.ipa',
+          xcargs: ios_build_xcargs(build_number, team_id)
+        )
+      end
+    end
+
+    upload_to_testflight(
+      api_key: api_key, app_identifier: APP_IDENTIFIER, ipa: ipa,
+      skip_submission: true, skip_waiting_for_build_processing: true, uses_non_exempt_encryption: false
+    )
+  end
+end
+
+# MARK: - Android
+
+def next_google_play_version_code
+  missing = lambda do |track, error|
+    UI.important("No version codes from the #{track} track (#{error.message.lines.first&.strip})")
+  end
+  PlayVersionCode.next_code(GOOGLE_PLAY_TRACKS, on_missing: missing) do |track|
+    google_play_track_version_codes(package_name: APP_IDENTIFIER, track: track, json_key: GOOGLE_PLAY_JSON_KEY_PATH)
+  end
+end
+
+platform :android do
+  desc 'Build the release App Bundle, signed with the upload key'
+  lane :build_release do |options|
+    load_store_secrets(ANDROID_SECRETS)
+    required_env('NC_ANDROID_KEYSTORE_PASS')
+    UI.user_error!("Missing upload keystore: #{ANDROID_KEYSTORE_PATH}") unless File.file?(ANDROID_KEYSTORE_PATH)
+
+    version_code = options[:version_code]&.to_i || next_google_play_version_code
+    UI.message("Building #{APP_IDENTIFIER} version code #{version_code}")
+    sh('sh', File.join(REPO_ROOT, 'scripts/ensureGradleWrapper.sh'))
+    gradle(
+      project_dir: ANDROID_DIR, task: 'bundleRelease',
+      properties: { 'ncVersionCode' => version_code }, flags: '--console=plain'
+    )
+    UI.user_error!("App Bundle was not created: #{ANDROID_RELEASE_AAB}") unless File.file?(ANDROID_RELEASE_AAB)
+    UI.success("App Bundle: #{ANDROID_RELEASE_AAB}")
+    ANDROID_RELEASE_AAB
+  end
+
+  # Google Play only accepts draft releases until the app has been published,
+  # so this defaults to draft; pass release_status:completed afterwards.
+  desc 'Build and upload the release App Bundle to the Google Play internal track'
+  lane :internal do |options|
+    aab = build_release(options)
+    upload_to_play_store(
+      package_name: APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH,
+      aab: aab, mapping: ANDROID_RELEASE_MAPPING,
+      track: 'internal', release_status: options.fetch(:release_status, 'draft'),
+      skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
+      skip_upload_images: true, skip_upload_screenshots: true
+    )
+  end
+end

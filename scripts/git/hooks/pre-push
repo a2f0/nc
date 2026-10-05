@@ -58,6 +58,12 @@ for_each_pushed_range sh scripts/checks/checkBinaryFiles.sh
 step "Linting shell scripts"
 sh scripts/checks/lintScripts.sh
 
+step "Checking agent skills"
+bun run --silent agents:check >/dev/null
+
+step "Testing fastlane helpers"
+bun run --silent test
+
 step "Building Android (debug build + lint)"
 sh scripts/ensureGradleWrapper.sh
 (cd android && ./gradlew --quiet assembleDebug lintDebug)

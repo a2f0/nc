@@ -1,4 +1,4 @@
-package com.noiseconnoisseur.app.widget
+package net.a2f0.nc.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -30,10 +30,10 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import com.noiseconnoisseur.app.NoiseType
-import com.noiseconnoisseur.app.R
-import com.noiseconnoisseur.app.playback.NoisePlayer
-import com.noiseconnoisseur.app.playback.PlaybackService
+import net.a2f0.nc.NoiseType
+import net.a2f0.nc.R
+import net.a2f0.nc.playback.NoisePlayer
+import net.a2f0.nc.playback.PlaybackService
 
 /** Home screen widget with a start/stop button for each noise. */
 class NoiseWidget : GlanceAppWidget() {

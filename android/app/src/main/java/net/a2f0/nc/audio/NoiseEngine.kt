@@ -1,10 +1,10 @@
-package com.noiseconnoisseur.app.audio
+package net.a2f0.nc.audio
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Process
-import com.noiseconnoisseur.app.NoiseType
+import net.a2f0.nc.NoiseType
 import kotlin.math.max
 import kotlin.math.min
 

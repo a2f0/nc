@@ -1,0 +1,14 @@
+{
+  "name": "nc",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "agent-tool": "agent-tool",
+    "agents:check": "agent-tool skills check",
+    "agents:sync": "agent-tool skills install --apply",
+    "test": "bun test fastlane"
+  },
+  "devDependencies": {
+    "@a2f0/agent-tool": "0.1.2"
+  }
+}

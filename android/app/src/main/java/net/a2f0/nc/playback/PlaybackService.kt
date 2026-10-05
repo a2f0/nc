@@ -1,4 +1,4 @@
-package com.noiseconnoisseur.app.playback
+package net.a2f0.nc.playback
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -19,11 +19,10 @@ import android.media.session.PlaybackState
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.IntentCompat
-import com.noiseconnoisseur.app.MainActivity
-import com.noiseconnoisseur.app.NoiseType
-import com.noiseconnoisseur.app.R
-import com.noiseconnoisseur.app.audio.NoiseEngine
+import net.a2f0.nc.MainActivity
+import net.a2f0.nc.NoiseType
+import net.a2f0.nc.R
+import net.a2f0.nc.audio.NoiseEngine
 
 /**
  * Foreground media service that keeps noise playing while the app is in the background.
@@ -70,10 +69,7 @@ class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY -> play(
-                IntentCompat.getSerializableExtra(intent, EXTRA_NOISE, NoiseType::class.java)
-                    ?: NoisePlayer.lastPlayed,
-            )
+            ACTION_PLAY -> play(NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed)
             else -> stop()
         }
         return START_NOT_STICKY
@@ -201,8 +197,8 @@ class PlaybackService : Service() {
     }
 
     companion object {
-        private const val ACTION_PLAY = "com.noiseconnoisseur.app.action.PLAY"
-        private const val ACTION_STOP = "com.noiseconnoisseur.app.action.STOP"
+        private const val ACTION_PLAY = "net.a2f0.nc.action.PLAY"
+        private const val ACTION_STOP = "net.a2f0.nc.action.STOP"
         private const val EXTRA_NOISE = "noise"
         private const val CHANNEL_ID = "playback"
         private const val NOTIFICATION_ID = 1
@@ -210,7 +206,7 @@ class PlaybackService : Service() {
         fun playIntent(context: Context, type: NoiseType): Intent =
             Intent(context, PlaybackService::class.java)
                 .setAction(ACTION_PLAY)
-                .putExtra(EXTRA_NOISE, type)
+                .putExtra(EXTRA_NOISE, type.id)
 
         fun stopIntent(context: Context): Intent =
             Intent(context, PlaybackService::class.java).setAction(ACTION_STOP)

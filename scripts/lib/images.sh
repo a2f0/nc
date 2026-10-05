@@ -2,8 +2,9 @@
 # Shared helpers for building native image assets from the SVGs in assets/.
 # Sourced by scripts/buildIosImages.sh and scripts/buildAndroidImages.sh.
 #
-# Requires: ImageMagick 7 (`magick`). Optional: librsvg (`rsvg-convert`), which
-# renders SVG features ImageMagick's built-in renderer can't, such as gradients.
+# Requires: ImageMagick (7's `magick`, or 6's `convert` as on Ubuntu). Optional:
+# librsvg (`rsvg-convert`), which renders SVG features ImageMagick's built-in
+# renderer can't, such as gradients.
 
 IMAGES_REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)"
 ICON_SVG="$IMAGES_REPO_ROOT/assets/icon.svg"
@@ -19,7 +20,11 @@ PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 export PATH
 
 images_require_tools() {
-  if ! command -v magick >/dev/null 2>&1; then
+  if command -v magick >/dev/null 2>&1; then
+    MAGICK=magick
+  elif command -v convert >/dev/null 2>&1; then
+    MAGICK=convert
+  else
     echo "Error: ImageMagick is required to build images (brew install imagemagick)." >&2
     exit 1
   fi
@@ -60,7 +65,7 @@ rasterize() {
     else
       density=$(awk -v px="$pixels" -v w="$(svg_viewbox_width "$svg")" 'BEGIN { printf "%d", (px * 72 / w) + 1 }')
       # PNG32 keeps RGB even for an all-gray render, so later composites keep color.
-      magick -background none -density "$density" "$svg" -resize "${pixels}x${pixels}" "PNG32:$output"
+      "$MAGICK" -background none -density "$density" "$svg" -resize "${pixels}x${pixels}" "PNG32:$output"
     fi
   fi
   printf '%s\n' "$output"
@@ -79,7 +84,7 @@ render_mark() {
   if [ -n "$color" ]; then
     set -- "$@" -fill "$color" -colorize 100
   fi
-  magick "$@" -depth 8 -colorspace sRGB -type TrueColorAlpha "$output"
+  "$MAGICK" "$@" -depth 8 -colorspace sRGB -type TrueColorAlpha "$output"
 }
 
 # render_background <width> <height> <output>
@@ -90,7 +95,7 @@ render_background() {
   output=$3
   if [ "$width" -gt "$height" ]; then longest=$width; else longest=$height; fi
   mkdir -p "$(dirname "$output")"
-  magick "$(rasterize "$BACKGROUND_SVG" "$longest")" \
+  "$MAGICK" "$(rasterize "$BACKGROUND_SVG" "$longest")" \
     -resize "${width}x${height}^" -gravity center -extent "${width}x${height}" \
     -background white -alpha remove -alpha off \
     -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 "$output"
@@ -103,7 +108,7 @@ render_icon() {
   mark=$2
   output=$3
   mkdir -p "$(dirname "$output")"
-  magick "$(rasterize "$BACKGROUND_SVG" "$size")" "$(rasterize "$ICON_SVG" "$mark")" \
+  "$MAGICK" "$(rasterize "$BACKGROUND_SVG" "$size")" "$(rasterize "$ICON_SVG" "$mark")" \
     -gravity center -composite \
     -background white -alpha remove -alpha off \
     -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 "$output"
@@ -111,6 +116,6 @@ render_icon() {
 
 # The background's average color as #RRGGBB, for places that only take a color.
 background_average_color() {
-  magick "$(rasterize "$BACKGROUND_SVG" 64)" -background white -alpha remove -alpha off \
+  "$MAGICK" "$(rasterize "$BACKGROUND_SVG" 64)" -background white -alpha remove -alpha off \
     -resize '1x1!' -depth 8 -format '#%[hex:u.p{0,0}]' info:
 }
