@@ -1,16 +1,16 @@
 # Noise Connoisseur
 
 White and pink noise player with background playback and home screen start/stop widgets.
-Native on both platforms; no shared code between them.
+Native on iOS and Android, plus a desktop web version; no shared code between them.
 
-| | iOS (`ios/`) | Android (`android/`) |
-|---|---|---|
-| UI | SwiftUI | Jetpack Compose |
-| Audio | `AVAudioEngine` + `AVAudioSourceNode` | `AudioTrack` on a dedicated thread |
-| Background | `audio` background mode | `mediaPlayback` foreground service |
-| System controls | Now Playing / remote commands | `MediaSession` + media notification |
-| Widget | WidgetKit + `AudioPlaybackIntent` buttons | Glance app widget |
-| Minimum OS | iOS 18 | Android 8.0 (API 26) |
+| | iOS (`ios/`) | Android (`android/`) | Web (`web/`) |
+|---|---|---|---|
+| UI | SwiftUI | Jetpack Compose | TypeScript + DOM |
+| Audio | `AVAudioEngine` + `AVAudioSourceNode` | `AudioTrack` on a dedicated thread | `AudioWorklet`, played through an `<audio>` element |
+| Background | `audio` background mode | `mediaPlayback` foreground service | Keeps playing in background tabs |
+| System controls | Now Playing / remote commands | `MediaSession` + media notification | Media Session (media keys, browser media controls) |
+| Widget | WidgetKit + `AudioPlaybackIntent` buttons | Glance app widget | None |
+| Minimum OS | iOS 18 | Android 8.0 (API 26) | Desktop browsers with `AudioWorklet` |
 
 Noise is generated in real time (xorshift PRNG for white; Paul Kellet's filter for pink),
 level-matched at about -17 dBFS, in stereo, with fade in/out.
@@ -20,7 +20,7 @@ level-matched at about -17 dBFS, in stereo, with fade in/out.
 ```sh
 mise install                        # Java, Gradle, Ruby, Bun, ShellCheck, jq (see .mise.toml)
 bundle install                      # fastlane
-bun install                         # agent-tool
+bun install                         # agent-tool, TypeScript
 brew install imagemagick            # icon and launch image generation
 curl -fsSL https://get.maestro.mobile.dev | bash   # screenshots only
 git init && sh scripts/git/install-hooks.sh
@@ -36,6 +36,12 @@ compiles into both the app and the widget extension.
 
 **Android:** open `android/` in Android Studio, or `cd android && ./gradlew assembleDebug`.
 The application ID is in `android/app/build.gradle.kts`.
+
+**Web:** `bun run web:dev` serves the app at http://localhost:8080 (set `PORT` to change it)
+and rebuilds when `web/` changes; reload to pick up a rebuild. `bun run web:build` writes a
+static site to the gitignored `web/dist/`, which any static host can serve over HTTPS
+(`AudioWorklet` needs a secure context, so `file://` doesn't work). The page and the audio
+worklet are separate bundles (`web/build.ts`); the favicon comes from `assets/icon.svg`.
 
 ## No binary files
 
@@ -63,8 +69,8 @@ refuses to run stale).
 - **pre-commit:** branch name is `<type>/<name>` (or `main`); no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
-  ShellCheck; shared agent skills are current; Android debug build and lint; iOS
-  simulator build.
+  ShellCheck; shared agent skills are current; fastlane helper and web audio tests; web
+  typecheck and build; Android debug build and lint; iOS simulator build.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 

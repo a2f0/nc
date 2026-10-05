@@ -1,8 +1,8 @@
 # Noise Connoisseur
 
-White and pink noise player, native on both platforms: `ios/` (SwiftUI, WidgetKit) and
-`android/` (Jetpack Compose, Glance). There is no shared code between them. See `README.md`
-for architecture, setup, and releasing.
+White and pink noise player, native on `ios/` (SwiftUI, WidgetKit) and `android/` (Jetpack
+Compose, Glance), plus a desktop web version in `web/` (TypeScript, AudioWorklet). There is
+no shared code between them. See `README.md` for architecture, setup, and releasing.
 
 ## Setup
 
@@ -22,14 +22,15 @@ checks. Run individual pieces while iterating:
 sh scripts/checks/lintScripts.sh                       # ShellCheck
 sh scripts/checks/checkBinaryFiles.sh --all            # no binary files
 bun run agents:check                                   # shared skills are current
-bun run test                                           # fastlane helper tests
+bun run test                                           # fastlane helper and web audio tests
+bun run web:check && bun run web:build                 # web typecheck and build
 (cd android && ./gradlew assembleDebug lintDebug)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-Changes to app behavior should also be checked in a simulator or emulator;
-`sh scripts/takeScreenshots.sh` drives both apps end to end.
+Changes to app behavior should also be checked in a simulator, emulator, or browser
+(`bun run web:dev`); `sh scripts/takeScreenshots.sh` drives the mobile apps end to end.
 
 ## Conventions
 
@@ -40,8 +41,9 @@ Changes to app behavior should also be checked in a simulator or emulator;
   gitignored; edit the SVGs, never the PNGs. The Gradle wrapper jar is regenerated.
 - Store credentials live in `.secrets/` (a gitignored symlink). Never copy secrets into
   the repository.
-- Keep the two apps' behavior in step: a feature or fix on one platform usually needs the
-  same change on the other.
+- Keep the apps' behavior in step: a feature or fix on one platform usually needs the same
+  change on the others. The web app has no widget, and its noise generator must keep
+  matching the native ones (`web/test/noiseGenerator.test.ts` compares it with iOS output).
 
 ## Shipping
 

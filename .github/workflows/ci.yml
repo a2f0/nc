@@ -50,7 +50,7 @@ jobs:
       - name: Check agent skills
         run: bun run agents:check
 
-      - name: Test fastlane helpers
+      - name: Test fastlane helpers and web audio
         run: bun run test
 
   android:
@@ -101,11 +101,33 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run web:check
+
+      - name: Build
+        run: bun run web:build
+
   # The single required check (see agent-tool.json).
   gate:
     name: CI gate
     if: always()
-    needs: [lint, android, ios]
+    needs: [lint, android, ios, web]
     runs-on: ubuntu-latest
     steps:
       - name: Require every job to succeed
