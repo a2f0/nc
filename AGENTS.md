@@ -22,6 +22,7 @@ checks. Run individual pieces while iterating:
 sh scripts/checks/lintScripts.sh                       # ShellCheck
 sh scripts/checks/checkBinaryFiles.sh --all            # no binary files
 bun run agents:check                                   # shared skills are current
+bun run test                                           # fastlane helper tests
 (cd android && ./gradlew assembleDebug lintDebug)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build

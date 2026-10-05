@@ -33,6 +33,11 @@ jobs:
         with:
           bun-version: 1.4.2
 
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: "4.0.6"
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
@@ -44,6 +49,9 @@ jobs:
 
       - name: Check agent skills
         run: bun run agents:check
+
+      - name: Test fastlane helpers
+        run: bun run test
 
   android:
     name: Android
