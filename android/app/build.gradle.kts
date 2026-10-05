@@ -67,6 +67,12 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
 
+    constraints {
+        // Glance only asks for WorkManager 2.7.1, whose Room 2.2.5 keep rules let R8 (full
+        // mode) remove WorkDatabase_Impl's constructor, so release builds crash at launch.
+        implementation(libs.androidx.work.runtime.ktx)
+    }
+
     testImplementation(libs.junit)
 }
 
