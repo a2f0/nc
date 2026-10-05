@@ -39,9 +39,9 @@ The application ID is in `android/app/build.gradle.kts`.
 
 **Web:** `bun run web:dev` serves the app at http://localhost:8080 (set `PORT` to change it)
 and rebuilds when `web/` changes; reload to pick up a rebuild. `bun run web:build` writes a
-static site to the gitignored `web/dist/`, which any static host can serve over HTTPS
-(`AudioWorklet` needs a secure context, so `file://` doesn't work). The page and the audio
-worklet are separate bundles (`web/build.ts`); the favicon comes from `assets/icon.svg`.
+static site to the gitignored `web/dist/` (`AudioWorklet` needs a secure context, so it must
+be served over HTTPS or from localhost, not `file://`). The page and the audio worklet are
+separate bundles (`web/build.ts`); the favicon comes from `assets/icon.svg`.
 
 ## No binary files
 
@@ -70,7 +70,7 @@ refuses to run stale).
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
   ShellCheck; shared agent skills are current; fastlane helper and web audio tests; web
-  typecheck and build; Android debug build and lint; iOS simulator build.
+  typecheck, build, and deploy dry run; Android debug build and lint; iOS simulator build.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 
@@ -93,6 +93,14 @@ store-sized PNGs (no alpha) to the gitignored `.screenshots/`: iPhone 6.9" (1320
 iPad 13" (2064x2752), and Android phone (1080x1920, within Google Play's 2:1 limit).
 
 ## Releasing
+
+**Web:** `bun run web:deploy` builds the site and publishes it as the `nc` Worker with
+static assets (`web/wrangler.jsonc`); run `bunx wrangler login` once first. `bun run
+web:preview` serves the same build through Wrangler's local Workers runtime. Terraform in
+[a2f0/a2f0.net](https://github.com/a2f0/a2f0.net) attaches `nc.a2f0.net` to the Worker, as
+it does for that zone's other hosts, so publish the Worker before applying it.
+
+**Stores:**
 
 IDs: `net.a2f0.nc` (app, both stores), `net.a2f0.nc.widget` (iOS widget), `group.net.a2f0.nc`
 (iOS App Group). Store credentials come from `.secrets/`, a gitignored symlink to

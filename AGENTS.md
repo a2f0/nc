@@ -24,6 +24,7 @@ sh scripts/checks/checkBinaryFiles.sh --all            # no binary files
 bun run agents:check                                   # shared skills are current
 bun run test                                           # fastlane helper and web audio tests
 bun run web:check && bun run web:build                 # web typecheck and build
+bunx wrangler deploy --config web/wrangler.jsonc --dry-run   # web deploy config
 (cd android && ./gradlew assembleDebug lintDebug)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
@@ -50,4 +51,5 @@ Changes to app behavior should also be checked in a simulator, emulator, or brow
 Use the `ship-pr` skill with `agent-tool` (`bun run agent-tool ...`). Review with an agent
 other than the one that wrote the change. The required check is `CI gate`; packages are not
 versioned. `bun run agents:sync` updates the shared skills after an `@a2f0/agent-tool`
-upgrade.
+upgrade. Merging doesn't deploy the web app; `bun run web:deploy` publishes it to
+`nc.a2f0.net` (see "Releasing" in `README.md`).
