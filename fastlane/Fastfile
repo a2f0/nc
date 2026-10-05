@@ -2,6 +2,7 @@
 
 require 'shellwords'
 require_relative 'lib/ios_signing_keychain'
+require_relative 'lib/play_version_code'
 require_relative 'lib/secrets'
 
 REPO_ROOT = File.expand_path('..', __dir__)
@@ -85,7 +86,7 @@ end
 platform :ios do
   desc 'Register the app and widget bundle IDs with App Groups enabled (App Store Connect API key)'
   lane :register_identifiers do
-    load_store_secrets
+    load_store_secrets(IOS_SECRETS)
     app_store_connect_api_key(**app_store_connect_api_key_options)
     { APP_IDENTIFIER => APP_NAME, WIDGET_IDENTIFIER => "#{APP_NAME} Widget" }.each do |identifier, name|
       bundle_id = Spaceship::ConnectAPI::BundleId.find(identifier) ||
@@ -105,7 +106,7 @@ platform :ios do
   # Apple ID (APPLE_ID) and needs a 2FA code. Run it once, in a terminal.
   desc 'Create the App Store Connect app, App Group, and App Store profiles (Apple ID login)'
   lane :create_app do
-    load_store_secrets
+    load_store_secrets(IOS_SECRETS)
     username = required_env('APPLE_ID')
     team_id = required_env('TEAM_ID')
 
@@ -139,7 +140,7 @@ platform :ios do
 
   desc 'Build, sign (match), and upload to TestFlight'
   lane :beta do |options|
-    load_store_secrets
+    load_store_secrets(IOS_SECRETS)
     team_id = required_env('TEAM_ID')
     api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
     build_number = options[:build_number]&.to_i ||
@@ -174,24 +175,19 @@ end
 
 # MARK: - Android
 
-# Only a missing app or track counts as "no version codes yet". Any other
-# failure (auth, network) could hide the highest code and produce a duplicate.
 def next_google_play_version_code
-  codes = GOOGLE_PLAY_TRACKS.flat_map do |track|
-    google_play_track_version_codes(package_name: APP_IDENTIFIER, track: track, json_key: GOOGLE_PLAY_JSON_KEY_PATH)
-  rescue StandardError => e
-    raise unless e.message.match?(/not found/i)
-
-    UI.important("No version codes from the #{track} track (#{e.message.lines.first&.strip})")
-    []
+  missing = lambda do |track, error|
+    UI.important("No version codes from the #{track} track (#{error.message.lines.first&.strip})")
   end
-  (codes.max || 0) + 1
+  PlayVersionCode.next_code(GOOGLE_PLAY_TRACKS, on_missing: missing) do |track|
+    google_play_track_version_codes(package_name: APP_IDENTIFIER, track: track, json_key: GOOGLE_PLAY_JSON_KEY_PATH)
+  end
 end
 
 platform :android do
   desc 'Build the release App Bundle, signed with the upload key'
   lane :build_release do |options|
-    load_store_secrets
+    load_store_secrets(ANDROID_SECRETS)
     required_env('NC_ANDROID_KEYSTORE_PASS')
     UI.user_error!("Missing upload keystore: #{ANDROID_KEYSTORE_PATH}") unless File.file?(ANDROID_KEYSTORE_PATH)
 

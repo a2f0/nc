@@ -6,8 +6,8 @@ require 'dotenv'
 # tearleads (see the README).
 SECRETS_DIR = File.expand_path('../../.secrets', __dir__)
 
-# Only what these lanes need: root.env also holds unrelated secrets.
-STORE_SECRET_NAMES = {
+# Only what each platform's lanes need: root.env also holds unrelated secrets.
+IOS_SECRETS = {
   'root.env' => %w[
     APPLE_ID
     APP_STORE_CONNECT_ISSUER_ID
@@ -17,15 +17,15 @@ STORE_SECRET_NAMES = {
     MATCH_GIT_URL
     MATCH_PASSWORD
     TEAM_ID
-  ],
-  'nc.env' => %w[NC_ANDROID_KEYSTORE_PASS]
+  ]
 }.freeze
+ANDROID_SECRETS = { 'nc.env' => %w[NC_ANDROID_KEYSTORE_PASS] }.freeze
 
 GOOGLE_PLAY_JSON_KEY_PATH = File.join(SECRETS_DIR, 'google-play-service-account-admin.json')
 
 # Values already in the environment win, so any of them can be overridden.
-def load_store_secrets
-  STORE_SECRET_NAMES.each do |file, names|
+def load_store_secrets(secret_names)
+  secret_names.each do |file, names|
     path = File.join(SECRETS_DIR, file)
     UI.user_error!("Missing #{path}. Is the .secrets symlink set up?") unless File.file?(path)
 
