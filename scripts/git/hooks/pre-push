@@ -61,8 +61,12 @@ sh scripts/checks/lintScripts.sh
 step "Checking agent skills"
 bun run --silent agents:check >/dev/null
 
-step "Testing fastlane helpers"
+step "Testing fastlane helpers and web audio"
 bun run --silent test
+
+step "Building web (typecheck + build)"
+bun run --silent web:check
+bun run --silent web:build >/dev/null
 
 step "Building Android (debug build + lint)"
 sh scripts/ensureGradleWrapper.sh

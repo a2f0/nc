@@ -13,3 +13,6 @@ fastlane/test_output/
 
 # Bun
 node_modules/
+
+# Web build output
+web/dist/
