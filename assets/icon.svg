@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- App mark. Square viewBox, framed tightly; scripts/buildImages.sh scales and centers it. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <rect x="6" y="8" width="8" height="32" rx="2" fill="#1C1C1E"/>
+  <rect x="20" y="0" width="8" height="48" rx="2" fill="#1C1C1E"/>
+  <rect x="34" y="12" width="8" height="24" rx="2" fill="#1C1C1E"/>
+</svg>

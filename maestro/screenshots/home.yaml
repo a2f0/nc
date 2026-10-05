@@ -1,0 +1,11 @@
+# Store screenshot: the home screen, nothing playing.
+appId: com.noiseconnoisseur.app
+tags:
+  - screenshots
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Tap a sound to start"
+    timeout: 30000

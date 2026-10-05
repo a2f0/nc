@@ -1,0 +1,16 @@
+# Store screenshot: pink noise playing.
+appId: com.noiseconnoisseur.app
+tags:
+  - screenshots
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Tap a sound to start"
+    timeout: 30000
+# iOS exposes the card as "Play Pink Noise"; Android as its title and blurb.
+- tapOn: ".*Pink Noise.*"
+- extendedWaitUntil:
+    visible: "Playing · Pink Noise"
+    timeout: 10000

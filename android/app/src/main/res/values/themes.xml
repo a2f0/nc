@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.NoiseConnoisseur" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Launch theme: the app icon on the background color from assets/background.svg. -->
+    <style name="Theme.NoiseConnoisseur.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.NoiseConnoisseur</item>
+    </style>
+</resources>

@@ -1,0 +1,7 @@
+// Settings shared by the app and the widget extension.
+// The bundle ID is permanent once the app is created in App Store Connect.
+BASE_BUNDLE_ID = com.noiseconnoisseur.app
+APP_GROUP_ID = group.$(BASE_BUNDLE_ID)
+
+MARKETING_VERSION = 1.0
+CURRENT_PROJECT_VERSION = 1

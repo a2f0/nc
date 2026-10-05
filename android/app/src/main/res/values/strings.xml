@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Noise Connoisseur</string>
+    <string name="widget_name">Noise Connoisseur</string>
+    <string name="widget_description">Start and stop white or pink noise</string>
+    <string name="noise_white">White Noise</string>
+    <string name="noise_pink">Pink Noise</string>
+    <string name="noise_white_short">White</string>
+    <string name="noise_pink_short">Pink</string>
+    <string name="noise_white_blurb">Equal energy at every frequency. Bright and crisp.</string>
+    <string name="noise_pink_blurb">Softer highs, deeper lows. Like steady rain.</string>
+    <string name="playing">Playing</string>
+    <string name="stopped">Tap a sound to start</string>
+    <string name="stop">Stop</string>
+    <string name="notification_channel_name">Playback</string>
+</resources>

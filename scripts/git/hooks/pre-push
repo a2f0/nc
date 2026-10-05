@@ -1,0 +1,75 @@
+#!/bin/sh
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# A copied hook must match the checked-out version before it can gate a push.
+if ! cmp -s "$0" "$REPO_ROOT/scripts/git/hooks/pre-push"; then
+  echo "Error: pre-push hook is stale. Run sh scripts/git/install-hooks.sh." >&2
+  exit 1
+fi
+
+cd "$REPO_ROOT"
+
+zero_sha="0000000000000000000000000000000000000000"
+
+refs_file=$(mktemp)
+trap 'rm -f "$refs_file"' EXIT
+trap 'exit 1' HUP INT TERM
+
+if [ -t 0 ]; then
+  : >"$refs_file"
+else
+  cat >"$refs_file"
+fi
+
+step() {
+  echo ""
+  echo "==> $1"
+}
+
+# Runs a check once per pushed ref, over the commits that ref adds.
+for_each_pushed_range() {
+  while read -r _ local_sha _ remote_sha; do
+    if [ "$local_sha" = "$zero_sha" ]; then
+      continue
+    fi
+
+    if [ "$remote_sha" = "$zero_sha" ]; then
+      range="main..$local_sha"
+    else
+      range="$remote_sha..$local_sha"
+    fi
+
+    "$@" --range "$range" </dev/null
+  done <"$refs_file"
+}
+
+step "Linting branch name"
+sh scripts/checks/lintBranchName.sh
+
+step "Checking commit signatures and co-authors"
+for_each_pushed_range sh scripts/checks/checkCommitTrust.sh
+
+step "Checking for binary files"
+for_each_pushed_range sh scripts/checks/checkBinaryFiles.sh
+
+step "Linting shell scripts"
+sh scripts/checks/lintScripts.sh
+
+step "Building Android (debug build + lint)"
+sh scripts/ensureGradleWrapper.sh
+(cd android && ./gradlew --quiet assembleDebug lintDebug)
+
+step "Building iOS (simulator)"
+xcodebuild \
+  -quiet \
+  -project ios/NoiseConnoisseur.xcodeproj \
+  -scheme NoiseConnoisseur \
+  -destination 'generic/platform=iOS Simulator' \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+
+echo ""
+echo "All checks passed."

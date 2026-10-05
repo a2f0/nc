@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+cd "$REPO_ROOT"
+
+echo "Linting branch name..."
+sh scripts/checks/lintBranchName.sh
+
+echo "Checking for binary files..."
+sh scripts/checks/checkBinaryFiles.sh --staged
