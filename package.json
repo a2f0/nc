@@ -1,6 +1,7 @@
 {
   "name": "nc",
   "private": true,
+  "license": "UNLICENSED",
   "packageManager": "bun@1.4.2",
   "scripts": {
     "agent-tool": "agent-tool",
