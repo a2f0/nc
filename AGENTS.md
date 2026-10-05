@@ -32,7 +32,9 @@ sh scripts/checks/testIosAudio.sh                      # iOS renderer, rendered 
 ```
 
 Changes to app behavior should also be checked in a simulator, emulator, or browser
-(`bun run web:dev`); `sh scripts/takeScreenshots.sh` drives the mobile apps end to end.
+(`bun run web:dev`); `sh scripts/takeScreenshots.sh` drives the mobile apps end to end. On
+Android it runs the minified (R8) release build: debug builds aren't minified, so they can
+hide release-only crashes.
 
 ## Conventions
 

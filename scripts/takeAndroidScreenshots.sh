@@ -38,9 +38,15 @@ if ! emulator -list-avds | grep -qx "$AVD_NAME"; then
     --package "$SYSTEM_IMAGE" --device "$DEVICE_PROFILE" >/dev/null
 fi
 
-echo "Building the Android app..."
+# A minified release build, so this run exercises the same R8 output that ships (debug
+# builds aren't minified). It's signed with the local debug key, only to install it here.
+echo "Building the Android app (release)..."
 sh "$REPO_ROOT/scripts/ensureGradleWrapper.sh"
-(cd "$REPO_ROOT/android" && ./gradlew --quiet assembleDebug)
+(cd "$REPO_ROOT/android" && ./gradlew --quiet assembleRelease \
+  -Pandroid.injected.signing.store.file="$HOME/.android/debug.keystore" \
+  -Pandroid.injected.signing.store.password=android \
+  -Pandroid.injected.signing.key.alias=androiddebugkey \
+  -Pandroid.injected.signing.key.password=android)
 
 mkdir -p "$OUTPUT_DIR/phone" "$MAESTRO_OUTPUT_DIR"
 emulator_log="$OUTPUT_DIR/emulator.log"
@@ -62,7 +68,9 @@ until [ "$(adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d
   sleep 2
 done
 
-adb -s "$SERIAL" install -r "$REPO_ROOT/android/app/build/outputs/apk/debug/app-debug.apk" >/dev/null
+# A fresh install: an earlier build may have a higher version code or another signature.
+adb -s "$SERIAL" uninstall "$APP_ID" >/dev/null 2>&1 || true
+adb -s "$SERIAL" install "$REPO_ROOT/android/app/build/outputs/apk/release/app-release.apk" >/dev/null
 
 # System UI demo mode: a clean, fixed status bar.
 demo() {
