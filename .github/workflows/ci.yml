@@ -75,7 +75,7 @@ jobs:
         run: |
           sh scripts/ensureGradleWrapper.sh
           cd android
-          ./gradlew --no-daemon assembleDebug lintDebug
+          ./gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest
 
   ios:
     name: iOS
@@ -100,6 +100,9 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Test audio rendering
+        run: sh scripts/checks/testIosAudio.sh
 
   web:
     name: Web

@@ -72,7 +72,8 @@ refuses to run stale).
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
   ShellCheck; shared agent skills are current; fastlane helper and web audio tests; web
-  typecheck, build, and deploy dry run; Android debug build and lint; iOS simulator build.
+  typecheck, build, and deploy dry run; Android debug build, lint, and unit tests; iOS
+  simulator build and audio rendering checks.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 
