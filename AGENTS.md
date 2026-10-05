@@ -42,8 +42,8 @@ Changes to app behavior should also be checked in a simulator, emulator, or brow
 - Store credentials live in `.secrets/` (a gitignored symlink). Never copy secrets into
   the repository.
 - Keep the apps' behavior in step: a feature or fix on one platform usually needs the same
-  change on the others. The web app has no widget, and its noise generator must stay sample
-  for sample with the native ones (`web/test/noiseGenerator.test.ts` checks this).
+  change on the others. The web app has no widget, and its noise generator must keep
+  matching the native ones (`web/test/noiseGenerator.test.ts` compares it with iOS output).
 
 ## Shipping
 

@@ -6,7 +6,8 @@ const PINK_GAIN = 0.08;
 
 /**
  * Produces one channel of noise, one sample at a time. Owned by the audio thread;
- * not thread-safe. Matches the iOS and Android generators sample for sample.
+ * not thread-safe. Uses the iOS and Android generators' algorithm and constants: the
+ * same random sequence, though this filter runs in double rather than float precision.
  */
 export class NoiseGenerator {
   private rng: number;
