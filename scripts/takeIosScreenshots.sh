@@ -17,7 +17,7 @@ OUTPUT_DIR="$SCREENSHOT_OUTPUT_ROOT/ios"
 MAESTRO_OUTPUT_DIR="$OUTPUT_DIR/maestro"
 BUILD_DIR="${TMPDIR:-/tmp}/noise-connoisseur-screenshots-derived-data"
 RUNTIME_VERSION="${IOS_SCREENSHOT_RUNTIME_VERSION:-26.2}"
-BUNDLE_ID=com.noiseconnoisseur.app
+BUNDLE_ID=net.a2f0.nc
 APP_PATH="$BUILD_DIR/Build/Products/Debug-iphonesimulator/NoiseConnoisseur.app"
 
 # Device type and expected screenshot size per device. These are the sizes

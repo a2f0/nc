@@ -1,10 +1,10 @@
-package com.noiseconnoisseur.app.playback
+package net.a2f0.nc.playback
 
 import android.content.Context
 import androidx.core.content.ContextCompat
 import androidx.glance.appwidget.updateAll
-import com.noiseconnoisseur.app.NoiseType
-import com.noiseconnoisseur.app.widget.NoiseWidget
+import net.a2f0.nc.NoiseType
+import net.a2f0.nc.widget.NoiseWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

@@ -3,21 +3,39 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Release builds are signed with the Google Play upload key from .secrets/
+// (gitignored; see the README). Without it, release builds are left unsigned.
+val uploadKeystore = rootProject.file("../.secrets/nc-upload.keystore")
+val uploadKeystorePassword = providers.environmentVariable("NC_ANDROID_KEYSTORE_PASS").orNull
+
 android {
-    namespace = "com.noiseconnoisseur.app"
+    namespace = "net.a2f0.nc"
     compileSdk = 37
 
     defaultConfig {
         // Permanent once published on Google Play.
-        applicationId = "com.noiseconnoisseur.app"
+        applicationId = "net.a2f0.nc"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
+        // Release lanes pass the next Play version code with -PncVersionCode=<n>.
+        versionCode = providers.gradleProperty("ncVersionCode").orNull?.toInt() ?: 1
         versionName = "1.0"
+    }
+
+    signingConfigs {
+        if (uploadKeystore.isFile && uploadKeystorePassword != null) {
+            create("upload") {
+                storeFile = uploadKeystore
+                storePassword = uploadKeystorePassword
+                keyAlias = "nc-upload"
+                keyPassword = uploadKeystorePassword
+            }
+        }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("upload")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

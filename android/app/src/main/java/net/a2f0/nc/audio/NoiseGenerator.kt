@@ -1,6 +1,6 @@
-package com.noiseconnoisseur.app.audio
+package net.a2f0.nc.audio
 
-import com.noiseconnoisseur.app.NoiseType
+import net.a2f0.nc.NoiseType
 
 /**
  * Produces one channel of noise, one sample at a time. Owned by the audio thread;

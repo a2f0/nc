@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "subject": {
+    "conventional": true,
+    "maxLength": 50,
+    "types": [
+      "build",
+      "chore",
+      "ci",
+      "cleanup",
+      "docs",
+      "feat",
+      "fix",
+      "perf",
+      "refactor",
+      "revert",
+      "style",
+      "test"
+    ]
+  },
+  "merge": {
+    "requireChecks": true,
+    "requiredChecks": [
+      {
+        "name": "CI gate",
+        "workflow": "CI"
+      }
+    ],
+    "requireStrictBaseFreshness": false
+  },
+  "review": {
+    "claudeModel": null,
+    "codexModel": null,
+    "opencodeModel": "deepseek/deepseek-v4-pro",
+    "opencodeVariants": {
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "xhigh": "max",
+      "max": "max"
+    },
+    "timeoutMs": 600000
+  },
+  "versions": {
+    "packages": [],
+    "lockfile": "bun.lock",
+    "validate": [],
+    "commitMessage": "chore: bump package versions"
+  },
+  "pr": {
+    "rejectClaudeBranding": true
+  }
+}

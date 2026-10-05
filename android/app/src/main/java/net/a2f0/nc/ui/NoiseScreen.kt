@@ -1,4 +1,4 @@
-package com.noiseconnoisseur.app.ui
+package net.a2f0.nc.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -32,9 +32,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.noiseconnoisseur.app.NoiseType
-import com.noiseconnoisseur.app.R
-import com.noiseconnoisseur.app.playback.NoisePlayer
+import net.a2f0.nc.NoiseType
+import net.a2f0.nc.R
+import net.a2f0.nc.playback.NoisePlayer
 
 @Composable
 fun NoiseConnoisseurTheme(content: @Composable () -> Unit) {

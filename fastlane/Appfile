@@ -1,0 +1,4 @@
+# frozen_string_literal: true
+
+app_identifier('net.a2f0.nc')
+package_name('net.a2f0.nc')
