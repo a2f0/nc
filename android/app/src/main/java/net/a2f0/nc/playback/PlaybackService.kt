@@ -19,6 +19,9 @@ import android.media.session.PlaybackState
 import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import net.a2f0.nc.MainActivity
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
@@ -31,6 +34,7 @@ import net.a2f0.nc.audio.NoiseEngine
  */
 class PlaybackService : Service() {
     private val engine = NoiseEngine()
+    private val scope = MainScope()
     private lateinit var audioManager: AudioManager
     private lateinit var focusRequest: AudioFocusRequest
     private lateinit var session: MediaSession
@@ -46,6 +50,9 @@ class PlaybackService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        val volume = NoisePlayer.volume(this)
+        engine.setVolume(volume.value)
+        scope.launch { volume.collect(engine::setVolume) }
         audioManager = getSystemService(AudioManager::class.java)
         focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(NoiseEngine.ATTRIBUTES)
@@ -78,6 +85,7 @@ class PlaybackService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        scope.cancel()
         engine.stop()
         audioManager.abandonAudioFocusRequest(focusRequest)
         unregisterNoisyReceiver()

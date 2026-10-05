@@ -11,5 +11,6 @@
     <string name="playing">Playing</string>
     <string name="stopped">Tap a sound to start</string>
     <string name="stop">Stop</string>
+    <string name="volume">Volume</string>
     <string name="notification_channel_name">Playback</string>
 </resources>

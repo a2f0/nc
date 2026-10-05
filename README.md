@@ -13,7 +13,9 @@ Native on iOS and Android, plus a desktop web version; no shared code between th
 | Minimum OS | iOS 18 | Android 8.0 (API 26) | Desktop browsers with `AudioWorklet` |
 
 Noise is generated in real time (xorshift PRNG for white; Paul Kellet's filter for pink),
-level-matched at about -17 dBFS, in stereo, with fade in/out.
+level-matched at about -17 dBFS, in stereo, with fade in/out. Each app has its own volume
+slider on top of the system volume: saved between launches, squared so halfway is about
+-12 dB, and ramped over about 50 ms so dragging doesn't crackle.
 
 ## Setup
 
@@ -70,7 +72,8 @@ refuses to run stale).
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
   ShellCheck; shared agent skills are current; fastlane helper and web audio tests; web
-  typecheck, build, and deploy dry run; Android debug build and lint; iOS simulator build.
+  typecheck, build, and deploy dry run; Android debug build, lint, and unit tests; iOS
+  simulator build and audio rendering checks.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 

@@ -25,9 +25,10 @@ bun run agents:check                                   # shared skills are curre
 bun run test                                           # fastlane helper and web audio tests
 bun run web:check && bun run web:build                 # web typecheck and build
 bunx wrangler deploy --config web/wrangler.jsonc --dry-run   # web deploy config
-(cd android && ./gradlew assembleDebug lintDebug)
+(cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+sh scripts/checks/testIosAudio.sh                      # iOS renderer, rendered offline on macOS
 ```
 
 Changes to app behavior should also be checked in a simulator, emulator, or browser

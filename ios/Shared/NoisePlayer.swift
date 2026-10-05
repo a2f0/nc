@@ -18,6 +18,9 @@ final class NoisePlayer {
     /// The most recently played noise; used when resuming from lock screen controls.
     private(set) var lastPlayed: NoiseType = .white
 
+    /// The app's own volume, from 0 to 1, on top of the system volume. Saved across launches.
+    private(set) var volume: Double
+
     @ObservationIgnored private let engine = AVAudioEngine()
     @ObservationIgnored private let renderer = NoiseRenderer()
     @ObservationIgnored private var isConfigured = false
@@ -26,10 +29,19 @@ final class NoisePlayer {
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
     private static let log = Logger(subsystem: "NoiseConnoisseur", category: "playback")
+    private static let volumeKey = "volume"
 
     private init() {
+        volume = UserDefaults.standard.object(forKey: Self.volumeKey) as? Double ?? 1
+        renderer.setVolume(volume)
         // A fresh process isn't playing anything, whatever the widget last showed.
         publishState()
+    }
+
+    func setVolume(_ value: Double) {
+        volume = min(max(value, 0), 1)
+        renderer.setVolume(volume)
+        UserDefaults.standard.set(volume, forKey: Self.volumeKey)
     }
 
     func toggle(_ type: NoiseType) {
