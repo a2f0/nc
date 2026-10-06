@@ -24,14 +24,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,29 +44,8 @@ import net.a2f0.nc.playback.NoisePlayer
 
 @Composable
 fun NoiseConnoisseurTheme(content: @Composable () -> Unit) {
-    // Neutral grays rather than Material's default purple tint.
-    val colors = if (isSystemInDarkTheme()) {
-        darkColorScheme(
-            primary = Color.White,
-            onPrimary = Color.Black,
-            background = Color.Black,
-            surface = Color(0xFF1C1C1E),
-            surfaceVariant = Color(0xFF2C2C2E),
-            onSurfaceVariant = Color(0xFFAEAEB2),
-            outlineVariant = Color(0xFF38383A),
-        )
-    } else {
-        lightColorScheme(
-            primary = Color(0xFF1C1C1E),
-            onPrimary = Color.White,
-            background = Color.White,
-            surface = Color.White,
-            surfaceVariant = Color(0xFFF2F2F7),
-            onSurfaceVariant = Color(0xFF6C6C70),
-            outlineVariant = Color(0xFFE5E5EA),
-        )
-    }
-    MaterialTheme(colorScheme = colors, content = content)
+    // Grays only (see Colors.kt), not Material's purples or the wallpaper's colors.
+    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors, content = content)
 }
 
 @Composable

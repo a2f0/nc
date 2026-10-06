@@ -108,11 +108,12 @@ for device in $DEVICES; do
   xcrun simctl bootstatus "$udid" -b >/dev/null
   xcrun simctl terminate "$udid" "$BUNDLE_ID" 2>/dev/null || true
   xcrun simctl install "$udid" "$APP_PATH"
+  # Discharging, not charged: a charged battery is drawn green.
   xcrun simctl status_bar "$udid" override \
     --time 9:41 \
     --dataNetwork wifi --wifiMode active --wifiBars 3 \
     --cellularMode active --cellularBars 4 \
-    --batteryState charged --batteryLevel 100
+    --batteryState discharging --batteryLevel 100
   mkdir -p "$OUTPUT_DIR/$device"
 
   capture "$device" home light 01-home.png

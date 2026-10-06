@@ -1,22 +1,23 @@
-/* Neutral grays, the same palette as the Android app. */
+/* Grays only, with equal red, green, and blue (no color anywhere; see AGENTS.md). The
+   same palette as the Android app. */
 :root {
   color-scheme: light dark;
   --background: #ffffff;
   --surface: #ffffff;
-  --fill: #f2f2f7;
-  --primary: #1c1c1e;
-  --secondary: #6c6c70;
-  --separator: #e5e5ea;
+  --fill: #f2f2f2;
+  --primary: #1c1c1c;
+  --secondary: #6c6c6c;
+  --separator: #e5e5e5;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #000000;
-    --surface: #1c1c1e;
-    --fill: #2c2c2e;
+    --surface: #1c1c1c;
+    --fill: #2c2c2c;
     --primary: #ffffff;
-    --secondary: #aeaeb2;
-    --separator: #38383a;
+    --secondary: #aeaeae;
+    --separator: #383838;
   }
 }
 
@@ -79,9 +80,15 @@ h1 {
   border-color: var(--secondary);
 }
 
-.card:focus-visible {
+/* Gray, rather than the browser's colored focus ring and text selection. */
+:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 3px;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--background);
 }
 
 /* A 2px border, drawn without shifting the contents. */

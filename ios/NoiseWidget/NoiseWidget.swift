@@ -48,7 +48,7 @@ struct NoiseWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Noise Connoisseur")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Gray.secondaryLabel)
                 .lineLimit(1)
             layout {
                 ForEach(NoiseType.allCases) { type in
@@ -82,7 +82,7 @@ private struct NoiseToggleButton: View {
         .font(.subheadline.weight(.semibold))
         .foregroundStyle(isPlaying ? Color(.systemBackground) : .primary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(isPlaying ? Color.primary : Color(.secondarySystemFill), in: .rect(cornerRadius: 12))
+        .background(isPlaying ? Color.primary : Gray.secondaryFill, in: .rect(cornerRadius: 12))
     }
 }
 
