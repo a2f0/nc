@@ -2,7 +2,7 @@
 // AudioWorklet needs a secure context: localhost is one, file:// pages are not.
 
 import { watch } from "node:fs";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { build, DIST_DIR } from "./build";
 
 const WEB_DIR = import.meta.dir;
@@ -14,15 +14,17 @@ const server = Bun.serve({
   hostname: "127.0.0.1",
   port,
   async fetch(request) {
-    // URL parsing resolves "..", so paths stay inside dist.
+    // URL parsing resolves "..", so paths stay inside dist. Like Cloudflare's static
+    // assets, "/privacy" serves privacy.html.
     const path = new URL(request.url).pathname;
-    const file = Bun.file(join(DIST_DIR, path === "/" ? "index.html" : path));
+    const name = path === "/" ? "index.html" : extname(path) === "" ? `${path}.html` : path;
+    const file = Bun.file(join(DIST_DIR, name));
     return (await file.exists()) ? new Response(file) : new Response("Not found", { status: 404 });
   },
 });
 
 let pending: ReturnType<typeof setTimeout> | undefined;
-for (const source of ["src", "index.html", "styles.css", "../assets/icon.svg"]) {
+for (const source of ["src", "index.html", "privacy.html", "support.html", "styles.css", "../assets/icon.svg"]) {
   watch(join(WEB_DIR, source), { recursive: true }, () => {
     clearTimeout(pending);
     pending = setTimeout(() => {

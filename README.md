@@ -43,7 +43,9 @@ The application ID is in `android/app/build.gradle.kts`.
 and rebuilds when `web/` changes; reload to pick up a rebuild. `bun run web:build` writes a
 static site to the gitignored `web/dist/` (`AudioWorklet` needs a secure context, so it must
 be served over HTTPS or from localhost, not `file://`). The page and the audio worklet are
-separate bundles (`web/build.ts`); the favicon comes from `assets/icon.svg`.
+separate bundles (`web/build.ts`); the favicon comes from `assets/icon.svg`. The store
+listings link to `web/privacy.html` and `web/support.html` (served at `/privacy` and
+`/support`); keep the privacy policy accurate when an app starts storing or sending anything new.
 
 ## No binary files
 
