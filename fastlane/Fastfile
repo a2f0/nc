@@ -251,15 +251,16 @@ platform :android do
     ANDROID_RELEASE_AAB
   end
 
-  # Google Play only accepts draft releases until the app has been published,
-  # so this defaults to draft; pass release_status:completed afterwards.
-  desc 'Build and upload the release App Bundle to the Google Play internal track'
+  # Rolls the release out to internal testers, with no Play Console step. A new
+  # Play app only accepts draft releases until its first release has been rolled
+  # out by hand; pass release_status:draft to upload one without rolling it out.
+  desc 'Build, upload, and roll out the release App Bundle to Google Play internal testers'
   lane :internal do |options|
     aab = build_release(options)
     upload_to_play_store(
       package_name: APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH,
       aab: aab, mapping: ANDROID_RELEASE_MAPPING,
-      track: 'internal', release_status: options.fetch(:release_status, 'draft'),
+      track: 'internal', release_status: options.fetch(:release_status, 'completed'),
       skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
       skip_upload_images: true, skip_upload_screenshots: true
     )
