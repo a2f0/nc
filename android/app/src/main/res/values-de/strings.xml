@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from l10n/ by `bun run l10n`; edit those files instead. -->
+<resources>
+    <string name="widget_description">Weißes oder rosa Rauschen starten und stoppen.</string>
+    <string name="noise_white_title">Weißes Rauschen</string>
+    <string name="noise_pink_title">Rosa Rauschen</string>
+    <string name="noise_white_short">Weiß</string>
+    <string name="noise_pink_short">Rosa</string>
+    <string name="noise_white_blurb">Gleiche Energie auf allen Frequenzen. Hell und klar.</string>
+    <string name="noise_pink_blurb">Sanftere Höhen, tiefere Bässe. Wie gleichmäßiger Regen.</string>
+    <string name="status_playing">Wiedergabe · %1$s</string>
+    <string name="status_tap_to_start">Zum Starten einen Klang antippen</string>
+    <string name="stop">Stopp</string>
+    <string name="volume">Lautstärke</string>
+    <string name="notification_channel_name">Wiedergabe</string>
+</resources>

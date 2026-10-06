@@ -24,7 +24,7 @@ const server = Bun.serve({
 });
 
 let pending: ReturnType<typeof setTimeout> | undefined;
-for (const source of ["src", "index.html", "privacy.html", "support.html", "styles.css", "../assets/icon.svg", "../assets/background.svg"]) {
+for (const source of ["src", "../l10n", "index.html", "privacy.html", "support.html", "styles.css", "../assets/icon.svg", "../assets/background.svg"]) {
   watch(join(WEB_DIR, source), { recursive: true }, () => {
     clearTimeout(pending);
     pending = setTimeout(() => {

@@ -61,7 +61,10 @@ sh scripts/checks/lintScripts.sh
 step "Checking agent skills"
 bun run --silent agents:check >/dev/null
 
-step "Testing fastlane helpers and web audio"
+step "Checking localization (translations, generated string files, store listings)"
+bun run --silent l10n:check
+
+step "Testing fastlane helpers, web, and localization"
 bun run --silent test
 
 step "Building web (typecheck + build + deploy dry run)"

@@ -6,9 +6,9 @@ struct ContentView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Noise Connoisseur")
+                Text(.appName)
                     .font(.largeTitle.bold())
-                Text(player.nowPlaying.map { "Playing · \($0.title)" } ?? "Tap a sound to start")
+                Text(player.nowPlaying.map { .statusPlaying(String(localized: $0.title)) } ?? .statusTapToStart)
                     .foregroundStyle(Gray.secondaryLabel)
                     .padding(.bottom, 8)
                 ForEach(NoiseType.allCases) { type in
@@ -58,7 +58,7 @@ private struct NoiseCard: View {
             .contentShape(.rect(cornerRadius: 20))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isPlaying ? "Stop \(type.title)" : "Play \(type.title)")
+        .accessibilityLabel(Text(isPlaying ? .stopNoise(String(localized: type.title)) : .playNoise(String(localized: type.title))))
     }
 }
 
@@ -67,7 +67,7 @@ private struct VolumeSlider: View {
 
     var body: some View {
         Slider(value: $volume, in: 0...1) {
-            Text("Volume")
+            Text(.volume)
         } minimumValueLabel: {
             Image(systemName: "speaker.fill")
                 .foregroundStyle(Gray.secondaryLabel)

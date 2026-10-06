@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from l10n/ by `bun run l10n`; edit those files instead. -->
+<resources>
+    <string name="widget_description">Inicia y detén el ruido blanco o rosa.</string>
+    <string name="noise_white_title">Ruido blanco</string>
+    <string name="noise_pink_title">Ruido rosa</string>
+    <string name="noise_white_short">Blanco</string>
+    <string name="noise_pink_short">Rosa</string>
+    <string name="noise_white_blurb">La misma energía en todas las frecuencias. Brillante y nítido.</string>
+    <string name="noise_pink_blurb">Agudos más suaves, graves más profundos. Como una lluvia constante.</string>
+    <string name="status_playing">Reproduciendo · %1$s</string>
+    <string name="status_tap_to_start">Toca un sonido para empezar</string>
+    <string name="stop">Detener</string>
+    <string name="volume">Volumen</string>
+    <string name="notification_channel_name">Reproducción</string>
+</resources>

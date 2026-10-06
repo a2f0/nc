@@ -50,7 +50,10 @@ jobs:
       - name: Check agent skills
         run: bun run agents:check
 
-      - name: Test fastlane helpers and web audio
+      - name: Check localization
+        run: bun run l10n:check
+
+      - name: Test fastlane helpers, web, and localization
         run: bun run test
 
   android:

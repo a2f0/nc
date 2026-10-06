@@ -5,6 +5,7 @@ import {
   PROCESSOR_FILE,
   PROCESSOR_NAME,
 } from "./noiseProtocol";
+import { t } from "./l10n";
 import { NOISE_INFO, type NoiseType } from "./noiseType";
 
 /**
@@ -173,8 +174,8 @@ export class NoisePlayer {
     navigator.mediaSession.playbackState = this.nowPlaying === null ? "paused" : "playing";
     if (this.nowPlaying !== null) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: NOISE_INFO[this.nowPlaying].title,
-        artist: "Noise Connoisseur",
+        title: t(NOISE_INFO[this.nowPlaying].title),
+        artist: t("app_name"),
       });
     }
   }

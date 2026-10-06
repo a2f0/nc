@@ -30,8 +30,8 @@ struct NoiseWidget: Widget {
             NoiseWidgetView(entry: entry)
                 .containerBackground(.background, for: .widget)
         }
-        .configurationDisplayName("Noise Connoisseur")
-        .description("Start and stop white or pink noise.")
+        .configurationDisplayName(Text(.appName))
+        .description(Text(.widgetDescription))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -46,7 +46,7 @@ struct NoiseWidgetView: View {
             : AnyLayout(VStackLayout(spacing: 8))
 
         VStack(alignment: .leading, spacing: 8) {
-            Text("Noise Connoisseur")
+            Text(.appName)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Gray.secondaryLabel)
                 .lineLimit(1)

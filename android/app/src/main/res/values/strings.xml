@@ -1,16 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated from l10n/ by `bun run l10n`; edit those files instead. -->
 <resources>
-    <string name="app_name">Noise Connoisseur</string>
-    <string name="widget_name">Noise Connoisseur</string>
-    <string name="widget_description">Start and stop white or pink noise</string>
-    <string name="noise_white">White Noise</string>
-    <string name="noise_pink">Pink Noise</string>
+    <!-- The app's name: on its screen and widget, and the artist in the system's media controls. -->
+    <string name="app_name" translatable="false">Noise Connoisseur</string>
+    <!-- Describes the home screen widget in the system's widget gallery. -->
+    <string name="widget_description">Start and stop white or pink noise.</string>
+    <!-- Name of white noise, which has equal energy at every frequency. Also its title in the system's media controls. -->
+    <string name="noise_white_title">White Noise</string>
+    <!-- Name of pink noise, which is softer at high frequencies than white noise. Also its title in the system's media controls. -->
+    <string name="noise_pink_title">Pink Noise</string>
+    <!-- White noise's name on a home screen widget button, where there's little room. -->
     <string name="noise_white_short">White</string>
+    <!-- Pink noise's name on a home screen widget button, where there's little room. -->
     <string name="noise_pink_short">Pink</string>
+    <!-- Describes white noise, under its name. -->
     <string name="noise_white_blurb">Equal energy at every frequency. Bright and crisp.</string>
+    <!-- Describes pink noise, under its name. -->
     <string name="noise_pink_blurb">Softer highs, deeper lows. Like steady rain.</string>
-    <string name="playing">Playing</string>
-    <string name="stopped">Tap a sound to start</string>
+    <!-- Status line under the app's name while a noise plays. {noise}: the noise's name, such as “Pink Noise”. -->
+    <string name="status_playing">Playing · %1$s</string>
+    <!-- Status line under the app's name while nothing plays. -->
+    <string name="status_tap_to_start">Tap a sound to start</string>
+    <!-- Button in the playback notification that stops the noise. -->
     <string name="stop">Stop</string>
+    <!-- Screen reader label for the volume slider. -->
     <string name="volume">Volume</string>
+    <!-- Name of the playback notification's category in the system's notification settings. -->
     <string name="notification_channel_name">Playback</string>
 </resources>

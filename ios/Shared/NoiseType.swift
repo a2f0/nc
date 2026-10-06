@@ -6,32 +6,34 @@ enum NoiseType: String, CaseIterable, Codable, Identifiable, Sendable {
 
     var id: Self { self }
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
-        case .white: "White Noise"
-        case .pink: "Pink Noise"
+        case .white: .noiseWhiteTitle
+        case .pink: .noisePinkTitle
         }
     }
 
-    var shortTitle: String {
+    var shortTitle: LocalizedStringResource {
         switch self {
-        case .white: "White"
-        case .pink: "Pink"
+        case .white: .noiseWhiteShort
+        case .pink: .noisePinkShort
         }
     }
 
-    var blurb: String {
+    var blurb: LocalizedStringResource {
         switch self {
-        case .white: "Equal energy at every frequency. Bright and crisp."
-        case .pink: "Softer highs, deeper lows. Like steady rain."
+        case .white: .noiseWhiteBlurb
+        case .pink: .noisePinkBlurb
         }
     }
 }
 
+// App Intents builds its metadata from literal keys, not the generated symbols; `bun run
+// l10n` checks that each is an iOS string in l10n/strings.ts.
 extension NoiseType: AppEnum {
-    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Noise"
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: LocalizedStringResource("intent_noise"))
     static let caseDisplayRepresentations: [NoiseType: DisplayRepresentation] = [
-        .white: "White Noise",
-        .pink: "Pink Noise",
+        .white: DisplayRepresentation(title: LocalizedStringResource("noise_white_title")),
+        .pink: DisplayRepresentation(title: LocalizedStringResource("noise_pink_title")),
     ]
 }

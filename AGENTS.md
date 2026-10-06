@@ -2,7 +2,8 @@
 
 White and pink noise player, native on `ios/` (SwiftUI, WidgetKit) and `android/` (Jetpack
 Compose, Glance), plus a desktop web version in `web/` (TypeScript, AudioWorklet). There is
-no shared code between them. See `README.md` for architecture, setup, and releasing.
+no shared code between them; their strings come from `l10n/`. See `README.md` for
+architecture, setup, and releasing.
 
 ## Setup
 
@@ -22,7 +23,8 @@ checks. Run individual pieces while iterating:
 sh scripts/checks/lintScripts.sh                       # ShellCheck
 sh scripts/checks/checkBinaryFiles.sh --all            # no binary files
 bun run agents:check                                   # shared skills are current
-bun run test                                           # fastlane helper and web audio tests
+bun run l10n:check                                     # translations, generated strings, store listings
+bun run test                                           # fastlane helper, web, and localization tests
 bun run web:check && bun run web:build                 # web typecheck and build
 bunx wrangler deploy --config web/wrangler.jsonc --dry-run   # web deploy config
 (cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest)
@@ -52,6 +54,12 @@ hide release-only crashes.
   or the browser's focus and selection colors. The palettes are
   `android/app/src/main/java/net/a2f0/nc/ui/Colors.kt` (`ColorsTest` checks every role),
   `ios/Shared/Gray.swift`, and `web/styles.css`; the icon is `assets/*.svg`.
+- Strings: every user-facing string is in `l10n/strings.ts`, with a comment for translators,
+  and `bun run l10n` writes each platform's string files from it and the translations; never
+  edit `strings.xml` or `Localizable.xcstrings` directly. Use `R.string.*` on Android, the
+  generated symbols on iOS (`Text(.volume)`, or `LocalizedStringResource("key")` in App
+  Intents' metadata), and `t()` from `web/src/l10n.ts` on the web. See "Localization" in
+  `README.md`.
 - Keep the apps' behavior in step: a feature or fix on one platform usually needs the same
   change on the others. The web app has no widget, and its noise generator must keep
   matching the native ones (`web/test/noiseGenerator.test.ts` compares it with iOS output).
