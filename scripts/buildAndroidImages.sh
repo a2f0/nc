@@ -31,7 +31,11 @@ for entry in mdpi:4 hdpi:6 xhdpi:8 xxhdpi:12 xxxhdpi:16; do
   render_mark "$notification" $((20 * quarters / 4)) \
     "$RES_DIR/drawable-$density/ic_notification.png" white
 
-  echo "  $density: launcher layers (${layer}px), notification icon (${notification}px)"
+  # Logo beside the app's title: 40dp (see ui/NoiseScreen.kt).
+  logo=$((40 * quarters / 4))
+  render_logo "$logo" "$RES_DIR/drawable-$density/ic_logo.png"
+
+  echo "  $density: launcher layers (${layer}px), notification icon (${notification}px), logo (${logo}px)"
 done
 
 # Android 12+ splash screens take a solid color, not an image.

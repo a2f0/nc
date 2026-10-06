@@ -53,7 +53,8 @@ svg_viewbox_width() {
 }
 
 # The mark without its "unlit" group (the dim LCD segments), for single-color
-# icons, where they'd be noise. web/build.ts drops them from the favicon too.
+# icons and the title logo, where they'd be noise. web/build.ts drops them from
+# the favicon too.
 lit_icon_svg() {
   output="$IMAGES_TMP_DIR/icon-lit.svg"
   if [ ! -f "$output" ]; then
@@ -152,6 +153,19 @@ render_icon() {
     -gravity center -composite \
     -background white -alpha remove -alpha off \
     -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 -define "$PNG_NO_TIMES" "$output"
+}
+
+# render_logo <size> <output>
+# The app icon without the mark's unlit segments, like the favicon, for the logo
+# beside each app's title. Square and opaque; the apps round its corners.
+render_logo() {
+  size=$1
+  output=$2
+  mkdir -p "$(dirname "$output")"
+  "$MAGICK" "$(rasterize "$BACKGROUND_SVG" "$size")" "$(rasterize "$(lit_icon_svg)" "$size")" \
+    -gravity center -composite \
+    -background white -alpha remove -alpha off \
+    -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 "$output"
 }
 
 # The background's average color as #RRGGBB, for places that only take a color.

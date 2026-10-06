@@ -4,7 +4,8 @@
      the icon's bottom edge. Grayscale, like the rest of the app: lit segments are gray,
      light gray from row 6, and white from row 9 (counting from the bottom). The dim, unlit
      segments in the "unlit" group are left out of the single-color icons (notification and
-     themed) and the favicon, so keep that group's id, and its closing tag on its own line. -->
+     themed), the favicon, and the logo beside each app's title, so keep that group's id, and
+     its closing tag on its own line. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <g id="unlit" fill-opacity="0.14">
     <rect x="776" y="708" width="120" height="52" fill="#A6A6A6"/>

@@ -13,6 +13,8 @@ ASSETS_DIR="$IMAGES_REPO_ROOT/ios/NoiseConnoisseur/Assets.xcassets"
 
 # Launch screen logo size in points (see ios/NoiseConnoisseur/LaunchScreen.storyboard).
 LAUNCH_LOGO_POINTS=100
+# Logo beside the app's title, in points (see ios/NoiseConnoisseur/ContentView.swift).
+LOGO_POINTS=40
 
 echo "Generating iOS images from assets/"
 
@@ -27,4 +29,10 @@ for scale in 2 3; do
   pixels=$((LAUNCH_LOGO_POINTS * scale))
   render_mark "$pixels" "$pixels" "$ASSETS_DIR/LaunchLogo.imageset/LaunchLogo@${scale}x.png"
   echo "  LaunchLogo@${scale}x.png (${pixels}x${pixels})"
+done
+
+for scale in 2 3; do
+  pixels=$((LOGO_POINTS * scale))
+  render_logo "$pixels" "$ASSETS_DIR/Logo.imageset/Logo@${scale}x.png"
+  echo "  Logo@${scale}x.png (${pixels}x${pixels})"
 done

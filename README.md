@@ -47,7 +47,7 @@ The application ID is in `android/app/build.gradle.kts`.
 and rebuilds when `web/` changes; reload to pick up a rebuild. `bun run web:build` writes a
 static site to the gitignored `web/dist/` (`AudioWorklet` needs a secure context, so it must
 be served over HTTPS or from localhost, not `file://`). The page and the audio worklet are
-separate bundles (`web/build.ts`); the favicon is the app icon, built from `assets/*.svg`. The store
+separate bundles (`web/build.ts`); the favicon, also the logo beside the title, is the app icon, built from `assets/*.svg`. The store
 listings link to `web/privacy.html` and `web/support.html` (served at `/privacy` and
 `/support`); keep the privacy policy accurate when an app starts storing or sending anything new.
 
@@ -102,15 +102,15 @@ Nothing binary is committed; the hooks reject it (`scripts/checks/checkBinaryFil
 
 | Source | Becomes |
 |---|---|
-| `assets/icon.svg` | The mark, an LCD equalizer drawn full-bleed so its columns touch the icon's bottom edge: the iOS app icon and launch screen logo; the Android adaptive icon foreground, themed (monochrome) icon, and notification icon; the favicon; the Play Store icon and feature graphic |
-| `assets/background.svg` | The iOS app icon backdrop and full-bleed launch screen; the Android adaptive icon background and splash color; the favicon and Play Store graphics |
+| `assets/icon.svg` | The mark, an LCD equalizer drawn full-bleed so its columns touch the icon's bottom edge: the iOS app icon and launch screen logo; the Android adaptive icon foreground, themed (monochrome) icon, and notification icon; the favicon; the logo beside each app's title; the Play Store icon and feature graphic |
+| `assets/background.svg` | The iOS app icon backdrop and full-bleed launch screen; the Android adaptive icon background and splash color; the favicon, title logo, and Play Store graphics |
 
 Builds regenerate them when the SVGs change (an Xcode build phase and a Gradle task
 before `preBuild`), or run `sh scripts/buildImages.sh`. Android 12+ splash screens only take
 a solid color, so Android uses the background's average color there. Android adaptive icons
 show the inner 72dp of a 108dp layer, which the mark fills; its bottom row is stretched to the
 layer's edge so the columns still reach the bottom under any launcher mask. Single-color
-renders (themed and notification icons) and the favicon leave out the mark's `unlit` group of
+renders (themed and notification icons), the favicon, and the title logo leave out the mark's `unlit` group of
 dim segments. `sh scripts/buildStoreImages.sh` writes the Play Store graphics to
 `.screenshots/android/`. ImageMagick's built-in
 SVG renderer handles plain shapes; for gradients, masks, filters, or text, `brew install librsvg`.

@@ -6,8 +6,16 @@ struct ContentView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text(.appName)
-                    .font(.largeTitle.bold())
+                HStack(spacing: 12) {
+                    // The app icon's corners: 224 of its 1024 points.
+                    Image(.logo)
+                        .resizable()
+                        .frame(width: 40, height: 40)
+                        .clipShape(.rect(cornerRadius: 9, style: .continuous))
+                        .accessibilityHidden(true)
+                    Text(.appName)
+                        .font(.largeTitle.bold())
+                }
                 Text(player.nowPlaying.map { .statusPlaying(String(localized: $0.title)) } ?? .statusTapToStart)
                     .foregroundStyle(Gray.secondaryLabel)
                     .padding(.bottom, 8)
