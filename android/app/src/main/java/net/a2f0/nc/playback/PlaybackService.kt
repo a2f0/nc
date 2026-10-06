@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.graphics.drawable.Icon
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -65,13 +66,17 @@ class PlaybackService : Service() {
                 override fun onStop() = stop()
             })
         }
-        getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.notification_channel_name),
-                NotificationManager.IMPORTANCE_LOW,
-            ),
-        )
+        createNotificationChannel()
+    }
+
+    // Changing the language doesn't restart the service, so relabel what it shows.
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        createNotificationChannel()
+        nowPlaying?.let { type ->
+            showNotification(type)
+            session.setMetadata(metadata(type))
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -103,12 +108,7 @@ class PlaybackService : Service() {
 
     private fun play(type: NoiseType) {
         // Must be called promptly after startForegroundService(), even if we end up not playing.
-        ServiceCompat.startForeground(
-            this,
-            NOTIFICATION_ID,
-            buildNotification(type),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
-        )
+        showNotification(type)
         if (audioManager.requestAudioFocus(focusRequest) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             stop()
             return
@@ -118,12 +118,7 @@ class PlaybackService : Service() {
         engine.play(type)
         registerNoisyReceiver()
 
-        session.setMetadata(
-            MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_TITLE, getString(type.title))
-                .putString(MediaMetadata.METADATA_KEY_ARTIST, getString(R.string.app_name))
-                .build(),
-        )
+        session.setMetadata(metadata(type))
         session.setPlaybackState(playbackState(PlaybackState.STATE_PLAYING))
         session.isActive = true
         NoisePlayer.update(this, type)
@@ -163,6 +158,32 @@ class PlaybackService : Service() {
         )
         .setState(state, PlaybackState.PLAYBACK_POSITION_UNKNOWN, 1f)
         .build()
+
+    /** Puts the service in the foreground with the playback notification, or updates the notification. */
+    private fun showNotification(type: NoiseType) {
+        ServiceCompat.startForeground(
+            this,
+            NOTIFICATION_ID,
+            buildNotification(type),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+        )
+    }
+
+    private fun metadata(type: NoiseType): MediaMetadata = MediaMetadata.Builder()
+        .putString(MediaMetadata.METADATA_KEY_TITLE, getString(type.title))
+        .putString(MediaMetadata.METADATA_KEY_ARTIST, getString(R.string.app_name))
+        .build()
+
+    /** Creates the playback channel, or renames it for the current language. */
+    private fun createNotificationChannel() {
+        getSystemService(NotificationManager::class.java).createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.notification_channel_name),
+                NotificationManager.IMPORTANCE_LOW,
+            ),
+        )
+    }
 
     private fun buildNotification(type: NoiseType): Notification {
         val openApp = PendingIntent.getActivity(

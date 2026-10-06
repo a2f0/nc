@@ -10,7 +10,11 @@ build_dir=$(mktemp -d "${TMPDIR:-/tmp}/audio-tests.XXXXXX")
 trap 'rm -rf "$build_dir"' EXIT
 trap 'exit 1' HUP INT TERM
 
+# NoiseType.swift uses the string symbols Xcode generates from the String Catalog.
+xcrun xcstringstool generate-symbols "$REPO_ROOT/ios/Shared/Localizable.xcstrings" \
+  --output-directory "$build_dir" --language swift
 xcrun swiftc -O -o "$build_dir/audio-tests" \
+  "$build_dir/GeneratedStringSymbols_Localizable.swift" \
   "$REPO_ROOT/ios/Shared/NoiseType.swift" \
   "$REPO_ROOT/ios/Shared/NoiseGenerator.swift" \
   "$REPO_ROOT/ios/Shared/NoiseRenderer.swift" \

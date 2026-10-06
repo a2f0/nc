@@ -9,8 +9,8 @@ enum class NoiseType(
     @StringRes val shortTitle: Int,
     @StringRes val blurb: Int,
 ) {
-    WHITE("white", R.string.noise_white, R.string.noise_white_short, R.string.noise_white_blurb),
-    PINK("pink", R.string.noise_pink, R.string.noise_pink_short, R.string.noise_pink_blurb),
+    WHITE("white", R.string.noise_white_title, R.string.noise_white_short, R.string.noise_white_blurb),
+    PINK("pink", R.string.noise_pink_title, R.string.noise_pink_short, R.string.noise_pink_blurb),
     ;
 
     companion object {

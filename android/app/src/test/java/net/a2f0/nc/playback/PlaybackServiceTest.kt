@@ -1,5 +1,7 @@
 package net.a2f0.nc.playback
 
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.Intent
 import net.a2f0.nc.MainActivity
 import net.a2f0.nc.NoiseType
@@ -58,5 +60,19 @@ class PlaybackServiceTest {
         assertTrue(shadowOf(service).isForegroundStopped)
         assertTrue("the playback notification is removed", shadowOf(service).notificationShouldRemoved)
         assertTrue(shadowOf(service).isStoppedBySelf)
+    }
+
+    @Test
+    fun changingTheLanguageRelabelsTheNotification() {
+        val service = playPinkNoise()
+
+        RuntimeEnvironment.setQualifiers("de")
+        service.onConfigurationChanged(context.resources.configuration)
+
+        val notification = shadowOf(service).lastForegroundNotification
+        assertEquals("Rosa Rauschen", notification.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals("Stopp", notification.actions.single().title)
+        val channel = context.getSystemService(NotificationManager::class.java).getNotificationChannel("playback")
+        assertEquals("Wiedergabe", channel.name)
     }
 }

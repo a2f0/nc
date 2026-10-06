@@ -5,3 +5,7 @@ APP_GROUP_ID = group.$(BASE_BUNDLE_ID)
 
 MARKETING_VERSION = 1.0
 CURRENT_PROJECT_VERSION = 1
+
+// The String Catalog (Shared/Localizable.xcstrings) is generated from l10n/ by `bun run
+// l10n`, so Xcode shouldn't add the strings it finds in the code to it.
+SWIFT_EMIT_LOC_STRINGS = NO

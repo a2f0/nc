@@ -1,0 +1,27 @@
+import type { Translation } from "./strings";
+
+export default {
+  widget_description: "Weißes oder rosa Rauschen starten und stoppen.",
+  noise_white_title: "Weißes Rauschen",
+  noise_pink_title: "Rosa Rauschen",
+  noise_white_short: "Weiß",
+  noise_pink_short: "Rosa",
+  noise_white_blurb: "Gleiche Energie auf allen Frequenzen. Hell und klar.",
+  noise_pink_blurb: "Sanftere Höhen, tiefere Bässe. Wie gleichmäßiger Regen.",
+  status_playing: "Wiedergabe · {noise}",
+  status_tap_to_start: "Zum Starten einen Klang antippen",
+  status_click_to_start: "Zum Starten einen Klang anklicken",
+  status_audio_failed: "Dieser Browser konnte die Wiedergabe nicht starten.",
+  play_noise: "{noise} abspielen",
+  stop_noise: "{noise} stoppen",
+  stop: "Stopp",
+  volume: "Lautstärke",
+  notification_channel_name: "Wiedergabe",
+  intent_noise: "Rauschen",
+  intent_play_title: "Rauschen abspielen",
+  intent_play_description: "Spielt weißes oder rosa Rauschen ab.",
+  intent_stop_title: "Rauschen stoppen",
+  intent_stop_description: "Stoppt die Wiedergabe.",
+  support: "Support",
+  privacy_policy: "Datenschutzerklärung",
+} satisfies Translation;

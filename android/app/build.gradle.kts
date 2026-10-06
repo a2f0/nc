@@ -51,6 +51,20 @@ android {
         compose = true
     }
 
+    // Lists the languages in res/ (values-*, written by `bun run l10n`) in the system's
+    // per-app language setting, on Android 13 and later.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
+    // Google Play installs only the device's languages from an App Bundle unless they're
+    // packaged together, and then the app's language setting couldn't switch to the others.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     // Robolectric tests (e.g. PlaybackServiceTest) build notifications from app resources,
     // and its Android 16 runtime reaches into a JDK internal on newer JDKs.
     testOptions {

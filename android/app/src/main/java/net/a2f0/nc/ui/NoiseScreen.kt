@@ -82,8 +82,8 @@ private fun NoiseScreen(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = nowPlaying?.let { stringResource(R.string.playing) + " · " + stringResource(it.title) }
-                    ?: stringResource(R.string.stopped),
+                text = nowPlaying?.let { stringResource(R.string.status_playing, stringResource(it.title)) }
+                    ?: stringResource(R.string.status_tap_to_start),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

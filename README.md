@@ -1,7 +1,8 @@
 # Noise Connoisseur
 
 White and pink noise player with background playback and home screen start/stop widgets.
-Native on iOS and Android, plus a desktop web version; no shared code between them.
+Native on iOS and Android, plus a desktop web version; no shared code between them, only
+their strings (see "Localization").
 
 | | iOS (`ios/`) | Android (`android/`) | Web (`web/`) |
 |---|---|---|---|
@@ -50,6 +51,49 @@ separate bundles (`web/build.ts`); the favicon is the app icon, built from `asse
 listings link to `web/privacy.html` and `web/support.html` (served at `/privacy` and
 `/support`); keep the privacy policy accurate when an app starts storing or sending anything new.
 
+## Localization
+
+The apps are in English, German, and Spanish. Each shows the user's language when it's one
+of those, and English otherwise. On
+Android and iOS that's the system language, or the app's own language setting (Android 13+
+and iOS); on the web, the browser's languages (`navigator.languages`), switching when they
+change. The App Store lists the languages the binary has, and both stores show the listing
+in the user's language when there is one.
+
+Every user-facing string is in `l10n/strings.ts`, the source: its English text, a comment
+for translators, and the platforms that show it. Translations are `l10n/<tag>.ts` files typed
+against it, so a missing or extra string, or a dropped `{placeholder}`, is a type error.
+`bun run l10n` checks them and writes the native files, which are committed; don't edit those.
+
+| | Generated | Used as |
+|---|---|---|
+| Android | `res/values*/strings.xml`, `res/resources.properties` | `R.string.status_playing`. The Android Gradle plugin builds the per-app language list from the `values-*` folders (`generateLocaleConfig`), and App Bundles keep every language so that list works |
+| iOS | `Shared/Localizable.xcstrings`, for the app and the widget | Xcode's generated symbols: `Text(.volume)`, `.statusPlaying(title)`. App Intents' metadata needs literal keys, `LocalizedStringResource("intent_noise")`, which `bun run l10n` checks. Xcode doesn't add strings it finds in code to the catalog (`SWIFT_EMIT_LOC_STRINGS = NO`) |
+| Web | Nothing: `web/src/l10n.ts` imports `l10n/` | `t("play_noise", { noise })`, with the keys and placeholders type-checked |
+
+Placeholders become `%1$s` (Android) and `%1$@` (iOS), numbered in the order English has them,
+so a translation can put them anywhere. Each platform gets only its own strings; names
+(`translatable: false`) stay English.
+
+Each locale in `l10n/locales.ts` also names its App Store Connect and Google Play codes
+(Spanish has two in each store, for Spain and Latin America), and needs a store listing for
+each in `fastlane/metadata/ios/<code>/` and `fastlane/metadata/android/<code>/` with the same
+files as `en-US`, within the stores' length limits (the `listing` lanes upload every one). Screenshots are English for every language. `bun run l10n:check`, run by
+pre-push and CI, typechecks the translations and fails if a generated file is out of date or
+a listing is missing or too long.
+
+To add a language:
+
+1. Write `l10n/<tag>.ts` (`export default { ... } satisfies Translation`), translating each
+   string with the help of its comment.
+2. List it in `l10n/locales.ts` with its tag (`de`, `pt-BR`, `zh-Hans`) and store codes.
+3. Add its listings under `fastlane/metadata/`.
+4. Run `bun run l10n`.
+
+To try one: on iOS, set the scheme's App Language (Edit Scheme → Run → Options); on Android,
+`adb shell cmd locale set-app-locales net.a2f0.nc --locales <tag>`; on the web, the browser's
+language settings. The privacy policy and support pages are in English only.
+
 ## No binary files
 
 Nothing binary is committed; the hooks reject it (`scripts/checks/checkBinaryFiles.sh`).
@@ -81,9 +125,9 @@ refuses to run stale).
 - **pre-commit:** branch name is `<type>/<name>` (or `main`); no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
-  ShellCheck; shared agent skills are current; fastlane helper and web audio tests; web
-  typecheck, build, and deploy dry run; Android debug build, lint, and unit tests; iOS
-  simulator build and audio rendering checks.
+  ShellCheck; shared agent skills are current; localization is current; fastlane helper,
+  web, and localization tests; web typecheck, build, and deploy dry run; Android debug
+  build, lint, and unit tests; iOS simulator build and audio rendering checks.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 

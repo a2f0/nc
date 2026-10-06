@@ -3,13 +3,14 @@ import AppIntents
 // These are compiled into both the app and the widget extension. Because they're
 // AudioPlaybackIntents, the system always performs them in the app's process
 // (launching it in the background if needed), which is what allows a widget tap to
-// start audio.
+// start audio. Their titles are literal keys, which App Intents needs instead of the
+// generated string symbols (see NoiseType.swift).
 
 struct PlayNoiseIntent: AudioPlaybackIntent {
-    static let title: LocalizedStringResource = "Play Noise"
-    static let description = IntentDescription("Starts playing white or pink noise.")
+    static let title = LocalizedStringResource("intent_play_title")
+    static let description = IntentDescription(LocalizedStringResource("intent_play_description"))
 
-    @Parameter(title: "Noise")
+    @Parameter(title: LocalizedStringResource("intent_noise"))
     var noise: NoiseType
 
     init() {}
@@ -26,8 +27,8 @@ struct PlayNoiseIntent: AudioPlaybackIntent {
 }
 
 struct StopNoiseIntent: AudioPlaybackIntent {
-    static let title: LocalizedStringResource = "Stop Noise"
-    static let description = IntentDescription("Stops playback.")
+    static let title = LocalizedStringResource("intent_stop_title")
+    static let description = IntentDescription(LocalizedStringResource("intent_stop_description"))
 
     @MainActor
     func perform() async throws -> some IntentResult {

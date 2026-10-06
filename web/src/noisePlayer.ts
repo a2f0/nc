@@ -5,6 +5,7 @@ import {
   PROCESSOR_FILE,
   PROCESSOR_NAME,
 } from "./noiseProtocol";
+import { t } from "./l10n";
 import { NOISE_INFO, type NoiseType } from "./noiseType";
 
 /**
@@ -168,13 +169,17 @@ export class NoisePlayer {
     for (const listener of this.listeners) listener();
   }
 
-  private updateMediaSession(): void {
+  /**
+   * Shows what's playing in the system's media controls, in the current language. Once
+   * something has played, the paused controls keep showing it.
+   */
+  updateMediaSession(): void {
     if (!("mediaSession" in navigator)) return;
     navigator.mediaSession.playbackState = this.nowPlaying === null ? "paused" : "playing";
-    if (this.nowPlaying !== null) {
+    if (this.nowPlaying !== null || navigator.mediaSession.metadata !== null) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: NOISE_INFO[this.nowPlaying].title,
-        artist: "Noise Connoisseur",
+        title: t(NOISE_INFO[this.nowPlaying ?? this.lastPlayed].title),
+        artist: t("app_name"),
       });
     }
   }

@@ -191,8 +191,8 @@ final class NoisePlayer {
             return
         }
         center.nowPlayingInfo = [
-            MPMediaItemPropertyTitle: (nowPlaying ?? lastPlayed).title,
-            MPMediaItemPropertyArtist: "Noise Connoisseur",
+            MPMediaItemPropertyTitle: String(localized: (nowPlaying ?? lastPlayed).title),
+            MPMediaItemPropertyArtist: String(localized: .appName),
             MPNowPlayingInfoPropertyIsLiveStream: true,
             MPNowPlayingInfoPropertyPlaybackRate: nowPlaying == nil ? 0.0 : 1.0,
         ]
