@@ -84,6 +84,13 @@ class PlaybackService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    // Swiping the app away from Recents quits it, as on iOS. A foreground service
+    // would otherwise outlive the task and keep playing.
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        stop()
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
         scope.cancel()
         engine.stop()

@@ -7,7 +7,7 @@ Native on iOS and Android, plus a desktop web version; no shared code between th
 |---|---|---|---|
 | UI | SwiftUI | Jetpack Compose | TypeScript + DOM |
 | Audio | `AVAudioEngine` + `AVAudioSourceNode` | `AudioTrack` on a dedicated thread | `AudioWorklet`, played through an `<audio>` element |
-| Background | `audio` background mode | `mediaPlayback` foreground service | Keeps playing in background tabs |
+| Background | `audio` background mode; stops when the app is quit | `mediaPlayback` foreground service; stops when the app is swiped away from Recents | Keeps playing in background tabs; stops when the tab closes |
 | System controls | Now Playing / remote commands | `MediaSession` + media notification | Media Session (media keys, browser media controls) |
 | Widget | WidgetKit + `AudioPlaybackIntent` buttons | Glance app widget | None |
 | Minimum OS | iOS 18 | Android 8.0 (API 26) | Desktop browsers with `AudioWorklet` |
