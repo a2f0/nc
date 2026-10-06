@@ -170,7 +170,8 @@ key (`nc-upload.keystore`, password in `nc.env`). Back up the upload key.
 | Lane | Does |
 |---|---|
 | `fastlane ios register_identifiers` | Registers the bundle IDs with App Groups (API key) |
-| `fastlane ios create_app` | One time, interactive (Apple ID + 2FA): App Store Connect app, App Group, match profiles |
+| `fastlane ios profiles` | Creates the match App Store profiles when missing or no longer valid (API key); `force:true` regenerates them, as after the bundle IDs' capabilities or the distribution certificate change |
+| `fastlane ios create_app` | One time, interactive (Apple ID + 2FA): App Store Connect app and App Group, then runs `profiles` |
 | `fastlane ios beta` | Signed build to TestFlight |
 | `fastlane android build_release` | Signed release App Bundle |
 | `fastlane android internal` | Signed release App Bundle, rolled out to internal testers (`release_status:draft` uploads it without rolling it out) |
