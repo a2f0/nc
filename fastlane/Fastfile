@@ -122,9 +122,26 @@ platform :ios do
     end
   end
 
-  # Apple has no API for creating App Store Connect apps or App Groups, and the
-  # shared API key can't create signing profiles, so this lane logs in with your
-  # Apple ID (APPLE_ID) and needs a 2FA code. Run it once, in a terminal.
+  # match keeps the App Store profiles in the encrypted certificates repo
+  # (MATCH_GIT_URL), where beta installs them from. This creates a profile when
+  # it's missing or no longer valid; force:true regenerates them, as after the
+  # bundle IDs' capabilities or the distribution certificate change.
+  desc 'Create or renew the match App Store profiles (App Store Connect API key; force:true regenerates them)'
+  lane :profiles do |options|
+    load_store_secrets(IOS_SECRETS)
+    api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
+    ios_signing_keychain do
+      # readonly: false overrides the MATCH_READONLY the signing keychain sets.
+      match(
+        type: 'appstore', app_identifier: IOS_TARGET_IDENTIFIERS.values, api_key: api_key, readonly: false,
+        force: options[:force].to_s == 'true'
+      )
+    end
+  end
+
+  # Apple has no API for creating App Store Connect apps or App Groups, so this
+  # lane logs in with your Apple ID (APPLE_ID) and needs a 2FA code. Run it once,
+  # in a terminal.
   desc 'Create the App Store Connect app, App Group, and App Store profiles (Apple ID login)'
   lane :create_app do
     load_store_secrets(IOS_SECRETS)
@@ -153,10 +170,7 @@ platform :ios do
     end
 
     # Profiles embed the App Group, so create them after the association.
-    match(
-      type: 'appstore', app_identifier: IOS_TARGET_IDENTIFIERS.values,
-      username: username, team_id: team_id, readonly: false
-    )
+    profiles
   end
 
   desc 'Build, sign (match), and upload to TestFlight'
