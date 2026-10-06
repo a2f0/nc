@@ -18,11 +18,13 @@ for entry in mdpi:4 hdpi:6 xhdpi:8 xxhdpi:12 xxxhdpi:16; do
   density=${entry%%:*}
   quarters=${entry#*:}
 
-  # Adaptive icon layers: a 108dp canvas whose inner 72dp is visible.
+  # Adaptive icon layers: a 108dp canvas whose inner 72dp is visible, which the
+  # mark fills. The themed (monochrome) layer is only its lit segments.
   layer=$((108 * quarters / 4))
-  mark=$((layer * 72 * ICON_MARK_PERCENT / (108 * 100)))
+  mark=$((72 * quarters / 4))
   render_background "$layer" "$layer" "$RES_DIR/mipmap-$density/ic_launcher_background.png"
-  render_mark "$layer" "$mark" "$RES_DIR/mipmap-$density/ic_launcher_foreground.png"
+  render_foreground "$layer" "$mark" "$RES_DIR/mipmap-$density/ic_launcher_foreground.png"
+  render_foreground "$layer" "$mark" "$RES_DIR/mipmap-$density/ic_launcher_monochrome.png" white
 
   # Status bar icon: white on transparent, 24dp with a 2dp margin.
   notification=$((24 * quarters / 4))

@@ -16,10 +16,8 @@ LAUNCH_LOGO_POINTS=100
 
 echo "Generating iOS images from assets/"
 
-icon_size=1024
-render_icon "$icon_size" $((icon_size * ICON_MARK_PERCENT / 100)) \
-  "$ASSETS_DIR/AppIcon.appiconset/AppIcon.png"
-echo "  AppIcon.png (${icon_size}x${icon_size})"
+render_icon 1024 "$ASSETS_DIR/AppIcon.appiconset/AppIcon.png"
+echo "  AppIcon.png (1024x1024)"
 
 # Large enough to aspect-fill the biggest iPad; the storyboard scales it down.
 render_background 2732 2732 "$ASSETS_DIR/LaunchBackground.imageset/LaunchBackground.png"

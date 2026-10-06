@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 require 'shellwords'
+require 'tmpdir'
 require_relative 'lib/ios_signing_keychain'
 require_relative 'lib/play_version_code'
 require_relative 'lib/secrets'
+require_relative 'lib/store_listing'
 
 REPO_ROOT = File.expand_path('..', __dir__)
 APP_NAME = 'Noise Connoisseur'
@@ -26,6 +28,11 @@ ANDROID_OUTPUTS_DIR = File.join(ANDROID_DIR, 'app/build/outputs')
 ANDROID_RELEASE_AAB = File.join(ANDROID_OUTPUTS_DIR, 'bundle/release/app-release.aab')
 ANDROID_RELEASE_MAPPING = File.join(ANDROID_OUTPUTS_DIR, 'mapping/release/mapping.txt')
 GOOGLE_PLAY_TRACKS = %w[production beta alpha internal].freeze
+
+# Listing text is committed; screenshots are generated (see StoreListing).
+IOS_METADATA_DIR = File.join(REPO_ROOT, 'fastlane/metadata/ios')
+ANDROID_METADATA_DIR = File.join(REPO_ROOT, 'fastlane/metadata/android')
+SCREENSHOTS_DIR = File.join(REPO_ROOT, '.screenshots')
 
 default_platform(:ios)
 skip_docs
@@ -81,6 +88,20 @@ def ios_build_xcargs(build_number, team_id)
     settings << "OTHER_CODE_SIGN_FLAGS=#{Shellwords.escape("--keychain #{FastlaneCore::Helper.keychain_path(keychain)}")}"
   end
   settings.join(' ')
+end
+
+# Whether the App Store version being prepared has App Review details yet.
+def ios_review_details?
+  app = Spaceship::ConnectAPI::App.find(APP_IDENTIFIER)
+  version = app&.get_edit_app_store_version(platform: Spaceship::ConnectAPI::Platform::IOS)
+  UI.user_error!("No App Store version of #{APP_IDENTIFIER} to edit") unless version
+  version.fetch_app_store_review_detail
+  true
+rescue RuntimeError => e
+  # Spaceship raises this for an empty relationship.
+  raise unless e.message == 'No data'
+
+  false
 end
 
 platform :ios do
@@ -171,6 +192,33 @@ platform :ios do
       skip_submission: true, skip_waiting_for_build_processing: true, uses_non_exempt_encryption: false
     )
   end
+
+  # Edits the version being prepared for submission; doesn't submit it. deliver
+  # can't upload the text until that version's App Review details exist
+  # (fastlane/fastlane#20538), and creating them takes a contact name and phone
+  # number, which stay out of the repository. Until they're added in App Store
+  # Connect, this uploads only the screenshots and then fails.
+  desc 'Upload the App Store listing: fastlane/metadata/ios text and .screenshots/ios screenshots'
+  lane :listing do
+    load_store_secrets(IOS_SECRETS)
+    api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
+    review_details = ios_review_details?
+    Dir.mktmpdir('nc-listing') do |dir|
+      deliver(
+        api_key: api_key, app_identifier: APP_IDENTIFIER, platform: 'ios',
+        metadata_path: IOS_METADATA_DIR, skip_metadata: !review_details,
+        screenshots_path: StoreListing.stage_ios_screenshots(SCREENSHOTS_DIR, dir),
+        overwrite_screenshots: true, skip_binary_upload: true, skip_app_version_update: true,
+        submit_for_review: false, run_precheck_before_submit: false, force: true
+      )
+    end
+    next if review_details
+
+    UI.user_error!(
+      'Uploaded the screenshots but not the text: add the App Review contact name and phone number ' \
+      '(App Store Connect → the version → App Review Information), then run this again.'
+    )
+  end
 end
 
 # MARK: - Android
@@ -215,5 +263,25 @@ platform :android do
       skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
       skip_upload_images: true, skip_upload_screenshots: true
     )
+  end
+
+  # supply only uploads a listing along with a release, so this attaches it to
+  # the newest internal one without changing that release.
+  desc 'Upload the Google Play listing: fastlane/metadata/android text, .screenshots/android screenshots, and graphics'
+  lane :listing do
+    version_code = google_play_track_version_codes(
+      package_name: APP_IDENTIFIER, track: 'internal', json_key: GOOGLE_PLAY_JSON_KEY_PATH
+    ).map(&:to_i).max
+    UI.user_error!('No internal release to attach the listing to; run `fastlane android internal` first.') unless version_code
+
+    Dir.mktmpdir('nc-listing') do |dir|
+      images = StoreListing.stage_play_listing(ANDROID_METADATA_DIR, SCREENSHOTS_DIR, dir)
+      sh('sh', File.join(REPO_ROOT, 'scripts/buildStoreImages.sh'), images)
+      upload_to_play_store(
+        package_name: APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH, metadata_path: dir,
+        track: 'internal', version_code: version_code,
+        skip_upload_apk: true, skip_upload_aab: true, skip_upload_changelogs: true, sync_image_upload: true
+      )
+    end
   end
 end
