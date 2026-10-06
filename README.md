@@ -34,7 +34,10 @@ sh scripts/ensureGradleWrapper.sh   # the wrapper jar is binary, so it isn't com
 **iOS:** open `ios/NoiseConnoisseur.xcodeproj`, select your team under Signing & Capabilities
 for both targets, and run. Bundle ID, App Group, and version live in `ios/Config/Base.xcconfig`.
 Source folders are synchronized, so new files are picked up automatically; `ios/Shared/`
-compiles into both the app and the widget extension.
+compiles into both the app and the widget extension. Each target's `PrivacyInfo.xcprivacy`
+declares its required-reason API use (`UserDefaults`, including the App Group's); App Store
+Connect rejects uploads that use such an API without declaring it, so update both manifests
+when adding one.
 
 **Android:** open `android/` in Android Studio, or `cd android && ./gradlew assembleDebug`.
 The application ID is in `android/app/build.gradle.kts`.
