@@ -1,22 +1,25 @@
 import SwiftUI
 import UIKit
 
-/// Grays with equal red, green, and blue, in place of the system's label, fill, and
-/// separator colors, which are tinted slightly blue: nothing in the app has color (see
-/// AGENTS.md). Each has the opacities of the system color it replaces.
+/// Gray versions of the system's label, fill, and separator colors, which are tinted
+/// slightly blue: nothing in the app has color (see AGENTS.md).
 enum Gray {
-    /// Secondary text and symbols, like `secondaryLabel`.
-    static let secondaryLabel = Color(light: UIColor(white: 60 / 255, alpha: 0.6), dark: UIColor(white: 235 / 255, alpha: 0.6))
-    /// Button backgrounds, like `secondarySystemFill`.
-    static let secondaryFill = Color(light: UIColor(white: 120 / 255, alpha: 0.16), dark: UIColor(white: 120 / 255, alpha: 0.32))
-    /// The unfilled part of a slider, like `systemFill`.
-    static let fill = Color(light: UIColor(white: 120 / 255, alpha: 0.2), dark: UIColor(white: 120 / 255, alpha: 0.36))
-    /// Card outlines, like `separator`.
-    static let separator = Color(light: UIColor(white: 60 / 255, alpha: 0.29), dark: UIColor(white: 84 / 255, alpha: 0.6))
+    /// Secondary text and symbols.
+    static let secondaryLabel = Color(uiColor: UIColor.secondaryLabel.grayscale)
+    /// Button backgrounds.
+    static let secondaryFill = Color(uiColor: UIColor.secondarySystemFill.grayscale)
+    /// Card outlines.
+    static let separator = Color(uiColor: UIColor.separator.grayscale)
 }
 
-private extension Color {
-    init(light: UIColor, dark: UIColor) {
-        self.init(uiColor: UIColor { $0.userInterfaceStyle == .dark ? dark : light })
+extension UIColor {
+    /// This color resolved for the current traits (light or dark, increased contrast)
+    /// and turned gray: the same luma (Rec. 709 weights) and opacity, with no hue.
+    var grayscale: UIColor {
+        UIColor { traits in
+            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+            self.resolvedColor(with: traits).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            return UIColor(white: 0.2126 * red + 0.7152 * green + 0.0722 * blue, alpha: alpha)
+        }
     }
 }
