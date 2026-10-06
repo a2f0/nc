@@ -22,6 +22,7 @@ localize();
 addEventListener("languagechange", () => {
   setPreferredLanguages(navigator.languages);
   localize();
+  player.updateMediaSession();
 });
 
 function card(type: NoiseType): HTMLButtonElement {

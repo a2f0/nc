@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { setPreferredLanguages } from "../src/l10n";
 import { NoisePlayer } from "../src/noisePlayer";
 import type { NoiseCommand, NoiseEvent } from "../src/noiseProtocol";
 
@@ -246,6 +247,18 @@ describe("NoisePlayer", () => {
 
     mediaSession.handlers.get("play")!();
     expect(player.nowPlaying).toBe("pink");
+  });
+
+  test("the media controls follow a language change", async () => {
+    const { player } = await loaded();
+    player.play("pink");
+    setPreferredLanguages(["de-DE"]);
+    try {
+      player.updateMediaSession();
+      expect(mediaSession.metadata?.title).toBe("Rosa Rauschen");
+    } finally {
+      setPreferredLanguages([]);
+    }
   });
 
   test("starts at the saved volume", () => {

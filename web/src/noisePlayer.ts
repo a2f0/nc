@@ -169,7 +169,8 @@ export class NoisePlayer {
     for (const listener of this.listeners) listener();
   }
 
-  private updateMediaSession(): void {
+  /** Shows what's playing in the system's media controls, in the current language. */
+  updateMediaSession(): void {
     if (!("mediaSession" in navigator)) return;
     navigator.mediaSession.playbackState = this.nowPlaying === null ? "paused" : "playing";
     if (this.nowPlaying !== null) {
