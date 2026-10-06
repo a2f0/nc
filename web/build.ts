@@ -7,6 +7,7 @@ import { join } from "node:path";
 const WEB_DIR = import.meta.dir;
 export const DIST_DIR = join(WEB_DIR, "dist");
 const ICON_SVG = join(WEB_DIR, "../assets/icon.svg");
+const BACKGROUND_SVG = join(WEB_DIR, "../assets/background.svg");
 
 export async function build(): Promise<void> {
   await rm(DIST_DIR, { recursive: true, force: true });
@@ -28,10 +29,26 @@ export async function build(): Promise<void> {
     await cp(join(WEB_DIR, file), join(DIST_DIR, file));
   }
 
-  // The favicon is the app mark, drawn white on dark browser chrome.
-  const icon = await readFile(ICON_SVG, "utf8");
-  const darkStyle = "<style>@media (prefers-color-scheme: dark) { rect { fill: #FFFFFF; } }</style>";
-  await writeFile(join(DIST_DIR, "icon.svg"), icon.replace(/<svg[^>]*>/, (tag) => `${tag}\n  ${darkStyle}`));
+  const [background, icon] = await Promise.all([readFile(BACKGROUND_SVG, "utf8"), readFile(ICON_SVG, "utf8")]);
+  await writeFile(join(DIST_DIR, "icon.svg"), favicon(background, icon));
+}
+
+// The favicon is the app icon with rounded corners, leaving out the mark's unlit
+// segments, which are noise at tab size. Both SVGs share a 1024 viewBox.
+export function favicon(background: string, icon: string): string {
+  const lit = icon.replace(/<g id="unlit"[^>]*>[\s\S]*?<\/g>/, "");
+  if (lit === icon) throw new Error("assets/icon.svg has no unlit group");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <clipPath id="corners"><rect width="1024" height="1024" rx="224"/></clipPath>
+  <g clip-path="url(#corners)">${svgContents(background)}${svgContents(lit)}</g>
+</svg>
+`;
+}
+
+function svgContents(svg: string): string {
+  const contents = svg.match(/<svg[^>]*>([\s\S]*)<\/svg>/)?.[1];
+  if (contents === undefined) throw new Error("Not an SVG document");
+  return contents;
 }
 
 if (import.meta.main) {

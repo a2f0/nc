@@ -1,7 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- App mark. Square viewBox, framed tightly; scripts/buildImages.sh scales and centers it. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <rect x="6" y="8" width="8" height="32" rx="2" fill="#1C1C1E"/>
-  <rect x="20" y="0" width="8" height="48" rx="2" fill="#1C1C1E"/>
-  <rect x="34" y="12" width="8" height="24" rx="2" fill="#1C1C1E"/>
+<!-- App mark: an LCD equalizer, five columns of segments rising from the bottom edge.
+     Full-bleed: scripts/buildImages.sh draws it over the whole icon, so the columns touch
+     the icon's bottom edge. Lit segments are green, amber at row 6, red at row 9 (counting
+     from the bottom). The dim, unlit segments in the "unlit" group are left out of the
+     single-color icons (notification and themed) and the favicon, so keep that group's
+     id, and its closing tag on its own line. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <g id="unlit" fill-opacity="0.14">
+    <rect x="776" y="708" width="120" height="52" fill="#3BE36B"/>
+    <rect x="776" y="620" width="120" height="52" fill="#3BE36B"/>
+    <rect x="128" y="532" width="120" height="52" fill="#FFC233"/>
+    <rect x="776" y="532" width="120" height="52" fill="#FFC233"/>
+    <rect x="128" y="444" width="120" height="52" fill="#FFC233"/>
+    <rect x="452" y="444" width="120" height="52" fill="#FFC233"/>
+    <rect x="776" y="444" width="120" height="52" fill="#FFC233"/>
+    <rect x="128" y="356" width="120" height="52" fill="#FFC233"/>
+    <rect x="452" y="356" width="120" height="52" fill="#FFC233"/>
+    <rect x="776" y="356" width="120" height="52" fill="#FFC233"/>
+    <rect x="128" y="268" width="120" height="52" fill="#FF4B3E"/>
+    <rect x="290" y="268" width="120" height="52" fill="#FF4B3E"/>
+    <rect x="452" y="268" width="120" height="52" fill="#FF4B3E"/>
+    <rect x="776" y="268" width="120" height="52" fill="#FF4B3E"/>
+    <rect x="128" y="180" width="120" height="52" fill="#FF4B3E"/>
+    <rect x="290" y="180" width="120" height="52" fill="#FF4B3E"/>
+    <rect x="452" y="180" width="120" height="52" fill="#FF4B3E"/>
+    <rect x="776" y="180" width="120" height="52" fill="#FF4B3E"/>
+  </g>
+  <rect x="128" y="972" width="120" height="52" fill="#3BE36B"/>
+  <rect x="290" y="972" width="120" height="52" fill="#3BE36B"/>
+  <rect x="452" y="972" width="120" height="52" fill="#3BE36B"/>
+  <rect x="614" y="972" width="120" height="52" fill="#3BE36B"/>
+  <rect x="776" y="972" width="120" height="52" fill="#3BE36B"/>
+  <rect x="128" y="884" width="120" height="52" fill="#3BE36B"/>
+  <rect x="290" y="884" width="120" height="52" fill="#3BE36B"/>
+  <rect x="452" y="884" width="120" height="52" fill="#3BE36B"/>
+  <rect x="614" y="884" width="120" height="52" fill="#3BE36B"/>
+  <rect x="776" y="884" width="120" height="52" fill="#3BE36B"/>
+  <rect x="128" y="796" width="120" height="52" fill="#3BE36B"/>
+  <rect x="290" y="796" width="120" height="52" fill="#3BE36B"/>
+  <rect x="452" y="796" width="120" height="52" fill="#3BE36B"/>
+  <rect x="614" y="796" width="120" height="52" fill="#3BE36B"/>
+  <rect x="776" y="796" width="120" height="52" fill="#3BE36B"/>
+  <rect x="128" y="708" width="120" height="52" fill="#3BE36B"/>
+  <rect x="290" y="708" width="120" height="52" fill="#3BE36B"/>
+  <rect x="452" y="708" width="120" height="52" fill="#3BE36B"/>
+  <rect x="614" y="708" width="120" height="52" fill="#3BE36B"/>
+  <rect x="128" y="620" width="120" height="52" fill="#3BE36B"/>
+  <rect x="290" y="620" width="120" height="52" fill="#3BE36B"/>
+  <rect x="452" y="620" width="120" height="52" fill="#3BE36B"/>
+  <rect x="614" y="620" width="120" height="52" fill="#3BE36B"/>
+  <rect x="290" y="532" width="120" height="52" fill="#FFC233"/>
+  <rect x="452" y="532" width="120" height="52" fill="#FFC233"/>
+  <rect x="614" y="532" width="120" height="52" fill="#FFC233"/>
+  <rect x="290" y="444" width="120" height="52" fill="#FFC233"/>
+  <rect x="614" y="444" width="120" height="52" fill="#FFC233"/>
+  <rect x="290" y="356" width="120" height="52" fill="#FFC233"/>
+  <rect x="614" y="356" width="120" height="52" fill="#FFC233"/>
+  <rect x="614" y="268" width="120" height="52" fill="#FF4B3E"/>
+  <rect x="614" y="180" width="120" height="52" fill="#FF4B3E"/>
 </svg>
