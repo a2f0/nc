@@ -27,6 +27,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.material3.ColorProviders
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -34,13 +35,16 @@ import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
 import net.a2f0.nc.playback.NoisePlayer
 import net.a2f0.nc.playback.PlaybackService
+import net.a2f0.nc.ui.DarkColors
+import net.a2f0.nc.ui.LightColors
 
 /** Home screen widget with a start/stop button for each noise. */
 class NoiseWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
             val nowPlaying by NoisePlayer.nowPlaying.collectAsState()
-            GlanceTheme { Content(nowPlaying) }
+            // The app's grays, not the wallpaper's dynamic colors.
+            GlanceTheme(colors = ColorProviders(light = LightColors, dark = DarkColors)) { Content(nowPlaying) }
         }
     }
 

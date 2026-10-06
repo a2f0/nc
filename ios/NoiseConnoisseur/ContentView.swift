@@ -9,7 +9,7 @@ struct ContentView: View {
                 Text("Noise Connoisseur")
                     .font(.largeTitle.bold())
                 Text(player.nowPlaying.map { "Playing · \($0.title)" } ?? "Tap a sound to start")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Gray.secondaryLabel)
                     .padding(.bottom, 8)
                 ForEach(NoiseType.allCases) { type in
                     NoiseCard(type: type, isPlaying: player.nowPlaying == type) {
@@ -39,7 +39,7 @@ private struct NoiseCard: View {
                         .font(.title3.weight(.semibold))
                     Text(type.blurb)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Gray.secondaryLabel)
                         .multilineTextAlignment(.leading)
                 }
                 Spacer(minLength: 0)
@@ -47,13 +47,13 @@ private struct NoiseCard: View {
                     .font(.title3)
                     .foregroundStyle(isPlaying ? Color(.systemBackground) : .primary)
                     .frame(width: 48, height: 48)
-                    .background(isPlaying ? Color.primary : Color(.secondarySystemFill), in: .circle)
+                    .background(isPlaying ? Color.primary : Gray.secondaryFill, in: .circle)
             }
             .padding(20)
             .background(Color(.systemBackground), in: .rect(cornerRadius: 20))
             .overlay {
                 RoundedRectangle(cornerRadius: 20)
-                    .strokeBorder(isPlaying ? Color.primary : Color(.separator), lineWidth: isPlaying ? 2 : 1)
+                    .strokeBorder(isPlaying ? Color.primary : Gray.separator, lineWidth: isPlaying ? 2 : 1)
             }
             .contentShape(.rect(cornerRadius: 20))
         }
@@ -70,10 +70,10 @@ private struct VolumeSlider: View {
             Text("Volume")
         } minimumValueLabel: {
             Image(systemName: "speaker.fill")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Gray.secondaryLabel)
         } maximumValueLabel: {
             Image(systemName: "speaker.wave.3.fill")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Gray.secondaryLabel)
         }
         .tint(.primary)
         .padding(.horizontal, 4)

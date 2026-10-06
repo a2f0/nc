@@ -45,6 +45,13 @@ hide release-only crashes.
   gitignored; edit the SVGs, never the PNGs. The Gradle wrapper jar is regenerated.
 - Store credentials live in `.secrets/` (a gitignored symlink). Never copy secrets into
   the repository.
+- Grayscale only: nothing in the apps, the app icon, the website, or the store graphics and
+  screenshots has color. Use black, white, and grays with equal red, green, and blue, and
+  don't fall back on system or theme colors that carry a hue: Material's baseline and dynamic
+  (wallpaper) colors, iOS's slightly blue label, fill, and separator colors, a colored accent,
+  or the browser's focus and selection colors. The palettes are
+  `android/app/src/main/java/net/a2f0/nc/ui/Colors.kt` (`ColorsTest` checks every role),
+  `ios/Shared/Gray.swift`, and `web/styles.css`; the icon is `assets/*.svg`.
 - Keep the apps' behavior in step: a feature or fix on one platform usually needs the same
   change on the others. The web app has no widget, and its noise generator must keep
   matching the native ones (`web/test/noiseGenerator.test.ts` compares it with iOS output).
