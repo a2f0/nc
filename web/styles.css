@@ -160,3 +160,28 @@ h1 {
   accent-color: var(--primary);
   cursor: pointer;
 }
+
+.footer {
+  margin-top: 48px;
+  font-size: 15px;
+  color: var(--secondary);
+}
+
+.footer a,
+.prose a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+/* Text pages: privacy policy and support. */
+.prose h2 {
+  margin: 32px 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.prose p {
+  margin: 0 0 12px;
+  font-size: 17px;
+  line-height: 1.5;
+}

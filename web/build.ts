@@ -24,8 +24,9 @@ export async function build(): Promise<void> {
     throw new AggregateError(result.logs, "Web build failed");
   }
 
-  await cp(join(WEB_DIR, "index.html"), join(DIST_DIR, "index.html"));
-  await cp(join(WEB_DIR, "styles.css"), join(DIST_DIR, "styles.css"));
+  for (const file of ["index.html", "privacy.html", "support.html", "styles.css"]) {
+    await cp(join(WEB_DIR, file), join(DIST_DIR, file));
+  }
 
   // The favicon is the app mark, drawn white on dark browser chrome.
   const icon = await readFile(ICON_SVG, "utf8");
