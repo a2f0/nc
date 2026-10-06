@@ -11,6 +11,10 @@ IMAGES_REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)"
 ICON_SVG="$IMAGES_REPO_ROOT/assets/icon.svg"
 BACKGROUND_SVG="$IMAGES_REPO_ROOT/assets/background.svg"
 
+# Leaves out the PNG timestamps, so identical images come out byte for byte the
+# same: fastlane skips re-uploading unchanged store graphics by checksum.
+PNG_NO_TIMES="png:exclude-chunks=date,time"
+
 # Xcode and Android Studio run builds with a minimal PATH.
 PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
 export PATH
@@ -147,7 +151,7 @@ render_icon() {
   "$MAGICK" "$(rasterize "$BACKGROUND_SVG" "$size")" "$(rasterize "$ICON_SVG" "$size")" \
     -gravity center -composite \
     -background white -alpha remove -alpha off \
-    -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 "$output"
+    -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 -define "$PNG_NO_TIMES" "$output"
 }
 
 # The background's average color as #RRGGBB, for places that only take a color.
@@ -169,5 +173,5 @@ render_banner() {
     -resize "${width}x${height}^" -gravity center -extent "${width}x${height}" \
     "$(rasterize "$ICON_SVG" "$height")" -gravity south -composite \
     -background white -alpha remove -alpha off \
-    -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 "$output"
+    -depth 8 -colorspace sRGB -type TrueColor -define png:color-type=2 -define "$PNG_NO_TIMES" "$output"
 }

@@ -266,7 +266,9 @@ platform :android do
   end
 
   # supply only uploads a listing along with a release, so this attaches it to
-  # the newest internal one without changing that release.
+  # the newest internal one. With no binaries, rollout, promotion, or changelogs,
+  # supply only reads that release (it never calls update_track or
+  # upload_changelogs), so its status and notes stay as they are.
   desc 'Upload the Google Play listing: fastlane/metadata/android text, .screenshots/android screenshots, and graphics'
   lane :listing do
     version_code = google_play_track_version_codes(
