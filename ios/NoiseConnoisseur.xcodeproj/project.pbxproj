@@ -241,6 +241,8 @@
 				"$(SRCROOT)/NoiseConnoisseur/Assets.xcassets/LaunchBackground.imageset/LaunchBackground.png",
 				"$(SRCROOT)/NoiseConnoisseur/Assets.xcassets/LaunchLogo.imageset/LaunchLogo@2x.png",
 				"$(SRCROOT)/NoiseConnoisseur/Assets.xcassets/LaunchLogo.imageset/LaunchLogo@3x.png",
+				"$(SRCROOT)/NoiseConnoisseur/Assets.xcassets/Logo.imageset/Logo@2x.png",
+				"$(SRCROOT)/NoiseConnoisseur/Assets.xcassets/Logo.imageset/Logo@3x.png",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
