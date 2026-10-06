@@ -50,6 +50,13 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Robolectric tests (e.g. PlaybackServiceTest) build notifications from app resources,
+    // and its Android 16 runtime reaches into a JDK internal on newer JDKs.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        unitTests.all { it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED") }
+    }
 }
 
 dependencies {
@@ -74,6 +81,7 @@ dependencies {
     }
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
 }
 
 // Launcher, notification, and splash images are generated from the SVGs in
