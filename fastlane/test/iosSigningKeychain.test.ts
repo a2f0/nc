@@ -12,8 +12,16 @@ const lifecycleScript = `
 require "json"
 require ARGV.fetch(0)
 
+LOGIN = "/keychains/login.keychain-db"
+
 def exercise(environment, lock_path:, fail: false, setup_fail: false, cleanup_fail: false)
   events = []
+  search_list = [LOGIN]
+  search_during = nil
+  security = lambda do |*args|
+    search_list = args.drop(args.index("-s") + 1) if args.include?("-s")
+    search_list.map { |path| "    \\"#{path}\\"\\n" }.join
+  end
   result = nil
   error = nil
   setup_password = nil
@@ -29,11 +37,14 @@ def exercise(environment, lock_path:, fail: false, setup_fail: false, cleanup_fa
         raise "setup failed" if setup_fail
       end,
       cleanup: proc do |name|
-        events << ["cleanup", name]
+        events << ["cleanup", name, search_list.dup]
         raise "cleanup failed" if cleanup_fail
-      end
+      end,
+      security: security,
+      path: proc { |name| "/keychains/#{name}-db" }
     ) do
       events << ["yield", environment["MATCH_KEYCHAIN_NAME"]]
+      search_during = search_list.dup
       yield_password = environment["MATCH_KEYCHAIN_PASSWORD"]
       yield_readonly = environment["MATCH_READONLY"]
       raise "build failed" if fail
@@ -47,6 +58,8 @@ def exercise(environment, lock_path:, fail: false, setup_fail: false, cleanup_fa
     error: error,
     events: events,
     result: result,
+    search_during: search_during,
+    search_after: search_list,
     setup_password: setup_password,
     yield_password: yield_password,
     yield_readonly: yield_readonly
@@ -90,7 +103,9 @@ IosSigningKeychain.with_temporary(
     record.call("setup")
     sleep 0.15
   end,
-  cleanup: proc { |_name| record.call("cleanup") }
+  cleanup: proc { |_name| record.call("cleanup") },
+  security: ->(*_args) { "" },
+  path: ->(name) { "/keychains/#{name}-db" }
 ) do
   record.call("yield")
   sleep 0.15
@@ -110,7 +125,9 @@ IosSigningKeychain.with_temporary(
   environment: {},
   lock_path: ARGV.fetch(2),
   setup: proc { |_name, _password| record.call("setup") },
-  cleanup: proc { |_name| record.call("cleanup") }
+  cleanup: proc { |_name| record.call("cleanup") },
+  security: ->(*_args) { "" },
+  path: ->(name) { "/keychains/#{name}-db" }
 ) do
   record.call("yield")
   sleep 30
@@ -151,6 +168,15 @@ test("temporary signing keychain lifecycle preserves caller state", async () => 
     MATCH_KEYCHAIN_PASSWORD: "login-secret",
     MATCH_READONLY: "false",
   });
+  // Searched first while the block runs, and restored before cleanup deletes it.
+  const login = "/keychains/login.keychain-db";
+  const keychain = results.success.events[0][1];
+  expect(results.success.search_during).toEqual([
+    `/keychains/${keychain}-db`,
+    login,
+  ]);
+  expect(results.success.events.at(-1)).toEqual(["cleanup", keychain, [login]]);
+  expect(results.success.search_after).toEqual([login]);
 
   expect(results.failure.error).toBe("build failed");
   expect(results.failure.events.map(([event]: string[]) => event)).toEqual([
@@ -162,6 +188,7 @@ test("temporary signing keychain lifecycle preserves caller state", async () => 
     results.success.setup_password,
   );
   expect(results.failure.environment).toEqual({});
+  expect(results.failure.search_after).toEqual([login]);
 
   expect(results.setup_failure.error).toBe("setup failed");
   expect(
@@ -170,16 +197,20 @@ test("temporary signing keychain lifecycle preserves caller state", async () => 
   expect(results.setup_failure.environment).toEqual({
     MATCH_KEYCHAIN_PASSWORD: "login-secret",
   });
+  expect(results.setup_failure.search_after).toEqual([login]);
 
   expect(results.cleanup_failure.error).toBe("cleanup failed");
   expect(
     results.cleanup_failure.events.map(([event]: string[]) => event),
   ).toEqual(["setup", "yield", "cleanup"]);
   expect(results.cleanup_failure.environment).toEqual({});
+  expect(results.cleanup_failure.search_after).toEqual([login]);
   expect(results.signal_handler_restored).toBe(true);
 
   expect(results.custom.result).toBe("built");
   expect(results.custom.events).toEqual([["yield", "caller-keychain"]]);
+  // A caller's keychain is the caller's to order.
+  expect(results.custom.search_during).toEqual([login]);
   expect(results.custom.environment).toEqual({
     MATCH_KEYCHAIN_NAME: "caller-keychain",
     MATCH_KEYCHAIN_PASSWORD: "caller-secret",

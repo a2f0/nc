@@ -3,19 +3,29 @@
 require 'securerandom'
 
 # Owns an ephemeral Fastlane Match keychain without disturbing caller state.
+#
+# While the block runs, the keychain comes first in the user's keychain search
+# list (through security, which runs the security tool and returns its output),
+# and the list is restored afterwards. codesign looks the signing identity up
+# through that list even when given --keychain, and the login keychain can hold
+# the same identity from an earlier match run. Where the login keychain is
+# locked, as over SSH, codesign fails with errSecInternalComponent if it finds
+# that copy first.
 class IosSigningKeychain
   DEFAULT_LOCK_PATH = File.join(Dir.home, 'Library', 'Keychains', '.nc-release.lock').freeze
   PRESERVED_ENVIRONMENT_KEYS = %w[MATCH_KEYCHAIN_PASSWORD MATCH_READONLY].freeze
   TERMINATION_SIGNALS = %w[HUP INT TERM].freeze
 
-  def self.with_temporary(environment:, setup:, cleanup:, lock_path: DEFAULT_LOCK_PATH, &)
-    new(environment, setup, cleanup, lock_path).run(&)
+  def self.with_temporary(environment:, setup:, cleanup:, security:, path:, lock_path: DEFAULT_LOCK_PATH, &)
+    new(environment, setup, cleanup, security, path, lock_path).run(&)
   end
 
-  def initialize(environment, setup, cleanup, lock_path)
+  def initialize(environment, setup, cleanup, security, path, lock_path)
     @environment = environment
     @setup = setup
     @cleanup = cleanup
+    @security = security
+    @path = path
     @lock_path = lock_path
   end
 
@@ -63,6 +73,7 @@ class IosSigningKeychain
   end
 
   def prepare
+    @search_list = search_list
     capture_environment
     @environment.delete('MATCH_KEYCHAIN_NAME')
     @keychain_name = "nc-fastlane-#{Process.pid}-#{SecureRandom.hex(6)}"
@@ -72,6 +83,15 @@ class IosSigningKeychain
     @environment['MATCH_READONLY'] = 'true'
     @ready = true
     @setup.call(@keychain_name, @keychain_password)
+    self.search_list = [@path.call(@keychain_name), *@search_list]
+  end
+
+  def search_list
+    @security.call('list-keychains', '-d', 'user').scan(/"([^"]+)"/).flatten
+  end
+
+  def search_list=(paths)
+    @security.call('list-keychains', '-d', 'user', '-s', *paths)
   end
 
   def capture_environment
@@ -82,10 +102,14 @@ class IosSigningKeychain
   end
 
   def finish
-    @cleanup.call(@keychain_name)
+    self.search_list = @search_list
   ensure
-    @environment.delete('MATCH_KEYCHAIN_NAME')
-    restore_environment
+    begin
+      @cleanup.call(@keychain_name)
+    ensure
+      @environment.delete('MATCH_KEYCHAIN_NAME')
+      restore_environment
+    end
   end
 
   def restore_environment
