@@ -6,7 +6,8 @@ struct ContentView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
+                // The logo's bottom edge is its baseline, so it sits on the title's.
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
                     // The app icon's corners: 224 of its 1024 points.
                     Image(.logo)
                         .resizable()
