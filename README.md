@@ -135,8 +135,16 @@ CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single re
 
 [agent-tool](https://github.com/a2f0/agent-tool) (`@a2f0/agent-tool`) provides independent
 reviews, guarded PR opening and squash merging, and the shared `ship-pr`, `open-pr`,
-`cross-agent-review`, `squash-merge`, and `reset` skills in `.claude/skills` and
+`cross-agent-review`, `squash-merge`, `reset`, and `update-dependencies` skills in `.claude/skills` and
 `.agents/skills`. Policy is in `agent-tool.json`; agent guidance is in `AGENTS.md`.
+
+Use `update-dependencies` for packages, the Ruby bundle, every `.mise.toml` tool,
+Android's version catalog and Gradle wrapper, and CI action pins. Check the upstream
+compatibility matrices and migrations together, then run the local gate and audit
+the resolved dependencies. Keep intentional minimum OS versions and supported
+toolchains explicit. A Wrangler bundle dry run checks the build; upgrading its
+deployment group also requires verifying the existing account, Worker, routes, and
+resource bindings. Store lanes and `web:deploy` are separate release operations.
 
 ## Screenshots
 

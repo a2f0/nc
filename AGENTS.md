@@ -66,6 +66,10 @@ hide release-only crashes.
 
 ## Shipping
 
+Use the `update-dependencies` skill for dependency upgrades, including runtime,
+native, and CI pins. Follow its compatibility, audit, and infrastructure-preview
+gates before running setup, hooks, or workflows with the proposed versions.
+
 Use the `ship-pr` skill with `agent-tool` (`bun run agent-tool ...`). Review with an agent
 other than the one that wrote the change. The required check is `CI gate`; packages are not
 versioned. `bun run agents:sync` updates the shared skills after an `@a2f0/agent-tool`
