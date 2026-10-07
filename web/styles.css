@@ -46,10 +46,10 @@ h1 {
   letter-spacing: -0.01em;
 }
 
-/* The app icon (the favicon) beside the title. */
+/* The app icon (the favicon) beside the title, its bottom edge on the title's baseline. */
 .app-title {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 12px;
 }
 

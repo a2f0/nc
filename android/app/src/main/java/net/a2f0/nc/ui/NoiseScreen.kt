@@ -78,15 +78,14 @@ private fun NoiseScreen(
                 .padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // The app icon's corners: 224 of its 1024 points.
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // The app icon's corners: 224 of its 1024 points. Its bottom edge sits on
+                // the title's baseline.
                 Image(
                     painterResource(R.drawable.ic_logo),
                     contentDescription = null,
                     modifier = Modifier
+                        .alignBy { it.measuredHeight }
                         .size(40.dp)
                         .clip(RoundedCornerShape(9.dp)),
                 )
@@ -94,6 +93,7 @@ private fun NoiseScreen(
                     text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.alignByBaseline(),
                 )
             }
             Text(
