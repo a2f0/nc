@@ -5,7 +5,7 @@
     "": {
       "name": "nc",
       "devDependencies": {
-        "@a2f0/agent-tool": "0.1.2",
+        "@a2f0/agent-tool": "0.1.10",
         "@types/bun": "1.4.2",
         "typescript": "7.0.2",
         "wrangler": "4.147.0",
@@ -13,7 +13,7 @@
     },
   },
   "packages": {
-    "@a2f0/agent-tool": ["@a2f0/agent-tool@0.1.2", "", { "bin": { "agent-tool": "src/index.ts" } }, "sha512-6DIwN5tQ//9QpWaONthodm1AlRxAmhov6wzVtKMiLEgd3I/TjRuxkN2qqfrWRgYDVEtb0wDmkJu68qdac1Toug=="],
+    "@a2f0/agent-tool": ["@a2f0/agent-tool@0.1.10", "", { "bin": { "agent-tool": "src/index.ts" } }, "sha512-kuAMx7swbLNU86c6fbSUgs88rXDLOvbtVlABEqaJVrsWdNetsg1KEkURZZlyVZq7Jjl//Koij/WoRiQ2RAmZ7Q=="],
 
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.5.0", "", {}, "sha512-jxQYkj8dSIzc0cD6cMMNdOc1UVjqSqu8BZdor5s8cGjW2I8BjODt/kWPVdY+u9zj3ms75Q5qaZgnxUad83+eAg=="],
 
