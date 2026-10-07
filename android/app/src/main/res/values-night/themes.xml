@@ -1,0 +1,4 @@
+<resources>
+    <!-- The window behind the app in dark mode, so it doesn't flash white (e.g. on rotation). -->
+    <style name="Theme.NoiseConnoisseur" parent="android:Theme.Material.NoActionBar" />
+</resources>

@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,7 +36,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -75,7 +79,10 @@ private fun NoiseScreen(
             modifier = Modifier
                 .safeDrawingPadding()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp)
+                // Readable on tablets and in landscape, as on iOS.
+                .wrapContentWidth()
+                .widthIn(max = 600.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -93,7 +100,9 @@ private fun NoiseScreen(
                     text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.alignByBaseline(),
+                    modifier = Modifier
+                        .alignByBaseline()
+                        .semantics { heading() },
                 )
             }
             Text(
@@ -147,6 +156,9 @@ private fun VolumeSlider(volume: Float, onVolumeChange: (Float) -> Unit) {
 
 @Composable
 private fun NoiseCard(type: NoiseType, isPlaying: Boolean, onClick: () -> Unit) {
+    val title = stringResource(type.title)
+    // Read as the button's action, as on iOS.
+    val description = stringResource(if (isPlaying) R.string.stop_noise else R.string.play_noise, title)
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -155,11 +167,18 @@ private fun NoiseCard(type: NoiseType, isPlaying: Boolean, onClick: () -> Unit) 
             width = if (isPlaying) 2.dp else 1.dp,
             color = if (isPlaying) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
         ),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = description },
     ) {
-        Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .clearAndSetSemantics {},
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(type.title), style = MaterialTheme.typography.titleLarge)
+                Text(title, style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     stringResource(type.blurb),
@@ -173,10 +192,10 @@ private fun NoiseCard(type: NoiseType, isPlaying: Boolean, onClick: () -> Unit) 
                 color = if (isPlaying) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.size(48.dp),
             ) {
-                Text(
-                    text = if (isPlaying) "■" else "▶",
-                    color = if (isPlaying) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium,
+                Icon(
+                    painterResource(if (isPlaying) R.drawable.ic_stop else R.drawable.ic_play),
+                    contentDescription = null,
+                    tint = if (isPlaying) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.wrapContentSize(Alignment.Center),
                 )
             }

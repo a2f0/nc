@@ -74,12 +74,12 @@ export const STRINGS = {
   play_noise: {
     text: "Play {noise}",
     comment: "Screen reader label for a noise's button while it's stopped. {noise}: the noise's name, such as “Pink Noise”.",
-    platforms: ["ios", "web"],
+    platforms: ["android", "ios", "web"],
   },
   stop_noise: {
     text: "Stop {noise}",
     comment: "Screen reader label for a noise's button while it plays. {noise}: the noise's name, such as “Pink Noise”.",
-    platforms: ["ios", "web"],
+    platforms: ["android", "ios", "web"],
   },
   stop: {
     text: "Stop",
