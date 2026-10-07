@@ -1,14 +1,16 @@
 package net.a2f0.nc.widget
 
 import android.content.Context
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
-import androidx.glance.Button
+import androidx.glance.ButtonDefaults
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidget
@@ -17,6 +19,7 @@ import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartService
 import androidx.glance.appwidget.appWidgetBackground
+import androidx.glance.appwidget.components.FilledButton
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -56,7 +59,7 @@ class NoiseWidget : GlanceAppWidget() {
                 .fillMaxSize()
                 .appWidgetBackground()
                 .background(GlanceTheme.colors.widgetBackground)
-                .cornerRadius(16.dp)
+                .systemCornerRadius()
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -69,8 +72,18 @@ class NoiseWidget : GlanceAppWidget() {
             NoiseType.entries.forEach { type ->
                 val isPlaying = type == nowPlaying
                 Spacer(GlanceModifier.height(8.dp))
-                Button(
-                    text = (if (isPlaying) "■  " else "▶  ") + context.getString(type.shortTitle),
+                // Filled while playing, like the app's play/stop buttons.
+                FilledButton(
+                    text = context.getString(type.shortTitle),
+                    icon = ImageProvider(if (isPlaying) R.drawable.ic_stop else R.drawable.ic_play),
+                    colors = if (isPlaying) {
+                        ButtonDefaults.buttonColors()
+                    } else {
+                        ButtonDefaults.buttonColors(
+                            backgroundColor = GlanceTheme.colors.surfaceVariant,
+                            contentColor = GlanceTheme.colors.onSurface,
+                        )
+                    },
                     onClick = if (isPlaying) {
                         actionRunCallback<StopNoiseAction>()
                     } else {
@@ -83,6 +96,10 @@ class NoiseWidget : GlanceAppWidget() {
         }
     }
 }
+
+/** The launcher's widget corner radius. Widgets have rounded corners on Android 12 and later. */
+private fun GlanceModifier.systemCornerRadius(): GlanceModifier =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) cornerRadius(android.R.dimen.system_app_widget_background_radius) else this
 
 class StopNoiseAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {

@@ -10,6 +10,8 @@
     <string name="noise_pink_blurb">Sanftere Höhen, tiefere Bässe. Wie gleichmäßiger Regen.</string>
     <string name="status_playing">Wiedergabe · %1$s</string>
     <string name="status_tap_to_start">Zum Starten einen Klang antippen</string>
+    <string name="play_noise">%1$s abspielen</string>
+    <string name="stop_noise">%1$s stoppen</string>
     <string name="stop">Stopp</string>
     <string name="volume">Lautstärke</string>
     <string name="notification_channel_name">Wiedergabe</string>

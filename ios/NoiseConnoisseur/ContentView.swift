@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     private let player = NoisePlayer.shared
+    // Scales with the title, for Dynamic Type.
+    @ScaledMetric(relativeTo: .largeTitle) private var logoSize = 40
 
     var body: some View {
         ScrollView {
@@ -11,11 +13,12 @@ struct ContentView: View {
                     // The app icon's corners: 224 of its 1024 points.
                     Image(.logo)
                         .resizable()
-                        .frame(width: 40, height: 40)
-                        .clipShape(.rect(cornerRadius: 9, style: .continuous))
+                        .frame(width: logoSize, height: logoSize)
+                        .clipShape(.rect(cornerRadius: logoSize * 224 / 1024, style: .continuous))
                         .accessibilityHidden(true)
                     Text(.appName)
                         .font(.largeTitle.bold())
+                        .accessibilityAddTraits(.isHeader)
                 }
                 Text(player.nowPlaying.map { .statusPlaying(String(localized: $0.title)) } ?? .statusTapToStart)
                     .foregroundStyle(Gray.secondaryLabel)
@@ -39,10 +42,17 @@ private struct NoiseCard: View {
     let type: NoiseType
     let isPlaying: Bool
     let action: () -> Void
+    @ScaledMetric(relativeTo: .title3) private var symbolSize = 48
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        // At accessibility text sizes the button goes under the text, which keeps its width.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+            : AnyLayout(HStackLayout(spacing: 16))
+
         Button(action: action) {
-            HStack(spacing: 16) {
+            layout {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(type.title)
                         .font(.title3.weight(.semibold))
@@ -55,7 +65,7 @@ private struct NoiseCard: View {
                 Image(systemName: isPlaying ? "stop.fill" : "play.fill")
                     .font(.title3)
                     .foregroundStyle(isPlaying ? Color(.systemBackground) : .primary)
-                    .frame(width: 48, height: 48)
+                    .frame(width: symbolSize, height: symbolSize)
                     .background(isPlaying ? Color.primary : Gray.secondaryFill, in: .circle)
             }
             .padding(20)

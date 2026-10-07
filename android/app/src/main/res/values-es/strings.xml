@@ -10,6 +10,8 @@
     <string name="noise_pink_blurb">Agudos más suaves, graves más profundos. Como una lluvia constante.</string>
     <string name="status_playing">Reproduciendo · %1$s</string>
     <string name="status_tap_to_start">Toca un sonido para empezar</string>
+    <string name="play_noise">Reproducir %1$s</string>
+    <string name="stop_noise">Detener %1$s</string>
     <string name="stop">Detener</string>
     <string name="volume">Volumen</string>
     <string name="notification_channel_name">Reproducción</string>

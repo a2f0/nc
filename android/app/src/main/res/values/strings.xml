@@ -21,6 +21,10 @@
     <string name="status_playing">Playing · %1$s</string>
     <!-- Status line under the app's name while nothing plays. -->
     <string name="status_tap_to_start">Tap a sound to start</string>
+    <!-- Screen reader label for a noise's button while it's stopped. {noise}: the noise's name, such as “Pink Noise”. -->
+    <string name="play_noise">Play %1$s</string>
+    <!-- Screen reader label for a noise's button while it plays. {noise}: the noise's name, such as “Pink Noise”. -->
+    <string name="stop_noise">Stop %1$s</string>
     <!-- Button in the playback notification that stops the noise. -->
     <string name="stop">Stop</string>
     <!-- Screen reader label for the volume slider. -->

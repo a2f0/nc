@@ -62,6 +62,7 @@ struct NoiseWidgetView: View {
 private struct NoiseToggleButton: View {
     let type: NoiseType
     let isPlaying: Bool
+    @Environment(\.widgetRenderingMode) private var renderingMode
 
     var body: some View {
         Group {
@@ -80,9 +81,22 @@ private struct NoiseToggleButton: View {
             Text(type.shortTitle)
         }
         .font(.subheadline.weight(.semibold))
-        .foregroundStyle(isPlaying ? Color(.systemBackground) : .primary)
+        .foregroundStyle(isPlaying && isFullColor ? Color(.systemBackground) : .primary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(isPlaying ? Color.primary : Gray.secondaryFill, in: .rect(cornerRadius: 12))
+        .background(background, in: .rect(cornerRadius: 12))
+    }
+
+    /// Tinted and clear home screens draw everything in one color, keeping only opacity,
+    /// so there a playing button is a stronger fill rather than an inverted one, which
+    /// would hide its label.
+    private var isFullColor: Bool { renderingMode == .fullColor }
+
+    private var background: Color {
+        switch (isPlaying, isFullColor) {
+        case (true, true): .primary
+        case (true, false): .primary.opacity(0.35)
+        case (false, _): Gray.secondaryFill
+        }
     }
 }
 
