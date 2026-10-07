@@ -19,12 +19,23 @@ ENV["APPLE_ID"] = "developer@example.com"
 ENV["TEAM_ID"] = "TEAM123"
 %w[MATCH_KEYCHAIN_NAME MATCH_KEYCHAIN_PASSWORD MATCH_READONLY].each { |name| ENV.delete(name) }
 
-# match records the environment the signing keychain gives it.
+# The security tool, as far as the keychain search list goes.
+SEARCH_LIST = ["/keychains/login.keychain-db"]
+SECURITY = lambda do |*args, **|
+  SEARCH_LIST.replace(args.drop(args.index("-s") + 1)) if args.include?("-s")
+  SEARCH_LIST.map { |path| "    \\"#{path}\\"\\n" }.join
+end
+
+# match records the environment the signing keychain gives it, and the search
+# list it signs with.
 def fake_lanes(events, lock_path)
   lanes = FakeFastfile.new(FASTFILE,
     produce: ->(**) {}, app_store_connect_api_key: ->(**) { "api-key" },
-    create_keychain: ->(**) {}, delete_keychain: ->(**) {},
-    match: ->(**) { events << ["match", ENV["MATCH_READONLY"], ENV["MATCH_KEYCHAIN_NAME"]] })
+    create_keychain: ->(**) {}, delete_keychain: ->(**) {}, sh: SECURITY,
+    match: lambda do |**|
+      events << ["match", ENV["MATCH_READONLY"], ENV["MATCH_KEYCHAIN_NAME"]]
+      events << ["search", SEARCH_LIST.dup]
+    end)
   # The store credentials in .secrets aren't available to tests.
   lanes.stub_method(:load_store_secrets) { |_names| nil }
   lanes.stub_method(:app_store_connect_api_key_options) { { key_id: "KEY123" } }
@@ -43,7 +54,8 @@ lanes.run_lane(:ios, :profiles)
 results[:profiles] = {
   match: lanes.calls_to(:match), events: events,
   keychain: lanes.calls_to(:create_keychain).first&.fetch(:name),
-  after: ENV.values_at("MATCH_READONLY", "MATCH_KEYCHAIN_NAME")
+  after: ENV.values_at("MATCH_READONLY", "MATCH_KEYCHAIN_NAME"),
+  search_after: SEARCH_LIST.dup
 }
 
 events = []
@@ -89,8 +101,13 @@ describe("ios signing lanes", () => {
     expect(result).toEqual({
       match: [{ ...appStoreProfiles, force: false }],
       // The signing keychain makes match read-only; profiles overrides that.
-      events: [["match", "true", keychain]],
+      // It's searched first while the lane runs.
+      events: [
+        ["match", "true", keychain],
+        ["search", [`/keychains/${keychain}-db`, "/keychains/login.keychain-db"]],
+      ],
       after: [null, null],
+      search_after: ["/keychains/login.keychain-db"],
     });
   });
 
@@ -119,6 +136,13 @@ describe("ios signing lanes", () => {
       ["associate_groups", "net.a2f0.nc", ["group.net.a2f0.nc"]],
       ["associate_groups", "net.a2f0.nc.widget", ["group.net.a2f0.nc"]],
       ["match", "true", expect.stringMatching(/^nc-fastlane-/)],
+      [
+        "search",
+        [
+          expect.stringMatching(/^\/keychains\/nc-fastlane-.+-db$/),
+          "/keychains/login.keychain-db",
+        ],
+      ],
     ]);
     expect(match).toEqual([{ ...appStoreProfiles, force: false }]);
   });
