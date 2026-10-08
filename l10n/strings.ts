@@ -113,7 +113,39 @@ export const STRINGS = {
   },
   volume: {
     text: "Volume",
-    comment: "Screen reader label for the volume slider.",
+    comment: "Label for the volume sliders: read by screen readers, and shown above the slider in Settings.",
+  },
+  more: {
+    text: "More",
+    comment: "Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About.",
+  },
+  settings: {
+    text: "Settings",
+    comment: "Item in the three-dot menu, and the title of the sheet it opens.",
+  },
+  rate_app: {
+    text: "Rate App",
+    comment: "Item in the three-dot menu that opens the app's page in the App Store or Google Play, to rate it.",
+    platforms: ["android", "ios"],
+  },
+  about: {
+    text: "About",
+    comment: "Item in the three-dot menu, and the title of the sheet it opens, which shows the app's name and version.",
+  },
+  about_version: {
+    text: "Version {version} ({build})",
+    comment: "In the About sheet, under the app's name. {version}: the app's version, such as “1.0”. {build}: its build number, such as “6”.",
+    platforms: ["android", "ios"],
+  },
+  about_build: {
+    text: "Build {build}",
+    comment: "In the About sheet, under the app's name. {build}: an identifier for this version of the website, such as “376bb6d”.",
+    platforms: ["web"],
+  },
+  close: {
+    text: "Close",
+    comment: "Screen reader label for the button that closes the Settings or About sheet.",
+    platforms: ["ios", "web"],
   },
   notification_channel_name: {
     text: "Playback",

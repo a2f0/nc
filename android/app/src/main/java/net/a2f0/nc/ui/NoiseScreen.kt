@@ -1,9 +1,14 @@
 package net.a2f0.nc.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +17,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
@@ -26,16 +32,25 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +66,9 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.a2f0.nc.BuildConfig
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
 import net.a2f0.nc.playback.NoisePlayer
@@ -87,6 +104,7 @@ private fun NoiseScreen(
     volume: Float,
     onVolumeChange: (Float) -> Unit,
 ) {
+    var sheet by rememberSaveable { mutableStateOf<Sheet?>(null) }
     Surface(
         color = MaterialTheme.colorScheme.background,
         modifier = Modifier
@@ -127,8 +145,16 @@ private fun NoiseScreen(
                         maxLines = 1,
                         autoSize = TextAutoSize.StepBased(minFontSize = titleStyle.fontSize / 2, maxFontSize = titleStyle.fontSize),
                         modifier = Modifier
+                            .weight(1f)
                             .alignByBaseline()
                             .semantics { heading() },
+                    )
+                    MoreMenu(
+                        onOpen = { sheet = it },
+                        // The icon lines up with the cards' trailing edge; its touch target reaches past it.
+                        modifier = Modifier
+                            .align(Alignment.CenterVertically)
+                            .offset(x = 12.dp),
                     )
                 }
                 Spacer(Modifier.height(8.dp))
@@ -142,6 +168,137 @@ private fun NoiseScreen(
                 onTogglePlayback = onTogglePlayback,
                 volume = volume,
                 onVolumeChange = onVolumeChange,
+            )
+        }
+    }
+    sheet?.let { open ->
+        SheetContent(open, onDismiss = { sheet = null }) {
+            when (open) {
+                Sheet.SETTINGS -> SettingsContent(volume = volume, onVolumeChange = onVolumeChange)
+                Sheet.ABOUT -> AboutContent()
+            }
+        }
+    }
+}
+
+/** The sheets the menu opens. */
+private enum class Sheet(@StringRes val title: Int) {
+    SETTINGS(R.string.settings),
+    ABOUT(R.string.about),
+}
+
+/** The three-dot menu at the end of the title: Settings, Rate App, and About. */
+@Composable
+private fun MoreMenu(onOpen: (Sheet) -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier) {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                painterResource(R.drawable.ic_more_vert),
+                contentDescription = stringResource(R.string.more),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.settings)) },
+                onClick = {
+                    expanded = false
+                    onOpen(Sheet.SETTINGS)
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.rate_app)) },
+                onClick = {
+                    expanded = false
+                    openStoreListing(context)
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.about)) },
+                onClick = {
+                    expanded = false
+                    onOpen(Sheet.ABOUT)
+                },
+            )
+        }
+    }
+}
+
+/** Opens the app's Google Play page: in the Play Store app, or else in a browser. */
+private fun openStoreListing(context: Context) {
+    val page = "details?id=${context.packageName}"
+    for (uri in listOf("market://$page", "https://play.google.com/store/apps/$page")) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()))
+            return
+        } catch (_: ActivityNotFoundException) {
+            // Try the next one.
+        }
+    }
+}
+
+/** A bottom sheet with a title. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+                // The sheet is its own window, outside the screen's semantics.
+                .semantics { testTagsAsResourceId = true },
+        ) {
+            Text(
+                stringResource(sheet.title),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { heading() },
+            )
+            content()
+        }
+    }
+}
+
+/** Settings: for now, the volume. */
+@Composable
+private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // The slider reads its own label.
+        Text(
+            stringResource(R.string.volume),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.clearAndSetSemantics {},
+        )
+        VolumeSlider(volume = volume, onVolumeChange = onVolumeChange, modifier = Modifier.testTag("settings-volume"))
+    }
+}
+
+/** The app's name, version, and build. */
+@Composable
+private fun AboutContent() {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        // The app icon's corners, as beside the title.
+        Image(
+            painterResource(R.drawable.ic_logo),
+            contentDescription = null,
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(14.dp)),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toString()),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

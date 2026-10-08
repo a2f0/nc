@@ -52,12 +52,78 @@ h1 {
   letter-spacing: -0.01em;
 }
 
+/* The title, with the three-dot menu at the end. */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
 /* The app icon (the favicon) beside the title, its bottom edge on the title's baseline. */
 .app-title {
   display: flex;
+  flex: 1;
   align-items: baseline;
   gap: 12px;
-  margin-bottom: 24px;
+  margin: 0;
+}
+
+/* Its symbol lines up with the cards' trailing edge; its target reaches past it. */
+.icon-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--fill);
+}
+
+.icon-button svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+/* A popover, placed under the button by main.ts. */
+.menu {
+  inset: auto;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--separator);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
+}
+
+.menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 17px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--fill);
 }
 
 .logo {
@@ -217,6 +283,92 @@ button.toggle {
   margin: 0;
   accent-color: var(--primary);
   cursor: pointer;
+}
+
+/* Settings and About: a sheet that rises from the bottom of the window. */
+.sheet {
+  width: min(600px, 100%);
+  max-width: none;
+  margin: auto auto 0;
+  padding: 0;
+  border: none;
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  color: var(--primary);
+}
+
+.sheet::backdrop {
+  background: rgb(0 0 0 / 32%);
+}
+
+/* Inside the padding, so that a click on the dialog itself is a click on the backdrop. */
+.sheet-content {
+  padding: 16px 24px 32px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sheet h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--secondary);
+  cursor: pointer;
+}
+
+.close svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2.5;
+}
+
+.setting {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.about {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.about-logo {
+  width: 64px;
+  height: 64px;
+}
+
+.about-name {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.about-build {
+  margin: 0;
+  font-size: 15px;
+  color: var(--secondary);
 }
 
 .footer {

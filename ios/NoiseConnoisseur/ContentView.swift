@@ -4,6 +4,7 @@ struct ContentView: View {
     private let player = NoisePlayer.shared
     // Scales with the title, for Dynamic Type.
     @ScaledMetric(relativeTo: .largeTitle) private var logoSize = 40
+    @State private var sheet: Sheet?
 
     var body: some View {
         ScrollView {
@@ -22,6 +23,8 @@ struct ContentView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .accessibilityAddTraits(.isHeader)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    MoreMenu(sheet: $sheet)
                 }
                 .padding(.bottom, 8)
                 ForEach(NoiseType.allCases) { type in
@@ -38,6 +41,140 @@ struct ContentView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             PlayerBar(player: player)
         }
+        .sheet(item: $sheet) { sheet in
+            switch sheet {
+            case .settings: SettingsSheet(player: player)
+            case .about: AboutSheet()
+            }
+        }
+    }
+}
+
+/// The sheets the menu opens.
+private enum Sheet: Identifiable {
+    case settings
+    case about
+
+    var id: Self { self }
+}
+
+/// The three-dot menu at the end of the title: Settings, Rate App, and About.
+private struct MoreMenu: View {
+    @Binding var sheet: Sheet?
+    @Environment(\.openURL) private var openURL
+
+    /// The App Store's page for writing a review. 6819365110 is the app's Apple ID in App
+    /// Store Connect.
+    private static let reviewURL = URL(string: "https://apps.apple.com/app/id6819365110?action=write-review")!
+
+    var body: some View {
+        Menu {
+            Button { sheet = .settings } label: {
+                Label { Text(.settings) } icon: { Image(systemName: "gearshape") }
+            }
+            Button { openURL(Self.reviewURL) } label: {
+                Label { Text(.rateApp) } icon: { Image(systemName: "star") }
+            }
+            Button { sheet = .about } label: {
+                Label { Text(.about) } icon: { Image(systemName: "info.circle") }
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.title2)
+                .foregroundStyle(.primary)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(.rect)
+        }
+        // The symbol lines up with the cards' trailing edge; its tap target reaches past it.
+        .padding(.trailing, -9)
+        .accessibilityLabel(Text(.more))
+    }
+}
+
+/// Settings: for now, the volume.
+private struct SettingsSheet: View {
+    let player: NoisePlayer
+
+    var body: some View {
+        SheetContent(title: .settings) {
+            VStack(alignment: .leading, spacing: 8) {
+                // The slider reads its own label.
+                Text(.volume)
+                    .font(.headline)
+                    .accessibilityHidden(true)
+                VolumeSlider(volume: Binding(get: { player.volume }, set: { player.setVolume($0) }))
+                    // For the Maestro flows (maestro/screenshots/).
+                    .accessibilityIdentifier("settings-volume")
+            }
+        }
+    }
+}
+
+/// The app's name, version, and build.
+private struct AboutSheet: View {
+    @ScaledMetric(relativeTo: .title3) private var logoSize = 64
+
+    private static let info = Bundle.main.infoDictionary ?? [:]
+    private static let version = info["CFBundleShortVersionString"] as? String ?? ""
+    private static let build = info["CFBundleVersion"] as? String ?? ""
+
+    var body: some View {
+        SheetContent(title: .about) {
+            HStack(spacing: 16) {
+                Image(.logo)
+                    .resizable()
+                    .frame(width: logoSize, height: logoSize)
+                    .clipShape(.rect(cornerRadius: logoSize * 224 / 1024, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(.appName)
+                        .font(.title3.weight(.semibold))
+                    Text(.aboutVersion(Self.version, Self.build))
+                        .font(.subheadline)
+                        .foregroundStyle(Gray.secondaryLabel)
+                }
+            }
+        }
+    }
+}
+
+/// A sheet with a title and a close button, as tall as its contents.
+private struct SheetContent<Content: View>: View {
+    let title: LocalizedStringResource
+    @ViewBuilder let content: Content
+    @State private var height: CGFloat = 0
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(title)
+                    .font(.title2.bold())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 16)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Gray.secondaryLabel)
+                        .frame(width: 32, height: 32)
+                        .background(Gray.secondaryFill, in: .circle)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                // Lines up with the contents' trailing edge, as in the title.
+                .padding(.trailing, -6)
+                .accessibilityLabel(Text(.close))
+            }
+            content
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+        .padding(.bottom, 24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+        .presentationDetents(height > 0 ? [.height(height)] : [.medium])
+        .presentationBackground(Gray.background)
     }
 }
 

@@ -49,6 +49,8 @@ android {
 
     buildFeatures {
         compose = true
+        // The About sheet shows the version name and code.
+        buildConfig = true
     }
 
     // Lists the languages in res/ (values-*, written by `bun run l10n`) in the system's

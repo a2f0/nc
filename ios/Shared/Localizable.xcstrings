@@ -1,6 +1,54 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "about" : {
+      "comment" : "Item in the three-dot menu, and the title of the sheet it opens, which shows the app's name and version.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Info"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de"
+          }
+        }
+      }
+    },
+    "about_version" : {
+      "comment" : "In the About sheet, under the app's name. {version}: the app's version, such as “1.0”. {build}: its build number, such as “6”.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión %1$@ (%2$@)"
+          }
+        }
+      }
+    },
     "app_name" : {
       "comment" : "The app's name: on its screen and widget, and the artist in the system's media controls.",
       "extractionState" : "manual",
@@ -25,6 +73,30 @@
         }
       },
       "shouldTranslate" : false
+    },
+    "close" : {
+      "comment" : "Screen reader label for the button that closes the Settings or About sheet.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schließen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar"
+          }
+        }
+      }
     },
     "intent_noise" : {
       "comment" : "In the Shortcuts app: what the app's sounds (White Noise, Fan, Ocean Waves, and so on) are, and the Play Noise action's setting for which one to play.",
@@ -142,6 +214,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Detener ruido"
+          }
+        }
+      }
+    },
+    "more" : {
+      "comment" : "Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más"
           }
         }
       }
@@ -530,6 +626,54 @@
         }
       }
     },
+    "rate_app" : {
+      "comment" : "Item in the three-dot menu that opens the app's page in the App Store or Google Play, to rate it.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App bewerten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate App"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Valorar la app"
+          }
+        }
+      }
+    },
+    "settings" : {
+      "comment" : "Item in the three-dot menu, and the title of the sheet it opens.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes"
+          }
+        }
+      }
+    },
     "stop_noise" : {
       "comment" : "Screen reader label for a noise's button while it plays. {noise}: the noise's name, such as “Pink Noise”.",
       "extractionState" : "manual",
@@ -555,7 +699,7 @@
       }
     },
     "volume" : {
-      "comment" : "Screen reader label for the volume slider.",
+      "comment" : "Label for the volume sliders: read by screen readers, and shown above the slider in Settings.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

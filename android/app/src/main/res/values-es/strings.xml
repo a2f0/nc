@@ -21,5 +21,10 @@
     <string name="stop_noise">Detener %1$s</string>
     <string name="stop">Detener</string>
     <string name="volume">Volumen</string>
+    <string name="more">Más</string>
+    <string name="settings">Ajustes</string>
+    <string name="rate_app">Valorar la app</string>
+    <string name="about">Acerca de</string>
+    <string name="about_version">Versión %1$s (%2$s)</string>
     <string name="notification_channel_name">Reproducción</string>
 </resources>
