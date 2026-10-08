@@ -377,6 +377,12 @@ button.toggle {
   color: var(--secondary);
 }
 
+.about-also {
+  margin: 16px 0 0;
+  font-size: 15px;
+  color: var(--secondary);
+}
+
 .footer {
   margin-top: 48px;
   font-size: 15px;
@@ -384,6 +390,7 @@ button.toggle {
 }
 
 .footer a,
+.about-also a,
 .prose a {
   color: inherit;
   text-underline-offset: 2px;

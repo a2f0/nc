@@ -32,6 +32,25 @@ export function t<K extends WebKey>(key: K, ...params: Params<K>): string {
 }
 
 /**
+ * `key`'s text in the current language, split around its placeholders, each replaced with
+ * its value, such as an element: `element.replaceChildren(...tParts(key, { link }))`.
+ */
+export function tParts<K extends WebKey, V extends Readonly<Record<Placeholders<(typeof STRINGS)[K]["text"]>, unknown>>>(
+  key: K,
+  values: V,
+): (string | V[keyof V])[] {
+  const text = localeText(current, key);
+  const parts: (string | V[keyof V])[] = [];
+  let end = 0;
+  for (const match of text.matchAll(PLACEHOLDER)) {
+    parts.push(text.slice(end, match.index), (values as Readonly<Record<string, V[keyof V]>>)[match[1] ?? ""] ?? match[0]);
+    end = match.index + match[0].length;
+  }
+  parts.push(text.slice(end));
+  return parts.filter((part) => part !== "");
+}
+
+/**
  * The locale for the first of `preferred` (the user's languages, most preferred first, as
  * in navigator.languages) that one matches, or English. Likely scripts and regions are
  * filled in before comparing, so "de-AT" matches "de", and "zh-TW" matches "zh-Hant" but

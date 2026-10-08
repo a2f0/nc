@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import type { Locale } from "../../l10n/locales";
 import type { Translation } from "../../l10n/strings";
-import { bestLocale, currentLocale, setPreferredLanguages, t } from "../src/l10n";
+import { bestLocale, currentLocale, setPreferredLanguages, t, tParts } from "../src/l10n";
 
 // Only the tags matter for matching.
 const locale = (tag: string): Locale => ({ tag, appStore: [tag], play: [tag] });
@@ -59,5 +59,22 @@ describe("t", () => {
     expect(t("play_noise", { noise: "Rosa Rauschen" })).toBe("Rosa Rauschen abspielen");
     expect(t("volume")).toBe("Lautstärke");
     expect(t("app_name")).toBe("Noise Connoisseur");
+  });
+});
+
+describe("tParts", () => {
+  afterEach(() => setPreferredLanguages([]));
+
+  const ios = { link: "iOS" };
+  const android = { link: "Android" };
+
+  test("splits the text around its placeholders, filled in with their values", () => {
+    expect(tParts("about_also_ios_android", { ios, android })).toEqual(["Also on ", ios, " and ", android]);
+  });
+
+  test("follows a translation's order, leaving out empty text", () => {
+    const translation = { about_also_ios_android: "{android} und {ios}" } as Partial<Translation> as Translation;
+    setPreferredLanguages(["de"], [EN, { ...DE, translation }]);
+    expect(tParts("about_also_ios_android", { ios, android })).toEqual([android, " und ", ios]);
   });
 });
