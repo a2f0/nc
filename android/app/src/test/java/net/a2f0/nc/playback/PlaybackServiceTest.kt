@@ -2,6 +2,7 @@ package net.a2f0.nc.playback
 
 import android.app.Notification
 import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import net.a2f0.nc.MainActivity
 import net.a2f0.nc.NoiseType
@@ -60,6 +61,30 @@ class PlaybackServiceTest {
         assertTrue(shadowOf(service).isForegroundStopped)
         assertTrue("the playback notification is removed", shadowOf(service).notificationShouldRemoved)
         assertTrue(shadowOf(service).isStoppedBySelf)
+    }
+
+    @Test
+    fun savesTheLastNoisePlayed() {
+        playPinkNoise()
+
+        assertEquals(NoiseType.PINK, NoisePlayer.lastPlayed(context).value)
+        val preferences = context.getSharedPreferences("playback", Context.MODE_PRIVATE)
+        assertEquals("pink", preferences.getString("lastPlayed", null))
+    }
+
+    @Test
+    fun thePlayButtonStopsTheNoiseOrPlaysTheLastOneAgain() {
+        val service = playPinkNoise()
+
+        NoisePlayer.togglePlayback(context)
+        val stop = shadowOf(context).nextStartedService
+        assertEquals(PlaybackService.stopIntent(context).toUri(0), stop.toUri(0))
+        service.onStartCommand(stop, 0, 2)
+        assertNull(NoisePlayer.nowPlaying.value)
+
+        NoisePlayer.togglePlayback(context)
+        val play = shadowOf(context).nextStartedService
+        assertEquals(PlaybackService.playIntent(context, NoiseType.PINK).toUri(0), play.toUri(0))
     }
 
     @Test

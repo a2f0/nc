@@ -530,54 +530,6 @@
         }
       }
     },
-    "status_playing" : {
-      "comment" : "Status line under the app's name while a noise plays. {noise}: the noise's name, such as “Pink Noise”.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wiedergabe · %1$@"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Playing · %1$@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reproduciendo · %1$@"
-          }
-        }
-      }
-    },
-    "status_tap_to_start" : {
-      "comment" : "Status line under the app's name while nothing plays.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zum Starten einen Klang antippen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap a sound to start"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toca un sonido para empezar"
-          }
-        }
-      }
-    },
     "stop_noise" : {
       "comment" : "Screen reader label for a noise's button while it plays. {noise}: the noise's name, such as “Pink Noise”.",
       "extractionState" : "manual",

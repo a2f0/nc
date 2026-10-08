@@ -17,8 +17,6 @@
     <string name="noise_brown_blurb">Vor allem Bässe, gedämpfte Höhen. Ein tiefes, weiches Grollen.</string>
     <string name="noise_fan_blurb">Ein gleichmäßiger Luftstrom über einem tiefen Brummen.</string>
     <string name="noise_waves_blurb">Brandung, die heranrollt und ausläuft, nie zweimal gleich.</string>
-    <string name="status_playing">Wiedergabe · %1$s</string>
-    <string name="status_tap_to_start">Zum Starten einen Klang antippen</string>
     <string name="play_noise">%1$s abspielen</string>
     <string name="stop_noise">%1$s stoppen</string>
     <string name="stop">Stopp</string>

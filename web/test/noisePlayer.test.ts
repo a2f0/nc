@@ -269,6 +269,26 @@ describe("NoisePlayer", () => {
     }
   });
 
+  test("the play button stops the noise, or plays the last one again", async () => {
+    const { player } = await loaded();
+    player.play("pink");
+
+    player.togglePlayback();
+    expect(player.nowPlaying).toBeNull();
+
+    player.togglePlayback();
+    expect(player.nowPlaying).toBe("pink");
+  });
+
+  test("remembers the last noise played", () => {
+    expect(new NoisePlayer().lastPlayed).toBe("white");
+    new NoisePlayer().play("waves");
+    expect(storage!.get("lastPlayed")).toBe("waves");
+    expect(new NoisePlayer().lastPlayed).toBe("waves");
+    storage!.set("lastPlayed", "not a noise");
+    expect(new NoisePlayer().lastPlayed).toBe("white");
+  });
+
   test("starts at the saved volume", () => {
     storage!.set("volume", "0.5");
     const player = new NoisePlayer();
@@ -307,5 +327,7 @@ describe("NoisePlayer", () => {
     expect(player.volume).toBe(1);
     player.setVolume(0.3);
     expect(player.volume).toBe(0.3);
+    player.play("fan");
+    expect(player.lastPlayed).toBe("fan");
   });
 });

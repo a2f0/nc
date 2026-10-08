@@ -10,6 +10,9 @@ setPreferredLanguages(navigator.languages);
 const player = new NoisePlayer();
 const status = element("status");
 const sounds = element("sounds");
+const playback = element("playback");
+playback.innerHTML = `${PLAY_ICON}${STOP_ICON}`;
+playback.addEventListener("click", () => player.togglePlayback());
 const volume = element("volume") as HTMLInputElement;
 volume.addEventListener("input", () => player.setVolume(volume.valueAsNumber));
 
@@ -52,18 +55,20 @@ function localize(): void {
 function render(): void {
   volume.valueAsNumber = player.volume;
   const playing = player.nowPlaying;
-  status.textContent =
-    playing !== null
-      ? t("status_playing", { noise: t(NOISE_INFO[playing].title) })
-      : player.failed
-        ? t("status_audio_failed")
-        : t("status_click_to_start");
+  status.textContent = player.failed ? t("status_audio_failed") : "";
   for (const [type, button] of cards) {
     const isPlaying = type === playing;
     button.classList.toggle("playing", isPlaying);
-    const noise = t(NOISE_INFO[type].title);
-    button.setAttribute("aria-label", isPlaying ? t("stop_noise", { noise }) : t("play_noise", { noise }));
+    button.setAttribute("aria-label", buttonLabel(type, isPlaying));
   }
+  playback.classList.toggle("playing", playing !== null);
+  playback.setAttribute("aria-label", buttonLabel(playing ?? player.lastPlayed, playing !== null));
+}
+
+/** Read as a play or stop button's action, as in the apps. */
+function buttonLabel(type: NoiseType, isPlaying: boolean): string {
+  const noise = t(NOISE_INFO[type].title);
+  return isPlaying ? t("stop_noise", { noise }) : t("play_noise", { noise });
 }
 
 function element(id: string): HTMLElement {

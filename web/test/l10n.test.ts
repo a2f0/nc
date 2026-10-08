@@ -42,7 +42,7 @@ describe("t", () => {
   afterEach(() => setPreferredLanguages([]));
 
   test("fills in placeholders", () => {
-    expect(t("status_playing", { noise: t("noise_pink_title") })).toBe("Playing · Pink Noise");
+    expect(t("stop_noise", { noise: t("noise_pink_title") })).toBe("Stop Pink Noise");
     expect(t("play_noise", { noise: "White Noise" })).toBe("Play White Noise");
   });
 
@@ -53,10 +53,10 @@ describe("t", () => {
   });
 
   test("a translation's text, with its placeholders in its own order", () => {
-    const translation = { status_playing: "{noise} läuft", volume: "Lautstärke" } as Partial<Translation> as Translation;
+    const translation = { play_noise: "{noise} abspielen", volume: "Lautstärke" } as Partial<Translation> as Translation;
     setPreferredLanguages(["de-CH"], [EN, { ...DE, translation }]);
     expect(currentLocale().tag).toBe("de");
-    expect(t("status_playing", { noise: "Rosa Rauschen" })).toBe("Rosa Rauschen läuft");
+    expect(t("play_noise", { noise: "Rosa Rauschen" })).toBe("Rosa Rauschen abspielen");
     expect(t("volume")).toBe("Lautstärke");
     expect(t("app_name")).toBe("Noise Connoisseur");
   });

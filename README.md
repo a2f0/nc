@@ -71,8 +71,8 @@ against it, so a missing or extra string, or a dropped `{placeholder}`, is a typ
 
 | | Generated | Used as |
 |---|---|---|
-| Android | `res/values*/strings.xml`, `res/resources.properties` | `R.string.status_playing`. The Android Gradle plugin builds the per-app language list from the `values-*` folders (`generateLocaleConfig`), and App Bundles keep every language so that list works |
-| iOS | `Shared/Localizable.xcstrings`, for the app and the widget | Xcode's generated symbols: `Text(.volume)`, `.statusPlaying(title)`. App Intents' metadata needs literal keys, `LocalizedStringResource("intent_noise")`, which `bun run l10n` checks. Xcode doesn't add strings it finds in code to the catalog (`SWIFT_EMIT_LOC_STRINGS = NO`) |
+| Android | `res/values*/strings.xml`, `res/resources.properties` | `R.string.play_noise`. The Android Gradle plugin builds the per-app language list from the `values-*` folders (`generateLocaleConfig`), and App Bundles keep every language so that list works |
+| iOS | `Shared/Localizable.xcstrings`, for the app and the widget | Xcode's generated symbols: `Text(.volume)`, `.playNoise(title)`. App Intents' metadata needs literal keys, `LocalizedStringResource("intent_noise")`, which `bun run l10n` checks. Xcode doesn't add strings it finds in code to the catalog (`SWIFT_EMIT_LOC_STRINGS = NO`) |
 | Web | Nothing: `web/src/l10n.ts` imports `l10n/` | `t("play_noise", { noise })`, with the keys and placeholders type-checked |
 
 Placeholders become `%1$s` (Android) and `%1$@` (iOS), numbered in the order English has them,

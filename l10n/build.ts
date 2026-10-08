@@ -242,7 +242,7 @@ function androidResourcesProperties({ locales }: Catalog): string {
 
 /**
  * A String Catalog of manually defined strings, for which Xcode generates symbols
- * (STRING_CATALOG_GENERATE_SYMBOLS): `Text(.volume)`, `.statusPlaying(title)`. Names have
+ * (STRING_CATALOG_GENERATE_SYMBOLS): `Text(.volume)`, `.playNoise(title)`. Names have
  * their English in every language, since iOS shows the key, not English, for a string
  * that the user's language is missing.
  */
