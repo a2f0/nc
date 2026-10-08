@@ -14,15 +14,15 @@
     <main>
       <header class="app-header">
         <h1 class="app-title"><img class="logo" src="icon.svg" alt="" />Noise Connoisseur</h1>
-        <button id="more" type="button" class="icon-button" popovertarget="menu" aria-label="More">
+        <button id="more" type="button" class="icon-button" aria-controls="menu" aria-expanded="false" aria-label="More">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <circle cx="5" cy="12" r="2" />
             <circle cx="12" cy="12" r="2" />
             <circle cx="19" cy="12" r="2" />
           </svg>
         </button>
-        <div id="menu" class="menu" popover>
-          <button id="open-settings" type="button" autofocus>Settings</button>
+        <div id="menu" class="menu" hidden>
+          <button id="open-settings" type="button">Settings</button>
           <button id="open-about" type="button">About</button>
         </div>
       </header>
@@ -48,7 +48,7 @@
       <div class="sheet-content">
         <div class="sheet-header">
           <h2 id="settings-title">Settings</h2>
-          <button type="button" class="close" aria-label="Close">
+          <button id="close-settings" type="button" class="close" aria-label="Close">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
@@ -68,7 +68,7 @@
       <div class="sheet-content">
         <div class="sheet-header">
           <h2 id="about-title">About</h2>
-          <button type="button" class="close" aria-label="Close">
+          <button id="close-about" type="button" class="close" aria-label="Close">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>

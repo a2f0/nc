@@ -54,6 +54,7 @@ h1 {
 
 /* The title, with the three-dot menu at the end. */
 .app-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -95,11 +96,13 @@ h1 {
   fill: currentColor;
 }
 
-/* A popover, placed under the button by main.ts. */
+/* Under the button, lined up with its trailing edge. */
 .menu {
-  inset: auto;
+  position: absolute;
+  top: calc(100% - 4px);
+  right: -10px;
+  z-index: 1;
   min-width: 180px;
-  margin: 0;
   padding: 6px;
   border: 1px solid var(--separator);
   border-radius: 12px;

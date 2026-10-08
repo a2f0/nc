@@ -1,3 +1,4 @@
+import { bindVolume, setUpMenu } from "./controls";
 import { currentLocale, setPreferredLanguages, t } from "./l10n";
 import { NoisePlayer } from "./noisePlayer";
 import { NOISE_INFO, NOISE_TYPES, type NoiseType } from "./noiseType";
@@ -17,16 +18,14 @@ const playback = element("playback");
 playback.innerHTML = `${PLAY_ICON}${STOP_ICON}`;
 playback.addEventListener("click", () => player.togglePlayback());
 const volume = element("volume") as HTMLInputElement;
-const settingsVolume = element("settings-volume") as HTMLInputElement;
-for (const slider of [volume, settingsVolume]) {
-  slider.addEventListener("input", () => player.setVolume(slider.valueAsNumber));
-}
+bindVolume([volume, element("settings-volume") as HTMLInputElement], player);
 
 const more = element("more");
-const menu = element("menu");
-const settings = element("settings") as HTMLDialogElement;
-const about = element("about") as HTMLDialogElement;
-setUpMenu();
+const closeButtons = [...document.querySelectorAll<HTMLElement>(".close")];
+setUpMenu(document, more, element("menu"), [
+  [element("open-settings"), element("settings") as HTMLDialogElement, element("close-settings")],
+  [element("open-about"), element("about") as HTMLDialogElement, element("close-about")],
+]);
 
 const cards = new Map<NoiseType, HTMLButtonElement>(NOISE_TYPES.map((type) => [type, card(type)]));
 sounds.append(...cards.values());
@@ -51,38 +50,6 @@ function card(type: NoiseType): HTMLButtonElement {
   return button;
 }
 
-/** The three-dot menu, which opens the Settings and About sheets. */
-function setUpMenu(): void {
-  // Under the button, its trailing edge lined up with the button's.
-  menu.addEventListener("beforetoggle", (event) => {
-    if ((event as ToggleEvent).newState !== "open") return;
-    const button = more.getBoundingClientRect();
-    menu.style.top = `${button.bottom + 4}px`;
-    menu.style.right = `${document.documentElement.clientWidth - button.right}px`;
-  });
-  // It would stay put while the page moved under it.
-  const close = () => {
-    if (menu.matches(":popover-open")) menu.hidePopover();
-  };
-  addEventListener("scroll", close);
-  addEventListener("resize", close);
-
-  for (const [id, sheet] of [
-    ["open-settings", settings],
-    ["open-about", about],
-  ] as const) {
-    element(id).addEventListener("click", () => {
-      menu.hidePopover();
-      sheet.showModal();
-    });
-    // A click outside the sheet lands on the dialog itself, its backdrop.
-    sheet.addEventListener("click", (event) => {
-      if (event.target === sheet) sheet.close();
-    });
-    sheet.querySelector(".close")!.addEventListener("click", () => sheet.close());
-  }
-}
-
 /** Puts the page's text in the current language; index.html has the English. */
 function localize(): void {
   document.documentElement.lang = currentLocale().tag;
@@ -93,7 +60,7 @@ function localize(): void {
   element("settings-title").textContent = t("settings");
   element("about-title").textContent = t("about");
   document.querySelector('label[for="settings-volume"]')!.textContent = t("volume");
-  for (const button of document.querySelectorAll(".close")) button.setAttribute("aria-label", t("close"));
+  for (const button of closeButtons) button.setAttribute("aria-label", t("close"));
   element("build").textContent = t("about_build", { build: BUILD_ID });
   element("support").textContent = t("support");
   element("privacy").textContent = t("privacy_policy");
@@ -105,8 +72,6 @@ function localize(): void {
 }
 
 function render(): void {
-  volume.valueAsNumber = player.volume;
-  settingsVolume.valueAsNumber = player.volume;
   const playing = player.nowPlaying;
   status.textContent = player.failed ? t("status_audio_failed") : "";
   for (const [type, button] of cards) {
