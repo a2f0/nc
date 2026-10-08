@@ -1,4 +1,5 @@
-# Store screenshot: pink noise playing.
+# Store screenshot: pink noise playing. On the way, checks that the player bar's button
+# stops the noise and, after a relaunch, plays it again.
 appId: net.a2f0.nc
 tags:
   - screenshots
@@ -11,6 +12,21 @@ tags:
     timeout: 30000
 # iOS exposes the card as "Play Pink Noise"; Android as its title and blurb.
 - tapOn: ".*Pink Noise.*"
+- extendedWaitUntil:
+    visible: "Stop Pink Noise"
+    timeout: 10000
+- tapOn:
+    id: "playback"
+- extendedWaitUntil:
+    notVisible: "Stop Pink Noise"
+    timeout: 10000
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
+- tapOn:
+    id: "playback"
 - extendedWaitUntil:
     visible: "Stop Pink Noise"
     timeout: 10000

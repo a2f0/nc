@@ -81,11 +81,8 @@ object NoisePlayer {
 
     internal fun update(context: Context, type: NoiseType?) {
         if (type != null) {
-            val lastPlayed = saved(context).lastPlayed
-            if (lastPlayed.value != type) {
-                lastPlayed.value = type
-                preferences(context).edit { putString(LAST_PLAYED_KEY, type.id) }
-            }
+            saved(context).lastPlayed.value = type
+            preferences(context).edit { putString(LAST_PLAYED_KEY, type.id) }
         }
         if (_nowPlaying.value == type) return
         _nowPlaying.value = type

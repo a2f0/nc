@@ -40,12 +40,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -85,7 +87,13 @@ private fun NoiseScreen(
     volume: Float,
     onVolumeChange: (Float) -> Unit,
 ) {
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier
+            .fillMaxSize()
+            // Test tags are resource IDs for the Maestro flows (maestro/screenshots/).
+            .semantics { testTagsAsResourceId = true },
+    ) {
         Column {
             Column(
                 modifier = Modifier
@@ -167,7 +175,9 @@ private fun PlayerBar(
             PlaybackSymbol(
                 isPlaying = isPlaying,
                 onClick = onTogglePlayback,
-                modifier = Modifier.semantics { contentDescription = description },
+                modifier = Modifier
+                    .testTag("playback")
+                    .semantics { contentDescription = description },
             )
             VolumeSlider(volume = volume, onVolumeChange = onVolumeChange, modifier = Modifier.weight(1f))
         }

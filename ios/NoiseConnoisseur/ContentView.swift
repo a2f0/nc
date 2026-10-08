@@ -93,6 +93,8 @@ private struct PlayerBar: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text((player.nowPlaying ?? player.lastPlayed).buttonLabel(isPlaying: isPlaying)))
+            // For the Maestro flows (maestro/screenshots/).
+            .accessibilityIdentifier("playback")
             VolumeSlider(volume: Binding(get: { player.volume }, set: { player.setVolume($0) }))
         }
         .padding(.horizontal, 24)
