@@ -1,9 +1,9 @@
 # Noise Connoisseur
 
-White and pink noise player, native on `ios/` (SwiftUI, WidgetKit) and `android/` (Jetpack
-Compose, Glance), plus a desktop web version in `web/` (TypeScript, AudioWorklet). There is
-no shared code between them; their strings come from `l10n/`. See `README.md` for
-architecture, setup, and releasing.
+Player for white, pink, and brown noise, a fan, and ocean waves, native on `ios/` (SwiftUI,
+WidgetKit) and `android/` (Jetpack Compose, Glance), plus a desktop web version in `web/`
+(TypeScript, AudioWorklet). There is no shared code between them; their strings come from
+`l10n/`. See `README.md` for architecture, setup, and releasing.
 
 ## Setup
 

@@ -1,8 +1,8 @@
 # Noise Connoisseur
 
-White and pink noise player with background playback and home screen start/stop widgets.
-Native on iOS and Android, plus a desktop web version; no shared code between them, only
-their strings (see "Localization").
+Player for white, pink, and brown noise, a fan, and ocean waves, with background playback
+and home screen start/stop widgets. Native on iOS and Android, plus a desktop web version;
+no shared code between them, only their strings (see "Localization").
 
 | | iOS (`ios/`) | Android (`android/`) | Web (`web/`) |
 |---|---|---|---|
@@ -13,10 +13,14 @@ their strings (see "Localization").
 | Widget | WidgetKit + `AudioPlaybackIntent` buttons | Glance app widget | None |
 | Minimum OS | iOS 18 | Android 8.0 (API 26) | Desktop browsers with `AudioWorklet` |
 
-Noise is generated in real time (xorshift PRNG for white; Paul Kellet's filter for pink),
-level-matched at about -17 dBFS, in stereo, with fade in/out. Each app has its own volume
-slider on top of the system volume: saved between launches, squared so halfway is about
--12 dB, and ramped over about 50 ms so dragging doesn't crackle.
+Noise is generated in real time (xorshift PRNG for white; Paul Kellet's filter for pink; a
+leaky integrator for brown; filtered pink noise for the fan, throbbing with its blades over a
+hum, and for the waves, swelling and breaking at random), level-matched at about -17 dBFS
+(waves average about -23, so their crests don't clip), in stereo, with fade in/out. The
+generator is written three times, once per platform; the web and Android tests compare
+theirs with samples from the iOS one. Each app has its own volume slider on top of the
+system volume: saved between launches, squared so halfway is about -12 dB, and ramped over
+about 50 ms so dragging doesn't crackle.
 
 ## Setup
 

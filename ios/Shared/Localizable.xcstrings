@@ -27,7 +27,7 @@
       "shouldTranslate" : false
     },
     "intent_noise" : {
-      "comment" : "In the Shortcuts app: what White Noise and Pink Noise are, and the Play Noise action's setting for which one to play.",
+      "comment" : "In the Shortcuts app: what the app's sounds (White Noise, Fan, Ocean Waves, and so on) are, and the Play Noise action's setting for which one to play.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -57,19 +57,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spielt weißes oder rosa Rauschen ab."
+            "value" : "Spielt einen der Klänge ab."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Starts playing white or pink noise."
+            "value" : "Starts playing one of the sounds."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Empieza a reproducir ruido blanco o rosa."
+            "value" : "Empieza a reproducir uno de los sonidos."
           }
         }
       }
@@ -146,6 +146,150 @@
         }
       }
     },
+    "noise_brown_blurb" : {
+      "comment" : "Describes brown noise, under its name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vor allem Bässe, gedämpfte Höhen. Ein tiefes, weiches Grollen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostly lows, muffled highs. A deep, soft rumble."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sobre todo graves, agudos apagados. Un rumor profundo y suave."
+          }
+        }
+      }
+    },
+    "noise_brown_short" : {
+      "comment" : "Brown noise's name on a home screen widget button, where there's little room.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Braun"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brown"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marrón"
+          }
+        }
+      }
+    },
+    "noise_brown_title" : {
+      "comment" : "Name of brown noise, which is softer still at high frequencies than pink noise: a deep rumble. Also its title in the system's media controls.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Braunes Rauschen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brown Noise"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruido marrón"
+          }
+        }
+      }
+    },
+    "noise_fan_blurb" : {
+      "comment" : "Describes the fan sound, under its name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein gleichmäßiger Luftstrom über einem tiefen Brummen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A steady stream of air over a low hum."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un flujo de aire constante sobre un zumbido grave."
+          }
+        }
+      }
+    },
+    "noise_fan_short" : {
+      "comment" : "The fan sound's name on a home screen widget button, where there's little room.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ventilator"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ventilador"
+          }
+        }
+      }
+    },
+    "noise_fan_title" : {
+      "comment" : "Name of the sound of an electric fan blowing. Also its title in the system's media controls.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ventilator"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fan"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ventilador"
+          }
+        }
+      }
+    },
     "noise_pink_blurb" : {
       "comment" : "Describes pink noise, under its name.",
       "extractionState" : "manual",
@@ -214,6 +358,78 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ruido rosa"
+          }
+        }
+      }
+    },
+    "noise_waves_blurb" : {
+      "comment" : "Describes the ocean waves sound, under its name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brandung, die heranrollt und ausläuft, nie zweimal gleich."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Surf rolling in and washing out, never the same twice."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Olas que llegan y se retiran, nunca dos veces iguales."
+          }
+        }
+      }
+    },
+    "noise_waves_short" : {
+      "comment" : "The ocean waves sound's name on a home screen widget button, where there's little room.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waves"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Olas"
+          }
+        }
+      }
+    },
+    "noise_waves_title" : {
+      "comment" : "Name of the sound of waves breaking on a beach. Also its title in the system's media controls.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meereswellen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocean Waves"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Olas del mar"
           }
         }
       }
@@ -417,19 +633,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Weißes oder rosa Rauschen starten und stoppen."
+            "value" : "Jeden Klang mit einem Tippen starten und stoppen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start and stop white or pink noise."
+            "value" : "Start and stop each sound with one tap."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inicia y detén el ruido blanco o rosa."
+            "value" : "Inicia y detén cada sonido con un toque."
           }
         }
       }

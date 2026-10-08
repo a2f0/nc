@@ -1,9 +1,12 @@
-Noise Connoisseur plays white noise and pink noise, generated live on your device. Two sounds, done well.
+Noise Connoisseur plays white, pink, and brown noise, a fan, and ocean waves, all generated live on your device. Five sounds, done well.
 
-The noise is made in real time, not looped from a recording, so there's no repeating pattern or seam to notice. Use it to sleep, focus, study, or cover up a noisy room.
+Every sound is made in real time, not looped from a recording, so there's no repeating pattern or seam to notice. Use it to sleep, focus, study, or cover up a noisy room.
 
 • White noise: equal energy at every frequency. Bright and crisp.
 • Pink noise: softer highs, deeper lows. Like steady rain.
+• Brown noise: mostly lows, muffled highs. A deep, soft rumble.
+• Ocean waves: surf rolling in and washing out, never the same twice.
+• Fan: a steady stream of air over a low hum.
 • Keeps playing in the background and with your phone locked. Stop it from the lock screen or Control Center.
 • Home screen widget: start and stop each sound with one tap.
 • Its own volume slider, so the noise can sit quieter than your other audio. It's remembered between launches.

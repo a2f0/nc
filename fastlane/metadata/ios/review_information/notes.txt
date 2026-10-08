@@ -1,1 +1,1 @@
-No account or sign-in. Tap White Noise or Pink Noise to start, and tap it again to stop. The noise keeps playing in the background and with the phone locked (stop it from the lock screen or Control Center), and the home screen widget starts and stops each sound.
+No account or sign-in. Tap a sound (White Noise, Pink Noise, Brown Noise, Fan, or Ocean Waves) to start, and tap it again to stop. It keeps playing in the background and with the phone locked (stop it from the lock screen or Control Center), and the home screen widget starts and stops each sound.

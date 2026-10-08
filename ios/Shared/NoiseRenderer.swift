@@ -14,7 +14,7 @@ final class NoiseRenderer: Sendable {
     private let volumeGain = Atomic<UInt32>(Float(1).bitPattern)
 
     func setNoise(_ type: NoiseType) {
-        noise.store(type == .white ? 0 : 1, ordering: .relaxed)
+        noise.store(type.index, ordering: .relaxed)
     }
 
     func setFadingOut(_ value: Bool) {
@@ -37,7 +37,7 @@ final class NoiseRenderer: Sendable {
         )
         return AVAudioSourceNode(format: format) { [self] _, _, frameCount, audioBufferList in
             let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-            let type: NoiseType = noise.load(ordering: .relaxed) == 0 ? .white : .pink
+            let type = NoiseType(index: noise.load(ordering: .relaxed))
             let target: Float = fadingOut.load(ordering: .relaxed) ? 0 : 1
             let targetVolume = Float(bitPattern: volumeGain.load(ordering: .relaxed))
             guard let left = buffers[0].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
@@ -51,8 +51,9 @@ final class NoiseRenderer: Sendable {
                     ? min(state.volume + state.volumeStep, targetVolume)
                     : max(state.volume - state.volumeStep, targetVolume)
                 let gain = state.gain * state.volume
-                left[frame] = state.left.next(type) * gain
-                right?[frame] = state.right.next(type) * gain
+                let (leftSample, rightSample) = state.noise.next(type)
+                left[frame] = leftSample * gain
+                right?[frame] = rightSample * gain
             }
             return noErr
         }
@@ -61,17 +62,44 @@ final class NoiseRenderer: Sendable {
 
 /// Render-thread-only state. Captured exclusively by the render block.
 private final class RenderState: @unchecked Sendable {
-    // Independent generators per channel give a wide, decorrelated stereo image.
-    var left = NoiseGenerator(seed: .random(in: 1...UInt32.max))
-    var right = NoiseGenerator(seed: .random(in: 1...UInt32.max))
+    var noise: NoiseGenerator
     var gain: Float = 0
     var volume: Float
     let gainStep: Float
     let volumeStep: Float
 
     init(sampleRate: Double, volume: Float) {
+        noise = NoiseGenerator(
+            sampleRate: sampleRate,
+            leftSeed: .random(in: 1...UInt32.max),
+            rightSeed: .random(in: 1...UInt32.max)
+        )
         self.volume = volume
         gainStep = Float(1 / (sampleRate * NoiseRenderer.fadeDuration))
         volumeStep = Float(1 / (sampleRate * NoiseRenderer.volumeRampDuration))
+    }
+}
+
+/// The noise as the renderer's atomic stores it. A switch rather than `allCases`, which
+/// would allocate on the render thread.
+extension NoiseType {
+    var index: UInt8 {
+        switch self {
+        case .white: 0
+        case .pink: 1
+        case .brown: 2
+        case .waves: 3
+        case .fan: 4
+        }
+    }
+
+    init(index: UInt8) {
+        switch index {
+        case 1: self = .pink
+        case 2: self = .brown
+        case 3: self = .waves
+        case 4: self = .fan
+        default: self = .white
+        }
     }
 }

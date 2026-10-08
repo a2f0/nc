@@ -19,9 +19,7 @@ internal fun volumeGain(volume: Float): Float {
  * thread; not thread-safe.
  */
 internal class NoiseMixer(sampleRate: Int, leftSeed: Int, rightSeed: Int, volumeGain: Float) {
-    // Independent generators per channel give a wide, decorrelated stereo image.
-    private val left = NoiseGenerator(leftSeed)
-    private val right = NoiseGenerator(rightSeed)
+    private val noise = NoiseGenerator(sampleRate, leftSeed, rightSeed)
     private val fadeStep = 1f / (sampleRate * FADE_SECONDS)
     private val volumeStep = 1f / (sampleRate * VOLUME_RAMP_SECONDS)
 
@@ -39,8 +37,9 @@ internal class NoiseMixer(sampleRate: Int, leftSeed: Int, rightSeed: Int, volume
             fade = approach(fade, targetFade, fadeStep)
             volume = approach(volume, volumeGain, volumeStep)
             val gain = fade * volume
-            buffer[frame * 2] = left.next(type) * gain
-            buffer[frame * 2 + 1] = right.next(type) * gain
+            noise.next(type)
+            buffer[frame * 2] = noise.left * gain
+            buffer[frame * 2 + 1] = noise.right * gain
         }
     }
 
