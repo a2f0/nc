@@ -6,7 +6,7 @@ import {
   PROCESSOR_NAME,
 } from "./noiseProtocol";
 import { t } from "./l10n";
-import { NOISE_INFO, type NoiseType } from "./noiseType";
+import { NOISE_INFO, NOISE_TYPES, type NoiseType } from "./noiseType";
 
 /**
  * The audio graph: noise worklet → volume → MediaStream → <audio>. Playing through a media
@@ -21,6 +21,7 @@ interface Engine {
 }
 
 const VOLUME_KEY = "volume";
+const LAST_PLAYED_KEY = "lastPlayed";
 
 /** Volume changes settle within about 50 ms (three time constants), so dragging doesn't crackle. */
 const VOLUME_TIME_CONSTANT = 0.015;
@@ -40,7 +41,8 @@ function clampVolume(volume: number): number {
 /** Plays one noise at a time. Starting and stopping fade (see noiseProcessor.ts). */
 export class NoisePlayer {
   nowPlaying: NoiseType | null = null;
-  lastPlayed: NoiseType = "white";
+  /** The most recently played noise, which the play button and media keys resume. Saved in this browser. */
+  lastPlayed: NoiseType = loadLastPlayed();
   /** Set when the browser couldn't start audio; cleared by the next play. */
   failed = false;
   /** The page's own volume, from 0 to 1, on top of the system volume. Saved in this browser. */
@@ -68,6 +70,11 @@ export class NoisePlayer {
     }
   }
 
+  /** Stops what's playing, or plays the last noise again. */
+  togglePlayback(): void {
+    this.toggle(this.nowPlaying ?? this.lastPlayed);
+  }
+
   /**
    * Must run during a user gesture (or, after the first one, a media key): browsers only
    * let audio start then.
@@ -75,6 +82,7 @@ export class NoisePlayer {
   play(type: NoiseType): void {
     this.nowPlaying = type;
     this.lastPlayed = type;
+    save(LAST_PLAYED_KEY, type);
     this.failed = false;
 
     const engine = (this.engine ??= this.createEngine());
@@ -100,11 +108,7 @@ export class NoisePlayer {
     if (engine !== null) {
       engine.volume.gain.setTargetAtTime(volumeGain(this.volume), engine.context.currentTime, VOLUME_TIME_CONSTANT);
     }
-    try {
-      localStorage.setItem(VOLUME_KEY, String(this.volume));
-    } catch {
-      // Storage can be unavailable (private windows, blocked site data); the volume still applies.
-    }
+    save(VOLUME_KEY, String(this.volume));
     this.publish();
   }
 
@@ -194,10 +198,30 @@ export class NoisePlayer {
 }
 
 function loadVolume(): number {
+  const saved = load(VOLUME_KEY);
+  return saved === null ? 1 : clampVolume(Number(saved));
+}
+
+function loadLastPlayed(): NoiseType {
+  const saved = load(LAST_PLAYED_KEY);
+  return NOISE_TYPES.find((type) => type === saved) ?? "white";
+}
+
+// Storage can be unavailable (private windows, blocked site data); settings then last
+// until the page closes.
+
+function load(key: string): string | null {
   try {
-    const saved = localStorage.getItem(VOLUME_KEY);
-    return saved === null ? 1 : clampVolume(Number(saved));
+    return localStorage.getItem(key);
   } catch {
-    return 1;
+    return null;
+  }
+}
+
+function save(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Not saved.
   }
 }

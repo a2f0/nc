@@ -15,8 +15,9 @@ final class NoisePlayer {
     /// The noise currently playing, or nil when stopped.
     private(set) var nowPlaying: NoiseType?
 
-    /// The most recently played noise; used when resuming from lock screen controls.
-    private(set) var lastPlayed: NoiseType = .white
+    /// The most recently played noise, which the play button and lock screen controls
+    /// resume. Saved across launches.
+    private(set) var lastPlayed: NoiseType
 
     /// The app's own volume, from 0 to 1, on top of the system volume. Saved across launches.
     private(set) var volume: Double
@@ -30,9 +31,11 @@ final class NoisePlayer {
 
     private static let log = Logger(subsystem: "NoiseConnoisseur", category: "playback")
     private static let volumeKey = "volume"
+    private static let lastPlayedKey = "lastPlayed"
 
     private init() {
         volume = UserDefaults.standard.object(forKey: Self.volumeKey) as? Double ?? 1
+        lastPlayed = UserDefaults.standard.string(forKey: Self.lastPlayedKey).flatMap(NoiseType.init(rawValue:)) ?? .white
         renderer.setVolume(volume)
         // A fresh process isn't playing anything, whatever the widget last showed.
         publishState()
@@ -46,6 +49,11 @@ final class NoisePlayer {
 
     func toggle(_ type: NoiseType) {
         if nowPlaying == type { stop() } else { play(type) }
+    }
+
+    /// Stops what's playing, or plays the last noise again.
+    func togglePlayback() {
+        toggle(nowPlaying ?? lastPlayed)
     }
 
     func play(_ type: NoiseType) {
@@ -63,6 +71,7 @@ final class NoisePlayer {
         }
         nowPlaying = type
         lastPlayed = type
+        UserDefaults.standard.set(type.rawValue, forKey: Self.lastPlayedKey)
         interruptedNoise = nil
         publishState()
     }
@@ -141,7 +150,7 @@ final class NoisePlayer {
             return .success
         }
         commands.togglePlayPauseCommand.addTarget { _ in
-            Task { @MainActor in player.toggle(player.nowPlaying ?? player.lastPlayed) }
+            Task { @MainActor in player.togglePlayback() }
             return .success
         }
     }

@@ -91,23 +91,9 @@ export const STRINGS = {
     text: "Surf rolling in and washing out, never the same twice.",
     comment: "Describes the ocean waves sound, under its name.",
   },
-  status_playing: {
-    text: "Playing · {noise}",
-    comment: "Status line under the app's name while a noise plays. {noise}: the noise's name, such as “Pink Noise”.",
-  },
-  status_tap_to_start: {
-    text: "Tap a sound to start",
-    comment: "Status line under the app's name while nothing plays.",
-    platforms: ["android", "ios"],
-  },
-  status_click_to_start: {
-    text: "Click a sound to start",
-    comment: "Status line under the app's name while nothing plays.",
-    platforms: ["web"],
-  },
   status_audio_failed: {
     text: "This browser couldn't start audio.",
-    comment: "Status line under the app's name when the browser can't play sound.",
+    comment: "Shown under the app's name when the browser can't play sound.",
     platforms: ["web"],
   },
   play_noise: {

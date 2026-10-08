@@ -61,7 +61,7 @@ class PlaybackService : Service() {
             .build()
         session = MediaSession(this, "NoiseConnoisseur").apply {
             setCallback(object : MediaSession.Callback() {
-                override fun onPlay() = play(nowPlaying ?: NoisePlayer.lastPlayed)
+                override fun onPlay() = play(nowPlaying ?: NoisePlayer.lastPlayed(this@PlaybackService).value)
                 override fun onPause() = stop()
                 override fun onStop() = stop()
             })
@@ -81,7 +81,7 @@ class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY -> play(NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed)
+            ACTION_PLAY -> play(NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed(this).value)
             else -> stop()
         }
         return START_NOT_STICKY

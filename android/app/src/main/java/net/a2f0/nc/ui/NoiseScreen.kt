@@ -7,20 +7,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -58,10 +64,13 @@ fun NoiseConnoisseurTheme(content: @Composable () -> Unit) {
 fun NoiseScreen() {
     val context = LocalContext.current
     val nowPlaying by NoisePlayer.nowPlaying.collectAsStateWithLifecycle()
+    val lastPlayed by remember { NoisePlayer.lastPlayed(context) }.collectAsStateWithLifecycle()
     val volume by remember { NoisePlayer.volume(context) }.collectAsStateWithLifecycle()
     NoiseScreen(
         nowPlaying = nowPlaying,
+        lastPlayed = lastPlayed,
         onToggle = { NoisePlayer.toggle(context, it) },
+        onTogglePlayback = { NoisePlayer.togglePlayback(context) },
         volume = volume,
         onVolumeChange = { NoisePlayer.setVolume(context, it) },
     )
@@ -70,64 +79,108 @@ fun NoiseScreen() {
 @Composable
 private fun NoiseScreen(
     nowPlaying: NoiseType?,
+    lastPlayed: NoiseType,
     onToggle: (NoiseType) -> Unit,
+    onTogglePlayback: () -> Unit,
     volume: Float,
     onVolumeChange: (Float) -> Unit,
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
+        Column {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 32.dp)
+                    // Readable on tablets and in landscape, as on iOS.
+                    .fillMaxWidth()
+                    .wrapContentWidth()
+                    .widthIn(max = 600.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // The app icon's corners: 224 of its 1024 points. Its bottom edge sits on
+                    // the title's baseline.
+                    Image(
+                        painterResource(R.drawable.ic_logo),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .alignBy { it.measuredHeight }
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(9.dp)),
+                    )
+                    // One line, shrinking to fit narrow screens and large text sizes, as on iOS.
+                    val titleStyle = MaterialTheme.typography.headlineLarge
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = titleStyle,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        autoSize = TextAutoSize.StepBased(minFontSize = titleStyle.fontSize / 2, maxFontSize = titleStyle.fontSize),
+                        modifier = Modifier
+                            .alignByBaseline()
+                            .semantics { heading() },
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                NoiseType.entries.forEach { type ->
+                    NoiseCard(type = type, isPlaying = type == nowPlaying, onClick = { onToggle(type) })
+                }
+            }
+            PlayerBar(
+                noise = nowPlaying ?: lastPlayed,
+                isPlaying = nowPlaying != null,
+                onTogglePlayback = onTogglePlayback,
+                volume = volume,
+                onVolumeChange = onVolumeChange,
+            )
+        }
+    }
+}
+
+/**
+ * Pinned to the bottom of the screen: stops the noise, or plays the last one again, and
+ * sets the volume.
+ */
+@Composable
+private fun PlayerBar(
+    noise: NoiseType,
+    isPlaying: Boolean,
+    onTogglePlayback: () -> Unit,
+    volume: Float,
+    onVolumeChange: (Float) -> Unit,
+) {
+    val description = buttonDescription(noise, isPlaying)
+    Column {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
-                .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp)
-                // Readable on tablets and in landscape, as on iOS.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .fillMaxWidth()
                 .wrapContentWidth()
                 .widthIn(max = 600.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // The app icon's corners: 224 of its 1024 points. Its bottom edge sits on
-                // the title's baseline.
-                Image(
-                    painterResource(R.drawable.ic_logo),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .alignBy { it.measuredHeight }
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(9.dp)),
-                )
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .alignByBaseline()
-                        .semantics { heading() },
-                )
-            }
-            Text(
-                text = nowPlaying?.let { stringResource(R.string.status_playing, stringResource(it.title)) }
-                    ?: stringResource(R.string.status_tap_to_start),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            PlaybackSymbol(
+                isPlaying = isPlaying,
+                onClick = onTogglePlayback,
+                modifier = Modifier.semantics { contentDescription = description },
             )
-            Spacer(Modifier.height(8.dp))
-            NoiseType.entries.forEach { type ->
-                NoiseCard(type = type, isPlaying = type == nowPlaying, onClick = { onToggle(type) })
-            }
-            Spacer(Modifier.height(8.dp))
-            VolumeSlider(volume = volume, onVolumeChange = onVolumeChange)
+            VolumeSlider(volume = volume, onVolumeChange = onVolumeChange, modifier = Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun VolumeSlider(volume: Float, onVolumeChange: (Float) -> Unit) {
+private fun VolumeSlider(volume: Float, onVolumeChange: (Float) -> Unit, modifier: Modifier = Modifier) {
     val description = stringResource(R.string.volume)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(horizontal = 4.dp),
+        modifier = modifier.padding(horizontal = 4.dp),
     ) {
         Icon(
             painterResource(R.drawable.ic_volume_low),
@@ -156,9 +209,7 @@ private fun VolumeSlider(volume: Float, onVolumeChange: (Float) -> Unit) {
 
 @Composable
 private fun NoiseCard(type: NoiseType, isPlaying: Boolean, onClick: () -> Unit) {
-    val title = stringResource(type.title)
-    // Read as the button's action, as on iOS.
-    val description = stringResource(if (isPlaying) R.string.stop_noise else R.string.play_noise, title)
+    val description = buttonDescription(type, isPlaying)
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -178,7 +229,7 @@ private fun NoiseCard(type: NoiseType, isPlaying: Boolean, onClick: () -> Unit) 
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(type.title), style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(4.dp))
                 Text(
                     stringResource(type.blurb),
@@ -187,26 +238,46 @@ private fun NoiseCard(type: NoiseType, isPlaying: Boolean, onClick: () -> Unit) 
                 )
             }
             Spacer(Modifier.width(16.dp))
-            Surface(
-                shape = CircleShape,
-                color = if (isPlaying) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.size(48.dp),
-            ) {
-                Icon(
-                    painterResource(if (isPlaying) R.drawable.ic_stop else R.drawable.ic_play),
-                    contentDescription = null,
-                    tint = if (isPlaying) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.wrapContentSize(Alignment.Center),
-                )
-            }
+            PlaybackSymbol(isPlaying = isPlaying)
         }
     }
 }
+
+/** A play or stop symbol in a circle, filled while playing; a button when it has [onClick]. */
+@Composable
+private fun PlaybackSymbol(isPlaying: Boolean, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val color = if (isPlaying) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceVariant
+    val icon: @Composable () -> Unit = {
+        Icon(
+            painterResource(if (isPlaying) R.drawable.ic_stop else R.drawable.ic_play),
+            contentDescription = null,
+            tint = if (isPlaying) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.wrapContentSize(Alignment.Center),
+        )
+    }
+    if (onClick == null) {
+        Surface(shape = CircleShape, color = color, modifier = modifier.size(48.dp), content = icon)
+    } else {
+        Surface(onClick = onClick, shape = CircleShape, color = color, modifier = modifier.size(48.dp), content = icon)
+    }
+}
+
+/** Read as a play or stop button's action, as on iOS. */
+@Composable
+private fun buttonDescription(type: NoiseType, isPlaying: Boolean): String =
+    stringResource(if (isPlaying) R.string.stop_noise else R.string.play_noise, stringResource(type.title))
 
 @Preview(showBackground = true)
 @Composable
 private fun NoiseScreenPreview() {
     NoiseConnoisseurTheme {
-        NoiseScreen(nowPlaying = NoiseType.PINK, onToggle = {}, volume = 0.7f, onVolumeChange = {})
+        NoiseScreen(
+            nowPlaying = NoiseType.PINK,
+            lastPlayed = NoiseType.PINK,
+            onToggle = {},
+            onTogglePlayback = {},
+            volume = 0.7f,
+            onVolumeChange = {},
+        )
     }
 }

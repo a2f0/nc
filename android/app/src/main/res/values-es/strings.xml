@@ -17,8 +17,6 @@
     <string name="noise_brown_blurb">Sobre todo graves, agudos apagados. Un rumor profundo y suave.</string>
     <string name="noise_fan_blurb">Un flujo de aire constante sobre un zumbido grave.</string>
     <string name="noise_waves_blurb">Olas que llegan y se retiran, nunca dos veces iguales.</string>
-    <string name="status_playing">Reproduciendo · %1$s</string>
-    <string name="status_tap_to_start">Toca un sonido para empezar</string>
     <string name="play_noise">Reproducir %1$s</string>
     <string name="stop_noise">Detener %1$s</string>
     <string name="stop">Detener</string>
