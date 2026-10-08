@@ -10,6 +10,8 @@ enum Gray {
     static let secondaryFill = Color(uiColor: UIColor.secondarySystemFill.grayscale)
     /// Card outlines.
     static let separator = Color(uiColor: UIColor.separator.grayscale)
+    /// Sheet backgrounds: the system background, which is tinted in dark mode's sheets.
+    static let background = Color(uiColor: UIColor.systemBackground.grayscale)
 }
 
 extension UIColor {

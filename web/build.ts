@@ -20,6 +20,7 @@ export async function build(): Promise<void> {
     format: "esm",
     minify: true,
     sourcemap: "linked",
+    define: { BUILD_ID: JSON.stringify(buildId()) },
   });
   if (!result.success) {
     throw new AggregateError(result.logs, "Web build failed");
@@ -31,6 +32,12 @@ export async function build(): Promise<void> {
 
   const [background, icon] = await Promise.all([readFile(BACKGROUND_SVG, "utf8"), readFile(ICON_SVG, "utf8")]);
   await writeFile(join(DIST_DIR, "icon.svg"), favicon(background, icon));
+}
+
+// The About sheet's build: the commit the site was built from.
+function buildId(): string {
+  const git = Bun.spawnSync(["git", "rev-parse", "--short", "HEAD"], { cwd: WEB_DIR });
+  return git.success ? git.stdout.toString().trim() : "dev";
 }
 
 // The favicon is the app icon with rounded corners, leaving out the mark's unlit

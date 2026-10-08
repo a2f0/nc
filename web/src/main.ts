@@ -1,9 +1,13 @@
+import { bindVolume, setUpMenu } from "./controls";
 import { currentLocale, setPreferredLanguages, t } from "./l10n";
 import { NoisePlayer } from "./noisePlayer";
 import { NOISE_INFO, NOISE_TYPES, type NoiseType } from "./noiseType";
 
 const PLAY_ICON = '<svg class="play" viewBox="0 0 24 24"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.6-6.86a1 1 0 0 0 0-1.7L9.52 4.3A1 1 0 0 0 8 5.14Z"/></svg>';
 const STOP_ICON = '<svg class="stop" viewBox="0 0 24 24"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5"/></svg>';
+
+/** The commit the site was built from, set by build.ts. */
+declare const BUILD_ID: string;
 
 setPreferredLanguages(navigator.languages);
 
@@ -14,7 +18,14 @@ const playback = element("playback");
 playback.innerHTML = `${PLAY_ICON}${STOP_ICON}`;
 playback.addEventListener("click", () => player.togglePlayback());
 const volume = element("volume") as HTMLInputElement;
-volume.addEventListener("input", () => player.setVolume(volume.valueAsNumber));
+bindVolume([volume, element("settings-volume") as HTMLInputElement], player);
+
+const more = element("more");
+const closeButtons = [...document.querySelectorAll<HTMLElement>(".close")];
+setUpMenu(document, more, element("menu"), [
+  [element("open-settings"), element("settings") as HTMLDialogElement, element("close-settings")],
+  [element("open-about"), element("about") as HTMLDialogElement, element("close-about")],
+]);
 
 const cards = new Map<NoiseType, HTMLButtonElement>(NOISE_TYPES.map((type) => [type, card(type)]));
 sounds.append(...cards.values());
@@ -43,6 +54,14 @@ function card(type: NoiseType): HTMLButtonElement {
 function localize(): void {
   document.documentElement.lang = currentLocale().tag;
   volume.setAttribute("aria-label", t("volume"));
+  more.setAttribute("aria-label", t("more"));
+  element("open-settings").textContent = t("settings");
+  element("open-about").textContent = t("about");
+  element("settings-title").textContent = t("settings");
+  element("about-title").textContent = t("about");
+  document.querySelector('label[for="settings-volume"]')!.textContent = t("volume");
+  for (const button of closeButtons) button.setAttribute("aria-label", t("close"));
+  element("build").textContent = t("about_build", { build: BUILD_ID });
   element("support").textContent = t("support");
   element("privacy").textContent = t("privacy_policy");
   for (const [type, button] of cards) {
@@ -53,7 +72,6 @@ function localize(): void {
 }
 
 function render(): void {
-  volume.valueAsNumber = player.volume;
   const playing = player.nowPlaying;
   status.textContent = player.failed ? t("status_audio_failed") : "";
   for (const [type, button] of cards) {

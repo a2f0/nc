@@ -1,4 +1,5 @@
-# Store screenshot: the home screen, nothing playing.
+# Store screenshot: the home screen, nothing playing. On the way, checks that the
+# three-dot menu opens the Settings and About sheets.
 appId: net.a2f0.nc
 tags:
   - screenshots
@@ -9,3 +10,42 @@ tags:
 - extendedWaitUntil:
     visible: "Noise Connoisseur"
     timeout: 30000
+- tapOn: "More"
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible:
+      id: "settings-volume"
+    timeout: 10000
+# iOS sheets have a close button; Android's close with Back.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: "Close"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    notVisible:
+      id: "settings-volume"
+    timeout: 10000
+- tapOn: "More"
+- tapOn: "About"
+- extendedWaitUntil:
+    visible: "Version .*"
+    timeout: 10000
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - tapOn: "Close"
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- extendedWaitUntil:
+    notVisible: "Version .*"
+    timeout: 10000

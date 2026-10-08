@@ -12,7 +12,20 @@
   </head>
   <body>
     <main>
-      <h1 class="app-title"><img class="logo" src="icon.svg" alt="" />Noise Connoisseur</h1>
+      <header class="app-header">
+        <h1 class="app-title"><img class="logo" src="icon.svg" alt="" />Noise Connoisseur</h1>
+        <button id="more" type="button" class="icon-button" aria-controls="menu" aria-expanded="false" aria-label="More">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="5" cy="12" r="2" />
+            <circle cx="12" cy="12" r="2" />
+            <circle cx="19" cy="12" r="2" />
+          </svg>
+        </button>
+        <div id="menu" class="menu" hidden>
+          <button id="open-settings" type="button">Settings</button>
+          <button id="open-about" type="button">About</button>
+        </div>
+      </header>
       <p id="status" class="status" aria-live="polite"></p>
       <div id="sounds" class="sounds"></div>
       <footer class="footer"><a id="support" href="support">Support</a> · <a id="privacy" href="privacy">Privacy policy</a></footer>
@@ -31,5 +44,42 @@
         </div>
       </div>
     </div>
+    <dialog id="settings" class="sheet" aria-labelledby="settings-title">
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <h2 id="settings-title">Settings</h2>
+          <button id="close-settings" type="button" class="close" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <label class="setting" for="settings-volume">Volume</label>
+        <div class="volume">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9v6h4l5 5V4l-5 5H7z" /></svg>
+          <input id="settings-volume" type="range" min="0" max="1" step="0.01" />
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+            />
+          </svg>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="about" class="sheet" aria-labelledby="about-title">
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <h2 id="about-title">About</h2>
+          <button id="close-about" type="button" class="close" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <div class="about">
+          <img class="about-logo" src="icon.svg" alt="" />
+          <div>
+            <p class="about-name">Noise Connoisseur</p>
+            <p id="build" class="about-build"></p>
+          </div>
+        </div>
+      </div>
+    </dialog>
   </body>
 </html>

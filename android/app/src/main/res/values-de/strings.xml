@@ -21,5 +21,10 @@
     <string name="stop_noise">%1$s stoppen</string>
     <string name="stop">Stopp</string>
     <string name="volume">Lautstärke</string>
+    <string name="more">Mehr</string>
+    <string name="settings">Einstellungen</string>
+    <string name="rate_app">App bewerten</string>
+    <string name="about">Info</string>
+    <string name="about_version">Version %1$s (%2$s)</string>
     <string name="notification_channel_name">Wiedergabe</string>
 </resources>
