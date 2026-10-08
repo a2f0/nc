@@ -4,19 +4,37 @@
     <!-- The app's name: on its screen and widget, and the artist in the system's media controls. -->
     <string name="app_name" translatable="false">Noise Connoisseur</string>
     <!-- Describes the home screen widget in the system's widget gallery. -->
-    <string name="widget_description">Start and stop white or pink noise.</string>
+    <string name="widget_description">Start and stop each sound with one tap.</string>
     <!-- Name of white noise, which has equal energy at every frequency. Also its title in the system's media controls. -->
     <string name="noise_white_title">White Noise</string>
     <!-- Name of pink noise, which is softer at high frequencies than white noise. Also its title in the system's media controls. -->
     <string name="noise_pink_title">Pink Noise</string>
+    <!-- Name of brown noise, which is softer still at high frequencies than pink noise: a deep rumble. Also its title in the system's media controls. -->
+    <string name="noise_brown_title">Brown Noise</string>
+    <!-- Name of the sound of an electric fan blowing. Also its title in the system's media controls. -->
+    <string name="noise_fan_title">Fan</string>
+    <!-- Name of the sound of waves breaking on a beach. Also its title in the system's media controls. -->
+    <string name="noise_waves_title">Ocean Waves</string>
     <!-- White noise's name on a home screen widget button, where there's little room. -->
     <string name="noise_white_short">White</string>
     <!-- Pink noise's name on a home screen widget button, where there's little room. -->
     <string name="noise_pink_short">Pink</string>
+    <!-- Brown noise's name on a home screen widget button, where there's little room. -->
+    <string name="noise_brown_short">Brown</string>
+    <!-- The fan sound's name on a home screen widget button, where there's little room. -->
+    <string name="noise_fan_short">Fan</string>
+    <!-- The ocean waves sound's name on a home screen widget button, where there's little room. -->
+    <string name="noise_waves_short">Waves</string>
     <!-- Describes white noise, under its name. -->
     <string name="noise_white_blurb">Equal energy at every frequency. Bright and crisp.</string>
     <!-- Describes pink noise, under its name. -->
     <string name="noise_pink_blurb">Softer highs, deeper lows. Like steady rain.</string>
+    <!-- Describes brown noise, under its name. -->
+    <string name="noise_brown_blurb">Mostly lows, muffled highs. A deep, soft rumble.</string>
+    <!-- Describes the fan sound, under its name. -->
+    <string name="noise_fan_blurb">A steady stream of air over a low hum.</string>
+    <!-- Describes the ocean waves sound, under its name. -->
+    <string name="noise_waves_blurb">Surf rolling in and washing out, never the same twice.</string>
     <!-- Status line under the app's name while a noise plays. {noise}: the noise's name, such as “Pink Noise”. -->
     <string name="status_playing">Playing · %1$s</string>
     <!-- Status line under the app's name while nothing plays. -->

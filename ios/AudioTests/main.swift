@@ -18,16 +18,16 @@ func near(_ value: Double, _ expected: Double, within tolerance: Double) -> Bool
     abs(value - expected) <= tolerance
 }
 
-/// One renderer playing white noise in an offline engine.
+/// One renderer playing a noise (white by default) in an offline engine.
 final class Harness {
     let renderer = NoiseRenderer()
     private let engine = AVAudioEngine()
     private let buffer: AVAudioPCMBuffer
 
     /// `volume` is set before the source node exists, like a volume restored at launch.
-    init(volume: Double = 1) throws {
+    init(volume: Double = 1, noise: NoiseType = .white) throws {
         renderer.setVolume(volume)
-        renderer.setNoise(.white)
+        renderer.setNoise(noise)
         try engine.enableManualRenderingMode(.offline, format: format, maximumFrameCount: 4_800)
         let source = renderer.makeSourceNode(format: format)
         engine.attach(source)
@@ -90,6 +90,16 @@ do {
     full.renderer.setFadingOut(true)
     _ = try full.render(seconds: 0.41)
     check(try full.render(seconds: 0.1) == -.infinity, "fades out to silence in 400 ms")
+
+    check(NoiseType.allCases.allSatisfy { NoiseType(index: $0.index) == $0 }, "the renderer can play every noise")
+    for noise in NoiseType.allCases {
+        let harness = try Harness(noise: noise)
+        _ = try harness.render(seconds: 0.5)
+        // Waves rise and fall, so they're measured over many of them.
+        let (expected, seconds, tolerance) = noise == .waves ? (-23.0, 120.0, 2.0) : (-17.0, 2.0, 0.6)
+        let level = try harness.render(seconds: seconds)
+        check(near(level, expected, within: tolerance), "\(noise) plays at about \(Int(expected)) dBFS (\(level))")
+    }
 } catch {
     check(false, "rendering failed: \(error)")
 }

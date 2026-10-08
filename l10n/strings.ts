@@ -22,7 +22,7 @@ export const STRINGS = {
     translatable: false,
   },
   widget_description: {
-    text: "Start and stop white or pink noise.",
+    text: "Start and stop each sound with one tap.",
     comment: "Describes the home screen widget in the system's widget gallery.",
     platforms: ["android", "ios"],
   },
@@ -34,6 +34,18 @@ export const STRINGS = {
     text: "Pink Noise",
     comment: "Name of pink noise, which is softer at high frequencies than white noise. Also its title in the system's media controls.",
   },
+  noise_brown_title: {
+    text: "Brown Noise",
+    comment: "Name of brown noise, which is softer still at high frequencies than pink noise: a deep rumble. Also its title in the system's media controls.",
+  },
+  noise_fan_title: {
+    text: "Fan",
+    comment: "Name of the sound of an electric fan blowing. Also its title in the system's media controls.",
+  },
+  noise_waves_title: {
+    text: "Ocean Waves",
+    comment: "Name of the sound of waves breaking on a beach. Also its title in the system's media controls.",
+  },
   noise_white_short: {
     text: "White",
     comment: "White noise's name on a home screen widget button, where there's little room.",
@@ -44,6 +56,21 @@ export const STRINGS = {
     comment: "Pink noise's name on a home screen widget button, where there's little room.",
     platforms: ["android", "ios"],
   },
+  noise_brown_short: {
+    text: "Brown",
+    comment: "Brown noise's name on a home screen widget button, where there's little room.",
+    platforms: ["android", "ios"],
+  },
+  noise_fan_short: {
+    text: "Fan",
+    comment: "The fan sound's name on a home screen widget button, where there's little room.",
+    platforms: ["android", "ios"],
+  },
+  noise_waves_short: {
+    text: "Waves",
+    comment: "The ocean waves sound's name on a home screen widget button, where there's little room.",
+    platforms: ["android", "ios"],
+  },
   noise_white_blurb: {
     text: "Equal energy at every frequency. Bright and crisp.",
     comment: "Describes white noise, under its name.",
@@ -51,6 +78,18 @@ export const STRINGS = {
   noise_pink_blurb: {
     text: "Softer highs, deeper lows. Like steady rain.",
     comment: "Describes pink noise, under its name.",
+  },
+  noise_brown_blurb: {
+    text: "Mostly lows, muffled highs. A deep, soft rumble.",
+    comment: "Describes brown noise, under its name.",
+  },
+  noise_fan_blurb: {
+    text: "A steady stream of air over a low hum.",
+    comment: "Describes the fan sound, under its name.",
+  },
+  noise_waves_blurb: {
+    text: "Surf rolling in and washing out, never the same twice.",
+    comment: "Describes the ocean waves sound, under its name.",
   },
   status_playing: {
     text: "Playing · {noise}",
@@ -97,7 +136,7 @@ export const STRINGS = {
   },
   intent_noise: {
     text: "Noise",
-    comment: "In the Shortcuts app: what White Noise and Pink Noise are, and the Play Noise action's setting for which one to play.",
+    comment: "In the Shortcuts app: what the app's sounds (White Noise, Fan, Ocean Waves, and so on) are, and the Play Noise action's setting for which one to play.",
     platforms: ["ios"],
   },
   intent_play_title: {
@@ -106,7 +145,7 @@ export const STRINGS = {
     platforms: ["ios"],
   },
   intent_play_description: {
-    text: "Starts playing white or pink noise.",
+    text: "Starts playing one of the sounds.",
     comment: "Describes the Play Noise action in the Shortcuts app.",
     platforms: ["ios"],
   },

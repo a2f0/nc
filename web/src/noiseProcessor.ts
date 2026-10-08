@@ -19,9 +19,7 @@ const FADE_SECONDS = 0.4;
  * fades out, so neither clicks. Switching noise type while playing is instant.
  */
 class NoiseProcessor extends AudioWorkletProcessor {
-  // Independent generators per channel give a wide, decorrelated stereo image.
-  private readonly left: NoiseGenerator;
-  private readonly right: NoiseGenerator;
+  private readonly noise: NoiseGenerator;
   private readonly gainStep = 1 / (sampleRate * FADE_SECONDS);
   private gain = 0;
   private type: NoiseType = "white";
@@ -32,8 +30,7 @@ class NoiseProcessor extends AudioWorkletProcessor {
   constructor(options: AudioWorkletNodeOptions) {
     super();
     const { seeds } = options.processorOptions as NoiseOptions;
-    this.left = new NoiseGenerator(seeds[0]);
-    this.right = new NoiseGenerator(seeds[1]);
+    this.noise = new NoiseGenerator(sampleRate, seeds[0], seeds[1]);
     this.port.onmessage = (event: MessageEvent<NoiseCommand>) => {
       this.command = event.data.id;
       this.type = event.data.type;
@@ -51,8 +48,9 @@ class NoiseProcessor extends AudioWorkletProcessor {
     for (let frame = 0; frame < left.length; frame++) {
       this.gain =
         this.gain < target ? Math.min(this.gain + this.gainStep, target) : Math.max(this.gain - this.gainStep, target);
-      left[frame] = this.left.next(type) * this.gain;
-      if (right !== undefined) right[frame] = this.right.next(type) * this.gain;
+      this.noise.next(type);
+      left[frame] = this.noise.left * this.gain;
+      if (right !== undefined) right[frame] = this.noise.right * this.gain;
     }
 
     if (this.fadingOut && this.gain === 0 && !this.reportedSilence) {

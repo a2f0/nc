@@ -21,9 +21,12 @@ import androidx.glance.appwidget.action.actionStartService
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.components.FilledButton
 import androidx.glance.appwidget.cornerRadius
+import androidx.glance.appwidget.lazy.LazyColumn
+import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -69,31 +72,41 @@ class NoiseWidget : GlanceAppWidget() {
                 style = TextStyle(fontWeight = FontWeight.Medium, color = GlanceTheme.colors.onSurface),
                 maxLines = 1,
             )
-            NoiseType.entries.forEach { type ->
-                val isPlaying = type == nowPlaying
-                Spacer(GlanceModifier.height(8.dp))
-                // Filled while playing, like the app's play/stop buttons.
-                FilledButton(
-                    text = context.getString(type.shortTitle),
-                    icon = ImageProvider(if (isPlaying) R.drawable.ic_stop else R.drawable.ic_play),
-                    colors = if (isPlaying) {
-                        ButtonDefaults.buttonColors()
-                    } else {
-                        ButtonDefaults.buttonColors(
-                            backgroundColor = GlanceTheme.colors.surfaceVariant,
-                            contentColor = GlanceTheme.colors.onSurface,
-                        )
-                    },
-                    onClick = if (isPlaying) {
-                        actionRunCallback<StopNoiseAction>()
-                    } else {
-                        // Widget taps may start a foreground service directly, even from the background.
-                        actionStartService(PlaybackService.playIntent(context, type), isForegroundService = true)
-                    },
-                    modifier = GlanceModifier.fillMaxWidth(),
-                )
+            Spacer(GlanceModifier.height(8.dp))
+            // Scrolls when the widget is too short for every sound.
+            LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+                items(NoiseType.entries, itemId = { it.ordinal.toLong() }) { type ->
+                    Box(modifier = GlanceModifier.fillMaxWidth().padding(top = if (type.ordinal == 0) 0.dp else 8.dp)) {
+                        NoiseButton(type, isPlaying = type == nowPlaying)
+                    }
+                }
             }
         }
+    }
+
+    @Composable
+    private fun NoiseButton(type: NoiseType, isPlaying: Boolean) {
+        val context = LocalContext.current
+        // Filled while playing, like the app's play/stop buttons.
+        FilledButton(
+            text = context.getString(type.shortTitle),
+            icon = ImageProvider(if (isPlaying) R.drawable.ic_stop else R.drawable.ic_play),
+            colors = if (isPlaying) {
+                ButtonDefaults.buttonColors()
+            } else {
+                ButtonDefaults.buttonColors(
+                    backgroundColor = GlanceTheme.colors.surfaceVariant,
+                    contentColor = GlanceTheme.colors.onSurface,
+                )
+            },
+            onClick = if (isPlaying) {
+                actionRunCallback<StopNoiseAction>()
+            } else {
+                // Widget taps may start a foreground service directly, even from the background.
+                actionStartService(PlaybackService.playIntent(context, type), isForegroundService = true)
+            },
+            modifier = GlanceModifier.fillMaxWidth(),
+        )
     }
 }
 
