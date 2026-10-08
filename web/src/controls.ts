@@ -30,6 +30,8 @@ export function setUpMenu(root: EventTarget, button: HTMLElement, menu: HTMLElem
       show(false);
       sheet.showModal();
     });
+    // The item that opened it is hidden, so focus goes back to the menu's button.
+    sheet.addEventListener("close", () => button.focus());
     setUpSheet(sheet, close);
   }
 }

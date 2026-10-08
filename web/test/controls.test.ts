@@ -35,7 +35,9 @@ class FakeDialog extends FakeElement {
   }
 
   close() {
+    if (!this.open) return;
     this.open = false;
+    this.dispatchEvent(new Event("close"));
   }
 }
 
@@ -97,6 +99,16 @@ describe("menu", () => {
     button.click();
     about.item.click();
     expect(about.sheet.open).toBe(true);
+  });
+
+  test("closing a sheet returns focus to the menu's button", () => {
+    const { button, about } = menu();
+    button.click();
+    about.item.click();
+    expect(button.focused).toBe(false);
+
+    about.close.click();
+    expect(button.focused).toBe(true);
   });
 
   test("a click elsewhere hides it; a click in it doesn't", () => {
