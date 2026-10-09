@@ -26,7 +26,7 @@
     <string name="rate_app">App bewerten</string>
     <string name="about">Info</string>
     <string name="about_version">Version %1$s (%2$s)</string>
-    <string name="about_also_ios_web">Auch für %1$s und im %2$s</string>
+    <string name="about_also_ios_web">Auch für %1$s und im %2$s erhältlich.</string>
     <string name="platform_web">Web</string>
     <string name="notification_channel_name">Wiedergabe</string>
 </resources>

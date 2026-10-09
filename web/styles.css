@@ -371,7 +371,7 @@ button.toggle {
   font-weight: 600;
 }
 
-.about-build {
+.about-version {
   margin: 0;
   font-size: 15px;
   color: var(--secondary);

@@ -42,7 +42,7 @@
     "timeoutMs": 600000
   },
   "versions": {
-    "packages": [],
+    "packages": ["."],
     "lockfile": "bun.lock",
     "validate": [],
     "commitMessage": "chore: bump package versions"

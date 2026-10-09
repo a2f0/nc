@@ -147,7 +147,7 @@ private struct AboutSheet: View {
         }
     }
 
-    /// "Also on Android and the web", with each of those linked.
+    /// "Also available on Android and the web.", with each of those linked.
     private static var alsoOn: AttributedString {
         let android = String(localized: .platformAndroid)
         let web = String(localized: .platformWeb)

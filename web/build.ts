@@ -8,6 +8,7 @@ const WEB_DIR = import.meta.dir;
 export const DIST_DIR = join(WEB_DIR, "dist");
 const ICON_SVG = join(WEB_DIR, "../assets/icon.svg");
 const BACKGROUND_SVG = join(WEB_DIR, "../assets/background.svg");
+const PACKAGE_JSON = join(WEB_DIR, "../package.json");
 
 export async function build(): Promise<void> {
   await rm(DIST_DIR, { recursive: true, force: true });
@@ -20,7 +21,7 @@ export async function build(): Promise<void> {
     format: "esm",
     minify: true,
     sourcemap: "linked",
-    define: { BUILD_ID: JSON.stringify(buildId()) },
+    define: { APP_VERSION: JSON.stringify(await appVersion()) },
   });
   if (!result.success) {
     throw new AggregateError(result.logs, "Web build failed");
@@ -34,10 +35,12 @@ export async function build(): Promise<void> {
   await writeFile(join(DIST_DIR, "icon.svg"), favicon(background, icon));
 }
 
-// The About sheet's build: the commit the site was built from.
-function buildId(): string {
-  const git = Bun.spawnSync(["git", "rev-parse", "--short", "HEAD"], { cwd: WEB_DIR });
-  return git.success ? git.stdout.toString().trim() : "dev";
+// The About sheet's version: the root package's, which shipping bumps with each change
+// (see "Shipping" in AGENTS.md).
+async function appVersion(): Promise<string> {
+  const { version } = (await Bun.file(PACKAGE_JSON).json()) as { version?: unknown };
+  if (typeof version !== "string") throw new Error(`No version in ${PACKAGE_JSON}`);
+  return version;
 }
 
 // The favicon is the app icon with rounded corners, leaving out the mark's unlit
