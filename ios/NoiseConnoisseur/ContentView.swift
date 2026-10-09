@@ -110,7 +110,7 @@ private struct SettingsSheet: View {
     }
 }
 
-/// The app's name, version, and build.
+/// The app's name, version, and build, with links to the Android app and the website.
 private struct AboutSheet: View {
     @ScaledMetric(relativeTo: .title3) private var logoSize = 64
 
@@ -118,23 +118,46 @@ private struct AboutSheet: View {
     private static let version = info["CFBundleShortVersionString"] as? String ?? ""
     private static let build = info["CFBundleVersion"] as? String ?? ""
 
+    private static let playURL = URL(string: "https://play.google.com/store/apps/details?id=net.a2f0.nc")!
+    private static let webURL = URL(string: "https://nc.a2f0.net")!
+
     var body: some View {
         SheetContent(title: .about) {
-            HStack(spacing: 16) {
-                Image(.logo)
-                    .resizable()
-                    .frame(width: logoSize, height: logoSize)
-                    .clipShape(.rect(cornerRadius: logoSize * 224 / 1024, style: .continuous))
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(.appName)
-                        .font(.title3.weight(.semibold))
-                    Text(.aboutVersion(Self.version, Self.build))
-                        .font(.subheadline)
-                        .foregroundStyle(Gray.secondaryLabel)
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 16) {
+                    Image(.logo)
+                        .resizable()
+                        .frame(width: logoSize, height: logoSize)
+                        .clipShape(.rect(cornerRadius: logoSize * 224 / 1024, style: .continuous))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(.appName)
+                            .font(.title3.weight(.semibold))
+                        Text(.aboutVersion(Self.version, Self.build))
+                            .font(.subheadline)
+                            .foregroundStyle(Gray.secondaryLabel)
+                    }
                 }
+                Text(Self.alsoOn)
+                    .font(.subheadline)
+                    .foregroundStyle(Gray.secondaryLabel)
+                    // Links take the tint, which would otherwise be the blue accent color.
+                    .tint(Gray.secondaryLabel)
             }
         }
+    }
+
+    /// "Also on Android and the web", with each of those linked.
+    private static var alsoOn: AttributedString {
+        let android = String(localized: .platformAndroid)
+        let web = String(localized: .platformWeb)
+        var text = AttributedString(String(localized: .aboutAlsoAndroidWeb(android, web)))
+        for (label, url) in [(android, playURL), (web, webURL)] {
+            guard let range = text.range(of: label) else { continue }
+            text[range].link = url
+            text[range].underlineStyle = Text.LineStyle.single
+        }
+        return text
     }
 }
 

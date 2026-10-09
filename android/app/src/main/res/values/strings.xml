@@ -53,6 +53,12 @@
     <string name="about">About</string>
     <!-- In the About sheet, under the app's name. {version}: the app's version, such as “1.0”. {build}: its build number, such as “6”. -->
     <string name="about_version">Version %1$s (%2$s)</string>
+    <!-- In the About sheet, under the app's name and version. {ios}: a link to the app in the App Store, “iOS”. {web}: a link to the website, “the web” (translated separately). -->
+    <string name="about_also_ios_web">Also on %1$s and %2$s</string>
+    <!-- Link to the app in the App Store, in the About sheet's “Also on …” line. -->
+    <string name="platform_ios" translatable="false">iOS</string>
+    <!-- Link to the website, which fills {web} in the About sheet's “Also on {android} and {web}” or “Also on {ios} and {web}”. -->
+    <string name="platform_web">the web</string>
     <!-- Name of the playback notification's category in the system's notification settings. -->
     <string name="notification_channel_name">Playback</string>
 </resources>

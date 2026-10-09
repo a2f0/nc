@@ -63,7 +63,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -281,26 +287,49 @@ private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
     }
 }
 
-/** The app's name, version, and build. */
+/** The app's name, version, and build, with links to the iOS app and the website. */
 @Composable
 private fun AboutContent() {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        // The app icon's corners, as beside the title.
-        Image(
-            painterResource(R.drawable.ic_logo),
-            contentDescription = null,
-            modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(14.dp)),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
-            Text(
-                stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toString()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // The app icon's corners, as beside the title.
+            Image(
+                painterResource(R.drawable.ic_logo),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(14.dp)),
             )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toString()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
+        val ios = stringResource(R.string.platform_ios)
+        val web = stringResource(R.string.platform_web)
+        Text(
+            linked(stringResource(R.string.about_also_ios_web, ios, web), mapOf(ios to APP_STORE_URL, web to WEB_URL)),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private const val APP_STORE_URL = "https://apps.apple.com/app/id6819365110"
+private const val WEB_URL = "https://nc.a2f0.net"
+
+/** [text], with each of [links]' labels in it underlined and linked to its URL. */
+private fun linked(text: String, links: Map<String, String>): AnnotatedString = buildAnnotatedString {
+    append(text)
+    for ((label, url) in links) {
+        val start = text.indexOf(label)
+        if (start < 0) continue
+        val style = TextLinkStyles(SpanStyle(textDecoration = TextDecoration.Underline))
+        addLink(LinkAnnotation.Url(url, style), start, start + label.length)
     }
 }
 
