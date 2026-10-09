@@ -10,12 +10,12 @@ const ICON_SVG = join(WEB_DIR, "../assets/icon.svg");
 const BACKGROUND_SVG = join(WEB_DIR, "../assets/background.svg");
 const PACKAGE_JSON = join(WEB_DIR, "../package.json");
 
-export async function build(): Promise<void> {
-  await rm(DIST_DIR, { recursive: true, force: true });
+export async function build(outDir: string = DIST_DIR): Promise<void> {
+  await rm(outDir, { recursive: true, force: true });
 
   const result = await Bun.build({
     entrypoints: [join(WEB_DIR, "src/main.ts"), join(WEB_DIR, "src/noiseProcessor.ts")],
-    outdir: DIST_DIR,
+    outdir: outDir,
     naming: "[name].[ext]",
     target: "browser",
     format: "esm",
@@ -28,11 +28,11 @@ export async function build(): Promise<void> {
   }
 
   for (const file of ["index.html", "privacy.html", "support.html", "styles.css"]) {
-    await cp(join(WEB_DIR, file), join(DIST_DIR, file));
+    await cp(join(WEB_DIR, file), join(outDir, file));
   }
 
   const [background, icon] = await Promise.all([readFile(BACKGROUND_SVG, "utf8"), readFile(ICON_SVG, "utf8")]);
-  await writeFile(join(DIST_DIR, "icon.svg"), favicon(background, icon));
+  await writeFile(join(outDir, "icon.svg"), favicon(background, icon));
 }
 
 // The About sheet's version: the root package's, which shipping bumps with each change
