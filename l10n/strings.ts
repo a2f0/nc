@@ -137,41 +137,41 @@ export const STRINGS = {
     comment: "In the About sheet, under the app's name. {version}: the app's version, such as “1.0”. {build}: its build number, such as “6”.",
     platforms: ["android", "ios"],
   },
-  about_build: {
-    text: "Build {build}",
-    comment: "In the About sheet, under the app's name. {build}: an identifier for this version of the website, such as “376bb6d”.",
+  about_site_version: {
+    text: "Version {version}",
+    comment: "In the website's About sheet, under its name. {version}: the website's version, such as “1.0.4”.",
     platforms: ["web"],
   },
   about_also_android_web: {
-    text: "Also on {android} and {web}",
+    text: "Also available on {android} and {web}.",
     comment: "In the About sheet, under the app's name and version. {android}: a link to the app in Google Play, “Android”. {web}: a link to the website, “the web” (translated separately).",
     platforms: ["ios"],
   },
   about_also_ios_web: {
-    text: "Also on {ios} and {web}",
+    text: "Also available on {ios} and {web}.",
     comment: "In the About sheet, under the app's name and version. {ios}: a link to the app in the App Store, “iOS”. {web}: a link to the website, “the web” (translated separately).",
     platforms: ["android"],
   },
   about_also_ios_android: {
-    text: "Also on {ios} and {android}",
+    text: "Also available on {ios} and {android}.",
     comment: "In the About sheet, under the website's name and build. {ios}: a link to the app in the App Store, “iOS”. {android}: a link to the app in Google Play, “Android”.",
     platforms: ["web"],
   },
   platform_android: {
     text: "Android",
-    comment: "Link to the app in Google Play, in the About sheet's “Also on …” line.",
+    comment: "Link to the app in Google Play, in the About sheet's “Also available on …” line.",
     platforms: ["ios", "web"],
     translatable: false,
   },
   platform_ios: {
     text: "iOS",
-    comment: "Link to the app in the App Store, in the About sheet's “Also on …” line.",
+    comment: "Link to the app in the App Store, in the About sheet's “Also available on …” line.",
     platforms: ["android", "web"],
     translatable: false,
   },
   platform_web: {
     text: "the web",
-    comment: "Link to the website, which fills {web} in the About sheet's “Also on {android} and {web}” or “Also on {ios} and {web}”.",
+    comment: "Link to the website, which fills {web} in the About sheet's “Also available on {android} and {web}.” or “Also available on {ios} and {web}.”",
     platforms: ["android", "ios"],
   },
   close: {

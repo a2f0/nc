@@ -71,7 +71,14 @@ native, and CI pins. Follow its compatibility, audit, and infrastructure-preview
 gates before running setup, hooks, or workflows with the proposed versions.
 
 Use the `ship-pr` skill with `agent-tool` (`bun run agent-tool ...`). Review with an agent
-other than the one that wrote the change. The required check is `CI gate`; packages are not
-versioned. `bun run agents:sync` updates the shared skills after an `@a2f0/agent-tool`
-upgrade. Merging doesn't deploy the web app; `bun run web:deploy` publishes it to
+other than the one that wrote the change. The required check is `CI gate`. `bun run agents:sync`
+updates the shared skills after an `@a2f0/agent-tool` upgrade.
+
+Versions: the root `package.json` version is the website's version, shown in its About sheet.
+Every shipped change moves it one patch past the base. After each base integration or repair
+and before each review, run `bun run agent-tool versions prepare "$BASE_OID"`, which commits
+the bumped `package.json` and `bun.lock`. Resolve a conflict confined to version fields with
+`bun run agent-tool versions resolve-conflicts`, then `git commit --no-edit`. Before merging,
+`bun run agent-tool versions check "$BASE_OID"` must pass against the live base. The mobile
+apps' versions are separate, in `ios/Config/Base.xcconfig` and `android/app/build.gradle.kts`. Merging doesn't deploy the web app; `bun run web:deploy` publishes it to
 `nc.a2f0.net` (see "Releasing" in `README.md`).

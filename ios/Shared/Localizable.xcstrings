@@ -32,19 +32,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auch für %1$@ und im %2$@"
+            "value" : "Auch für %1$@ und im %2$@ erhältlich."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Also on %1$@ and %2$@"
+            "value" : "Also available on %1$@ and %2$@."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "También en %1$@ y en %2$@"
+            "value" : "También disponible en %1$@ y en %2$@."
           }
         }
       }
@@ -627,7 +627,7 @@
       }
     },
     "platform_android" : {
-      "comment" : "Link to the app in Google Play, in the About sheet's “Also on …” line.",
+      "comment" : "Link to the app in Google Play, in the About sheet's “Also available on …” line.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -652,7 +652,7 @@
       "shouldTranslate" : false
     },
     "platform_web" : {
-      "comment" : "Link to the website, which fills {web} in the About sheet's “Also on {android} and {web}” or “Also on {ios} and {web}”.",
+      "comment" : "Link to the website, which fills {web} in the About sheet's “Also available on {android} and {web}.” or “Also available on {ios} and {web}.”",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

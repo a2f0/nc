@@ -9,8 +9,8 @@ const STOP_ICON = '<svg class="stop" viewBox="0 0 24 24"><rect x="5.5" y="5.5" w
 const APP_STORE_URL = "https://apps.apple.com/app/id6819365110";
 const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=net.a2f0.nc";
 
-/** The commit the site was built from, set by build.ts. */
-declare const BUILD_ID: string;
+/** The site's version, from the root package.json, set by build.ts. */
+declare const APP_VERSION: string;
 
 setPreferredLanguages(navigator.languages);
 
@@ -64,7 +64,7 @@ function localize(): void {
   element("about-title").textContent = t("about");
   document.querySelector('label[for="settings-volume"]')!.textContent = t("volume");
   for (const button of closeButtons) button.setAttribute("aria-label", t("close"));
-  element("build").textContent = t("about_build", { build: BUILD_ID });
+  element("version").textContent = t("about_site_version", { version: APP_VERSION });
   element("also-on").replaceChildren(
     ...tParts("about_also_ios_android", {
       ios: link(t("platform_ios"), APP_STORE_URL),

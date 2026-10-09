@@ -69,7 +69,7 @@ describe("tParts", () => {
   const android = { link: "Android" };
 
   test("splits the text around its placeholders, filled in with their values", () => {
-    expect(tParts("about_also_ios_android", { ios, android })).toEqual(["Also on ", ios, " and ", android]);
+    expect(tParts("about_also_ios_android", { ios, android })).toEqual(["Also available on ", ios, " and ", android, "."]);
   });
 
   test("follows a translation's order, leaving out empty text", () => {
