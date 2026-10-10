@@ -7,12 +7,26 @@ import android.os.Process
 import net.a2f0.nc.NoiseType
 import kotlin.math.min
 
+/** Where [NoiseEngine] writes its audio: an [AudioTrack], or a fake in tests. */
+internal interface AudioSink {
+    /** The most frames the sink queues. [release] discards any still queued. */
+    val bufferSizeInFrames: Int
+
+    /**
+     * Queues [size] interleaved stereo samples from [buffer], blocking until there's room.
+     * Returns a negative number on error.
+     */
+    fun write(buffer: FloatArray, size: Int): Int
+
+    fun release()
+}
+
 /**
  * Streams generated stereo noise ([NoiseMixer]) to an [AudioTrack] on a dedicated thread.
  * Starting fades in and stopping fades out, so neither clicks. Switching noise type while
  * playing is instant.
  */
-internal class NoiseEngine {
+internal class NoiseEngine(private val openSink: () -> AudioSink = ::AudioTrackSink) {
     private val lock = Any()
     private var thread: Thread? = null
 
@@ -28,7 +42,7 @@ internal class NoiseEngine {
         }
     }
 
-    /** Begins a fade-out; the audio thread releases the track and exits once it's silent. */
+    /** Begins a fade-out; the audio thread releases the sink and exits once it's silent. */
     fun stop() = synchronized(lock) {
         if (thread != null) fadingOut = true
     }
@@ -40,9 +54,51 @@ internal class NoiseEngine {
 
     private fun run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
+        val sink = openSink()
 
-        val minBufferBytes = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_MASK, ENCODING)
-        val track = AudioTrack.Builder()
+        val mixer = NoiseMixer(
+            SAMPLE_RATE,
+            leftSeed = System.nanoTime().toInt(),
+            rightSeed = System.nanoTime().toInt() xor 0x5bd1e995,
+            volumeGain = targetVolumeGain,
+        )
+        val buffer = FloatArray(FRAMES_PER_WRITE * 2)
+
+        try {
+            while (true) {
+                mixer.render(buffer, type, fadingOut, targetVolumeGain)
+                if (sink.write(buffer, buffer.size) < 0) break
+
+                if (mixer.fade == 0f && fadingOut) {
+                    val exit = synchronized(lock) {
+                        fadingOut.also { if (it) thread = null }
+                    }
+                    if (exit) {
+                        // Releasing the sink discards what's queued, so push the
+                        // fade-out through with a buffer's worth of silence first.
+                        buffer.fill(0f)
+                        var silentFrames = sink.bufferSizeInFrames
+                        while (silentFrames > 0) {
+                            val frames = min(silentFrames, FRAMES_PER_WRITE)
+                            if (sink.write(buffer, frames * 2) < 0) break
+                            silentFrames -= frames
+                        }
+                        break
+                    }
+                }
+            }
+        } finally {
+            synchronized(lock) {
+                if (thread == Thread.currentThread()) thread = null
+            }
+            sink.release()
+        }
+    }
+
+    /** A playing [AudioTrack]. */
+    private class AudioTrackSink : AudioSink {
+        private val minBufferBytes = AudioTrack.getMinBufferSize(SAMPLE_RATE, CHANNEL_MASK, ENCODING)
+        private val track = AudioTrack.Builder()
             .setAudioAttributes(ATTRIBUTES)
             .setAudioFormat(
                 AudioFormat.Builder()
@@ -58,43 +114,14 @@ internal class NoiseEngine {
             .setBufferSizeInBytes(minBufferBytes * 2)
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
+            .apply { play() }
 
-        val mixer = NoiseMixer(
-            SAMPLE_RATE,
-            leftSeed = System.nanoTime().toInt(),
-            rightSeed = System.nanoTime().toInt() xor 0x5bd1e995,
-            volumeGain = targetVolumeGain,
-        )
-        val buffer = FloatArray(FRAMES_PER_WRITE * 2)
+        override val bufferSizeInFrames: Int get() = track.bufferSizeInFrames
 
-        track.play()
-        try {
-            while (true) {
-                mixer.render(buffer, type, fadingOut, targetVolumeGain)
-                if (track.write(buffer, 0, buffer.size, AudioTrack.WRITE_BLOCKING) < 0) break
+        override fun write(buffer: FloatArray, size: Int): Int =
+            track.write(buffer, 0, size, AudioTrack.WRITE_BLOCKING)
 
-                if (mixer.fade == 0f && fadingOut) {
-                    val exit = synchronized(lock) {
-                        fadingOut.also { if (it) thread = null }
-                    }
-                    if (exit) {
-                        // Releasing the track discards what's queued, so push the
-                        // fade-out through with a buffer's worth of silence first.
-                        buffer.fill(0f)
-                        var silentFrames = track.bufferSizeInFrames
-                        while (silentFrames > 0) {
-                            val frames = min(silentFrames, FRAMES_PER_WRITE)
-                            if (track.write(buffer, 0, frames * 2, AudioTrack.WRITE_BLOCKING) < 0) break
-                            silentFrames -= frames
-                        }
-                        break
-                    }
-                }
-            }
-        } finally {
-            synchronized(lock) {
-                if (thread == Thread.currentThread()) thread = null
-            }
+        override fun release() {
             track.stop()
             track.release()
         }
