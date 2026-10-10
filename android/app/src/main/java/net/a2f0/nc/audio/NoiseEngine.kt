@@ -5,6 +5,7 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Process
 import net.a2f0.nc.NoiseType
+import kotlin.math.min
 
 /**
  * Streams generated stereo noise ([NoiseMixer]) to an [AudioTrack] on a dedicated thread.
@@ -50,6 +51,10 @@ internal class NoiseEngine {
                     .setChannelMask(CHANNEL_MASK)
                     .build(),
             )
+            // The power-saving ("deep buffer") output, which media players' longer buffers
+            // also get: it plays longer stretches between wakeups, so the processor sleeps
+            // more. The system enlarges the buffer to suit it.
+            .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_POWER_SAVING)
             .setBufferSizeInBytes(minBufferBytes * 2)
             .setTransferMode(AudioTrack.MODE_STREAM)
             .build()
@@ -73,9 +78,15 @@ internal class NoiseEngine {
                         fadingOut.also { if (it) thread = null }
                     }
                     if (exit) {
-                        // Let the queued fade-out drain before stopping.
+                        // Releasing the track discards what's queued, so push the
+                        // fade-out through with a buffer's worth of silence first.
                         buffer.fill(0f)
-                        track.write(buffer, 0, buffer.size, AudioTrack.WRITE_BLOCKING)
+                        var silentFrames = track.bufferSizeInFrames
+                        while (silentFrames > 0) {
+                            val frames = min(silentFrames, FRAMES_PER_WRITE)
+                            if (track.write(buffer, 0, frames * 2, AudioTrack.WRITE_BLOCKING) < 0) break
+                            silentFrames -= frames
+                        }
                         break
                     }
                 }
