@@ -17,7 +17,18 @@ sh scripts/ensureGradleWrapper.sh
 ## Validation
 
 The pre-push hook (`scripts/git/hooks/pre-push`) is the full local gate; CI runs the same
-checks. Run individual pieces while iterating:
+checks.
+
+For agent sessions, use `bun run --silent agent:run --label <name> -- <command> [args...]`
+for finite noisy commands, including tests, builds, and pushes through the full
+pre-push hook. The harness preserves the exit status, stores complete output in a private
+temporary log, and prints a compact receipt plus a bounded tail on failure. Inspect a
+needed excerpt with `bun run --silent agent-tool logs <log-path>`; success alone does not
+establish that warnings are absent. Keep review findings, version preparation, audit
+reports, and infrastructure decisions visible by running those commands directly. Run
+interactive commands and development servers directly too.
+
+Run individual pieces while iterating:
 
 ```sh
 sh scripts/checks/lintScripts.sh                       # ShellCheck

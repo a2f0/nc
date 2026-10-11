@@ -1,11 +1,12 @@
 {
   "name": "nc",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "license": "UNLICENSED",
   "packageManager": "bun@1.4.2",
   "scripts": {
     "agent-tool": "agent-tool",
+    "agent:run": "agent-tool run",
     "agents:check": "agent-tool skills check",
     "agents:sync": "agent-tool skills install --apply",
     "l10n": "bun l10n/build.ts",
@@ -18,7 +19,7 @@
     "web:preview": "bun run web:build && wrangler dev --config web/wrangler.jsonc --local"
   },
   "devDependencies": {
-    "@a2f0/agent-tool": "0.1.10",
+    "@a2f0/agent-tool": "0.1.11",
     "@types/bun": "1.4.2",
     "typescript": "7.0.2",
     "wrangler": "4.147.0"
