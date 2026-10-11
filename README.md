@@ -137,34 +137,9 @@ CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single re
 
 ## Agent workflow
 
-[agent-tool](https://github.com/a2f0/agent-tool) (`@a2f0/agent-tool`) provides independent
-reviews, guarded PR opening and squash merging, and the shared `ship-pr`, `open-pr`,
-`cross-agent-review`, `squash-merge`, `reset`, and `update-dependencies` skills in `.claude/skills` and
-`.agents/skills`. Policy is in `agent-tool.json`; agent guidance is in `AGENTS.md`.
-
-Use the compact output harness for finite commands in agent sessions:
-
-```sh
-bun run --silent agent:run --label tests -- bun run test
-bun run --silent agent:run --label push -- git push -u origin HEAD
-bun run --silent agent-tool logs /path/from/receipt/output.log
-```
-
-The command's exit status is preserved; complete stdout and stderr stay in a private
-temporary log. Successful commands print a JSON receipt, while failures also show a
-bounded tail (4096 bytes and 40 lines by default). Inspect targeted excerpts for failures,
-warnings, or required evidence. Logs may contain secrets and remain until removed or
-cleaned by the OS. Keep audit reports, version preparation, review findings, and
-infrastructure decisions visible by running those commands directly; interactive tools
-and development servers also run directly.
-
-Use `update-dependencies` for packages, the Ruby bundle, every `.mise.toml` tool,
-Android's version catalog and Gradle wrapper, and CI action pins. Check the upstream
-compatibility matrices and migrations together, then run the local gate and audit
-the resolved dependencies. Keep intentional minimum OS versions and supported
-toolchains explicit. A Wrangler bundle dry run checks the build; upgrading its
-deployment group also requires verifying the existing account, Worker, routes, and
-resource bindings. Store lanes and `web:deploy` are separate release operations.
+Coding agents follow [AGENTS.md](AGENTS.md) for command capture, managed skills,
+and review and shipping policy. See [dependency maintenance](docs/dependency-upgrades.md)
+for upgrade procedures and compatibility boundaries.
 
 ## Screenshots
 

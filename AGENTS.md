@@ -80,6 +80,12 @@ hide release-only crashes.
 Use the `update-dependencies` skill for dependency upgrades, including runtime,
 native, and CI pins. Follow its compatibility, audit, and infrastructure-preview
 gates before running setup, hooks, or workflows with the proposed versions.
+Read [dependency maintenance](docs/dependency-upgrades.md) and keep reusable
+procedures and active constraints there, updating entries in place and removing
+resolved ones. Put run-specific inventories, audits, validation, previews, and
+held groups in the upgrade PR. Keep README focused on setup and normal usage
+with a short maintenance link, without upgrade reports or duplicated agent
+instructions.
 
 Use the `ship-pr` skill with `agent-tool` (`bun run agent-tool ...`). Review with an agent
 other than the one that wrote the change. The required check is `CI gate`. `bun run agents:sync`
