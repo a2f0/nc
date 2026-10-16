@@ -56,8 +56,9 @@ hide release-only crashes.
   `Co-authored-by` trailers.
 - No binary files in Git. Icons and launch images are generated from `assets/*.svg` and
   gitignored; edit the SVGs, never the PNGs. The Gradle wrapper jar is regenerated.
-- Store credentials live in `.secrets/` (a gitignored symlink). Never copy secrets into
-  the repository.
+- Store credentials live in `.secrets/prod/`; `.secrets` is a gitignored symlink to
+  `../matrix-secrets/nc`, managed and backed up from a2f0/matrix (see "Releasing" in
+  `README.md`). Never copy secrets into the repository.
 - Grayscale only: nothing in the apps, the app icon, the website, or the store graphics and
   screenshots has color. Use black, white, and grays with equal red, green, and blue, and
   don't fall back on system or theme colors that carry a hue: Material's baseline and dynamic

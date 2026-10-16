@@ -2,36 +2,39 @@
 
 require 'dotenv'
 
-# .secrets is a gitignored symlink to the store credentials shared with
-# tearleads (see the README).
-SECRETS_DIR = File.expand_path('../../.secrets', __dir__)
+# .secrets is a gitignored symlink to this project's folder in matrix-secrets
+# (see the README). The store lanes release to production, nc's only tier, so
+# everything they read is in .secrets/prod.
+SECRETS_DIR = File.expand_path('../../.secrets/prod', __dir__)
 
-# Only what each platform's lanes need: root.env also holds unrelated secrets.
-IOS_SECRETS = {
-  'root.env' => %w[
-    APPLE_ID
-    APP_STORE_CONNECT_ISSUER_ID
-    APP_STORE_CONNECT_KEY_ID
-    ITC_TEAM_ID
-    MATCH_GIT_BASIC_AUTHORIZATION
-    MATCH_GIT_URL
-    MATCH_PASSWORD
-    TEAM_ID
-  ]
-}.freeze
-ANDROID_SECRETS = { 'nc.env' => %w[NC_ANDROID_KEYSTORE_PASS] }.freeze
+# shared.env holds the values copied from the shared root.env that nc uses, and
+# app.env nc's own. They load in that order, so app.env wins.
+SECRETS_ENV_FILES = %w[shared.env app.env].freeze
+
+# Only what each platform's lanes need.
+IOS_SECRETS = %w[
+  APPLE_ID
+  APP_STORE_CONNECT_ISSUER_ID
+  APP_STORE_CONNECT_KEY_ID
+  ITC_TEAM_ID
+  MATCH_GIT_BASIC_AUTHORIZATION
+  MATCH_GIT_URL
+  MATCH_PASSWORD
+  TEAM_ID
+].freeze
+ANDROID_SECRETS = %w[NC_ANDROID_KEYSTORE_PASS].freeze
 
 GOOGLE_PLAY_JSON_KEY_PATH = File.join(SECRETS_DIR, 'google-play-service-account-admin.json')
 
 # Values already in the environment win, so any of them can be overridden.
-def load_store_secrets(secret_names)
-  secret_names.each do |file, names|
+def load_store_secrets(names)
+  values = SECRETS_ENV_FILES.each_with_object({}) do |file, merged|
     path = File.join(SECRETS_DIR, file)
     UI.user_error!("Missing #{path}. Is the .secrets symlink set up?") unless File.file?(path)
 
-    values = Dotenv.parse(path)
-    names.each { |name| ENV[name] ||= values[name] if values.key?(name) }
+    merged.merge!(Dotenv.parse(path))
   end
+  names.each { |name| ENV[name] ||= values[name] if values.key?(name) }
 end
 
 def required_env(name)
