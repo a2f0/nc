@@ -167,10 +167,11 @@ it does for that zone's other hosts, so publish the Worker before applying it.
 **Stores:**
 
 IDs: `net.a2f0.nc` (app, both stores), `net.a2f0.nc.widget` (iOS widget), `group.net.a2f0.nc`
-(iOS App Group). Store credentials come from `.secrets/`, a gitignored symlink to
-`../tearleads-shared/.secrets` (`ln -s ../tearleads-shared/.secrets .secrets`): the App Store
-Connect API key, Google Play service account, fastlane match settings, and the Android upload
-key (`nc-upload.keystore`, password in `nc.env`). Back up the upload key.
+(iOS App Group). Store credentials come from `.secrets/prod/`. `.secrets` is a gitignored
+symlink to `../matrix-secrets/nc` (`ln -s ../matrix-secrets/nc .secrets`), managed and backed
+up from [a2f0/matrix](https://github.com/a2f0/matrix) (`docs/secrets.md`). `prod/` holds the
+App Store Connect API key, Google Play service account, fastlane match settings (`shared.env`),
+and the Android upload key (`nc-upload.keystore`, password in `app.env`).
 
 | Lane | Does |
 |---|---|

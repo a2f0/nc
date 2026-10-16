@@ -3,9 +3,9 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Release builds are signed with the Google Play upload key from .secrets/
+// Release builds are signed with the Google Play upload key from .secrets/prod/
 // (gitignored; see the README). Without it, release builds are left unsigned.
-val uploadKeystore = rootProject.file("../.secrets/nc-upload.keystore")
+val uploadKeystore = rootProject.file("../.secrets/prod/nc-upload.keystore")
 val uploadKeystorePassword = providers.environmentVariable("NC_ANDROID_KEYSTORE_PASS").orNull
 
 android {
