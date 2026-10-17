@@ -19,7 +19,7 @@
     "web:preview": "bun run web:build && wrangler dev --config web/wrangler.jsonc --local"
   },
   "devDependencies": {
-    "@a2f0/agent-tool": "0.1.14",
+    "@a2f0/agent-tool": "0.1.15",
     "@types/bun": "1.4.3",
     "typescript": "7.0.2",
     "wrangler": "4.151.1"
