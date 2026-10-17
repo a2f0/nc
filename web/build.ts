@@ -1,14 +1,14 @@
 // Builds the web app into web/dist. The page script and the audio worklet are separate
 // bundles because the worklet is loaded by URL.
 
-import { cp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 const WEB_DIR = import.meta.dir;
+const REPO_ROOT = join(WEB_DIR, "..");
 export const DIST_DIR = join(WEB_DIR, "dist");
-const ICON_SVG = join(WEB_DIR, "../assets/icon.svg");
-const BACKGROUND_SVG = join(WEB_DIR, "../assets/background.svg");
-const PACKAGE_JSON = join(WEB_DIR, "../package.json");
+const PACKAGE_JSON = join(REPO_ROOT, "package.json");
+const AGENT_TOOL = join(REPO_ROOT, "node_modules/.bin/agent-tool");
 
 export async function build(outDir: string = DIST_DIR): Promise<void> {
   await rm(outDir, { recursive: true, force: true });
@@ -31,8 +31,7 @@ export async function build(outDir: string = DIST_DIR): Promise<void> {
     await cp(join(WEB_DIR, file), join(outDir, file));
   }
 
-  const [background, icon] = await Promise.all([readFile(BACKGROUND_SVG, "utf8"), readFile(ICON_SVG, "utf8")]);
-  await writeFile(join(outDir, "icon.svg"), favicon(background, icon));
+  await buildIcon(outDir);
 }
 
 // The About sheet's version: the root package's, which shipping bumps with each change
@@ -43,22 +42,18 @@ async function appVersion(): Promise<string> {
   return version;
 }
 
-// The favicon is the app icon with rounded corners, leaving out the mark's unlit
-// segments, which are noise at tab size. Both SVGs share a 1024 viewBox.
-export function favicon(background: string, icon: string): string {
-  const lit = icon.replace(/<g id="unlit"[^>]*>[\s\S]*?<\/g>/, "");
-  if (lit === icon) throw new Error("assets/icon.svg has no unlit group");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <clipPath id="corners"><rect width="1024" height="1024" rx="224"/></clipPath>
-  <g clip-path="url(#corners)">${svgContents(background)}${svgContents(lit)}</g>
-</svg>
-`;
-}
-
-function svgContents(svg: string): string {
-  const contents = svg.match(/<svg[^>]*>([\s\S]*)<\/svg>/)?.[1];
-  if (contents === undefined) throw new Error("Not an SVG document");
-  return contents;
+// The favicon, also the logo beside the title, is the app icon with rounded corners,
+// leaving out the mark's unlit segments, which are noise at tab size: the web target in
+// agent-tool.json, rendered from assets/brand/.
+async function buildIcon(outDir: string): Promise<void> {
+  const command = [process.execPath, AGENT_TOOL, "--repo", REPO_ROOT, "images", "build", "web", "--out", outDir];
+  const agentTool = Bun.spawn(command, { stdout: "pipe", stderr: "pipe" });
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(agentTool.stdout).text(),
+    new Response(agentTool.stderr).text(),
+    agentTool.exited,
+  ]);
+  if (exitCode !== 0) throw new Error(`agent-tool images build web failed (exit ${exitCode}):\n${stderr || stdout}`);
 }
 
 if (import.meta.main) {

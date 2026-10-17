@@ -11,7 +11,7 @@ captures/
 *.keystore
 *.jks
 
-# Generated from assets/*.svg by scripts/buildAndroidImages.sh
+# Generated from assets/brand/*.svg by scripts/buildImages.sh (see agent-tool.json)
 app/src/main/res/mipmap-mdpi/
 app/src/main/res/mipmap-hdpi/
 app/src/main/res/mipmap-xhdpi/

@@ -101,16 +101,17 @@ dependencies {
 }
 
 // Launcher, notification, and splash images are generated from the SVGs in
-// assets/ (see scripts/buildAndroidImages.sh) and gitignored. Regenerate them
-// whenever the sources change, before anything reads resources.
+// assets/brand/ as agent-tool.json declares (see scripts/buildImages.sh) and
+// gitignored. Regenerate them whenever the sources change, before anything reads
+// resources.
 val repoRoot: Directory = rootProject.layout.projectDirectory.dir("..")
 val generateImages = tasks.register<Exec>("generateImages") {
-    description = "Generates image resources from assets/*.svg."
+    description = "Generates image resources from assets/brand/*.svg."
     inputs.files(
-        repoRoot.file("assets/icon.svg"),
-        repoRoot.file("assets/background.svg"),
-        repoRoot.file("scripts/buildAndroidImages.sh"),
-        repoRoot.file("scripts/lib/images.sh"),
+        repoRoot.file("agent-tool.json"),
+        repoRoot.file("assets/brand/logo.svg"),
+        repoRoot.file("assets/brand/background.svg"),
+        repoRoot.file("scripts/buildImages.sh"),
     )
     val res = layout.projectDirectory.dir("src/main/res")
     listOf("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi").forEach { density ->
@@ -118,6 +119,6 @@ val generateImages = tasks.register<Exec>("generateImages") {
         outputs.dir(res.dir("drawable-$density"))
     }
     outputs.file(res.file("values/generated_colors.xml"))
-    commandLine("sh", repoRoot.file("scripts/buildAndroidImages.sh").asFile.path)
+    commandLine("sh", repoRoot.file("scripts/buildImages.sh").asFile.path, "android")
 }
 tasks.named("preBuild") { dependsOn(generateImages) }

@@ -49,5 +49,221 @@
   },
   "pr": {
     "rejectClaudeBranding": true
+  },
+  "images": {
+    "targets": {
+      "ios": {
+        "dir": "ios/NoiseConnoisseur/Assets.xcassets",
+        "outputs": [
+          {
+            "path": "AppIcon.appiconset/AppIcon.png",
+            "size": 1024,
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              },
+              {
+                "source": "logo"
+              }
+            ]
+          },
+          {
+            "path": "LaunchBackground.imageset/LaunchBackground.png",
+            "size": 2732,
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              }
+            ]
+          },
+          {
+            "path": "LaunchLogo.imageset/LaunchLogo{variant}.png",
+            "size": 100,
+            "variants": {
+              "@2x": 2,
+              "@3x": 3
+            },
+            "layers": [
+              {
+                "source": "logo"
+              }
+            ]
+          },
+          {
+            "path": "Logo.imageset/Logo{variant}.png",
+            "size": 40,
+            "variants": {
+              "@2x": 2,
+              "@3x": 3
+            },
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              },
+              {
+                "source": "logo",
+                "hide": [
+                  "unlit"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "android": {
+        "dir": "android/app/src/main/res",
+        "outputs": [
+          {
+            "path": "mipmap-{variant}/ic_launcher_background.png",
+            "size": 108,
+            "variants": "android",
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              }
+            ]
+          },
+          {
+            "path": "mipmap-{variant}/ic_launcher_foreground.png",
+            "size": 108,
+            "variants": "android",
+            "layers": [
+              {
+                "source": "logo",
+                "size": 72,
+                "bleed": [
+                  "bottom"
+                ]
+              }
+            ]
+          },
+          {
+            "path": "mipmap-{variant}/ic_launcher_monochrome.png",
+            "size": 108,
+            "variants": "android",
+            "layers": [
+              {
+                "source": "logo",
+                "size": 72,
+                "bleed": [
+                  "bottom"
+                ],
+                "hide": [
+                  "unlit"
+                ],
+                "tint": "#ffffff"
+              }
+            ]
+          },
+          {
+            "path": "drawable-{variant}/ic_notification.png",
+            "size": 24,
+            "variants": "android",
+            "layers": [
+              {
+                "source": "logo",
+                "size": 20,
+                "hide": [
+                  "unlit"
+                ],
+                "tint": "#ffffff"
+              }
+            ]
+          },
+          {
+            "path": "drawable-{variant}/ic_logo.png",
+            "size": 40,
+            "variants": "android",
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              },
+              {
+                "source": "logo",
+                "hide": [
+                  "unlit"
+                ]
+              }
+            ]
+          },
+          {
+            "path": "values/generated_colors.xml",
+            "colors": {
+              "splash_background": {
+                "average": "background"
+              }
+            }
+          }
+        ]
+      },
+      "store": {
+        "outputs": [
+          {
+            "path": "icon.png",
+            "size": 512,
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              },
+              {
+                "source": "logo"
+              }
+            ]
+          },
+          {
+            "path": "featureGraphic.png",
+            "size": [
+              1024,
+              500
+            ],
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              },
+              {
+                "source": "logo"
+              }
+            ]
+          }
+        ]
+      },
+      "web": {
+        "outputs": [
+          {
+            "path": "icon.svg",
+            "size": 1024,
+            "mask": {
+              "cornerRadius": 0.21875
+            },
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              },
+              {
+                "source": "logo",
+                "hide": [
+                  "unlit"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
   }
 }

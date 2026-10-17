@@ -228,10 +228,10 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(SRCROOT)/../assets/icon.svg",
-				"$(SRCROOT)/../assets/background.svg",
-				"$(SRCROOT)/../scripts/buildIosImages.sh",
-				"$(SRCROOT)/../scripts/lib/images.sh",
+				"$(SRCROOT)/../agent-tool.json",
+				"$(SRCROOT)/../assets/brand/logo.svg",
+				"$(SRCROOT)/../assets/brand/background.svg",
+				"$(SRCROOT)/../scripts/buildImages.sh",
 			);
 			name = "Generate Images";
 			outputFileListPaths = (
@@ -246,7 +246,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Icons and launch images are generated from assets/*.svg and gitignored.\nexec sh \"$SRCROOT/../scripts/buildIosImages.sh\"\n";
+			shellScript = "# Icons and launch images are generated from assets/brand/*.svg and gitignored.\nexec sh \"$SRCROOT/../scripts/buildImages.sh\" --xcode ios\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
