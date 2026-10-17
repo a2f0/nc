@@ -3,9 +3,10 @@
 require 'fileutils'
 
 # Stages store listing uploads. The text is committed under fastlane/metadata;
-# screenshots and Play graphics are generated into the gitignored .screenshots/
-# (scripts/takeScreenshots.sh, scripts/buildStoreImages.sh), so the lanes copy
-# them into a temporary directory laid out the way deliver and supply expect.
+# screenshots are generated into the gitignored .screenshots/
+# (scripts/takeScreenshots.sh), so the lanes copy them into a temporary directory
+# laid out the way deliver and supply expect. The Play lane renders its graphics
+# there too (the store target in agent-tool.json, via scripts/buildImages.sh).
 module StoreListing
   LOCALE = 'en-US'
   IOS_DEVICES = %w[iphone ipad].freeze

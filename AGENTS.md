@@ -9,7 +9,6 @@ WidgetKit) and `android/` (Jetpack Compose, Glance), plus a desktop web version 
 
 ```sh
 mise install && bundle install && bun install
-brew install imagemagick
 sh scripts/git/install-hooks.sh
 sh scripts/ensureGradleWrapper.sh
 ```
@@ -54,8 +53,9 @@ hide release-only crashes.
 - Branches: `<type>/<name>`, e.g. `feat/sleep-timer`. Commits and PR titles: Conventional
   Commits, at most 50 characters, lowercase subject. Commits are signed and carry no
   `Co-authored-by` trailers.
-- No binary files in Git. Icons and launch images are generated from `assets/*.svg` and
-  gitignored; edit the SVGs, never the PNGs. The Gradle wrapper jar is regenerated.
+- No binary files in Git. Icons and launch images are generated from `assets/brand/*.svg`
+  as the `images` section of `agent-tool.json` declares, and gitignored; edit the SVGs or
+  that section, never the PNGs. The Gradle wrapper jar is regenerated.
 - Store credentials live in `.secrets/prod/`; `.secrets` is a gitignored symlink to
   `../matrix-secrets/nc`, managed and backed up from a2f0/matrix (see "Releasing" in
   `README.md`). Never copy secrets into the repository.
@@ -65,7 +65,7 @@ hide release-only crashes.
   (wallpaper) colors, iOS's slightly blue label, fill, and separator colors, a colored accent,
   or the browser's focus and selection colors. The palettes are
   `android/app/src/main/java/net/a2f0/nc/ui/Colors.kt` (`ColorsTest` checks every role),
-  `ios/Shared/Gray.swift`, and `web/styles.css`; the icon is `assets/*.svg`.
+  `ios/Shared/Gray.swift`, and `web/styles.css`; the icon is `assets/brand/*.svg`.
 - Strings: every user-facing string is in `l10n/strings.ts`, with a comment for translators,
   and `bun run l10n` writes each platform's string files from it and the translations; never
   edit `strings.xml` or `Localizable.xcstrings` directly. Use `R.string.*` on Android, the
