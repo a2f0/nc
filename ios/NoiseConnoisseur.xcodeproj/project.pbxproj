@@ -247,7 +247,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Icons and launch images are generated from assets/brand/*.svg and gitignored.\nexec sh \"$SRCROOT/../scripts/buildImages.sh\" --xcode ios\n";
+			shellScript = "# Icons and launch images are generated from assets/brand/*.svg and gitignored.\nexec sh \"$SRCROOT/../scripts/buildImages.sh\" ios\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
