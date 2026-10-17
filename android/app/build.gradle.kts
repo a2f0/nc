@@ -102,8 +102,8 @@ dependencies {
 
 // Launcher, notification, and splash images are generated from the SVGs in
 // assets/brand/ as agent-tool.json declares (see scripts/buildImages.sh) and
-// gitignored. Regenerate them whenever the sources change, before anything reads
-// resources.
+// gitignored. Regenerate them whenever the sources or the renderer (agent-tool, in
+// bun.lock) change, before anything reads resources.
 val repoRoot: Directory = rootProject.layout.projectDirectory.dir("..")
 val generateImages = tasks.register<Exec>("generateImages") {
     description = "Generates image resources from assets/brand/*.svg."
@@ -112,6 +112,7 @@ val generateImages = tasks.register<Exec>("generateImages") {
         repoRoot.file("assets/brand/logo.svg"),
         repoRoot.file("assets/brand/background.svg"),
         repoRoot.file("scripts/buildImages.sh"),
+        repoRoot.file("bun.lock"),
     )
     val res = layout.projectDirectory.dir("src/main/res")
     listOf("mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi").forEach { density ->

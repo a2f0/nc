@@ -232,6 +232,7 @@
 				"$(SRCROOT)/../assets/brand/logo.svg",
 				"$(SRCROOT)/../assets/brand/background.svg",
 				"$(SRCROOT)/../scripts/buildImages.sh",
+				"$(SRCROOT)/../bun.lock",
 			);
 			name = "Generate Images";
 			outputFileListPaths = (
