@@ -22,6 +22,49 @@ Store lanes and `web:deploy` are separate release operations. Never deploy merel
 to establish that an upgrade is safe; follow the skill's preview gates before
 any separately authorized release.
 
+## Android toolchain and release validation
+
+Keep the Kotlin Compose compiler aligned with the Kotlin compiler selected by
+AGP's [built-in Kotlin support](https://developer.android.com/build/migrate-to-built-in-kotlin).
+Check the [AGP compatibility table](https://developer.android.com/build/releases/agp-9-4-0-release-notes)
+and [Gradle compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html)
+before changing Gradle or the build JDK. The build uses a maintained Temurin LTS
+release; Java source/bytecode compatibility remains 17 and the minimum Android
+version remains API 26. Regenerate both wrapper scripts with the selected Gradle
+and verify the distribution SHA-256; the wrapper jar stays gitignored.
+
+Preserve the explicit WorkManager constraint: Glance's older transitive request
+can select Room keep rules that let R8 strip a required database constructor.
+Revisit only when Glance itself selects a safe WorkManager/Room graph. Validate
+with the minified release build and `scripts/takeAndroidScreenshots.sh`, which
+installs it using the local debug key and exercises startup and playback. A debug
+build alone does not cover this regression.
+
+## Deployment compatibility
+
+The `nc.a2f0.net` custom domain belongs to Terraform in
+[a2f0/a2f0.net](https://github.com/a2f0/a2f0.net); Wrangler's configuration omits
+routes so it does not take over their management. Verify the authenticated
+Terraform plan preserves the existing domain ID, account, hostname, and Worker
+service, alongside Wrangler's read-only live Worker version and bindings checks.
+Revisit this division only with a reviewed ownership migration and a complete
+non-destructive preview.
+
+Keep `upload_source_maps: false` to preserve the existing Worker upload policy.
+[Wrangler 4.150](https://github.com/cloudflare/workers-sdk/releases/tag/wrangler%404.150.0)
+changed the default; enabling upload later needs an explicit decision about the
+source content sent to Cloudflare. This setting does not remove `.map` files
+already emitted by the static website build.
+
+Fastlane and its release SDK dependencies remain a coupled store-tool group.
+The lanes register identifiers, create/renew profiles, modify signing keychains,
+and publish store builds and listings. Mocked helper tests validate local lane
+logic, but do not preview those real effects. Hold this group until a genuine
+read-only preview of the affected store operations is available; never run a
+publishing lane just to test an upgrade. Recheck the selected
+[Fastlane release notes](https://github.com/fastlane/fastlane/releases) and Ruby
+advisory audit before revisiting it.
+
 ## Recording an upgrade
 
 Put each run's version inventory, audit findings, migrations, warnings, validation,

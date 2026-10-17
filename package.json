@@ -3,7 +3,7 @@
   "version": "1.0.6",
   "private": true,
   "license": "UNLICENSED",
-  "packageManager": "bun@1.4.2",
+  "packageManager": "bun@1.4.3",
   "scripts": {
     "agent-tool": "agent-tool",
     "agent:run": "agent-tool run",
@@ -20,8 +20,8 @@
   },
   "devDependencies": {
     "@a2f0/agent-tool": "0.1.14",
-    "@types/bun": "1.4.2",
+    "@types/bun": "1.4.3",
     "typescript": "7.0.2",
-    "wrangler": "4.147.0"
+    "wrangler": "4.151.1"
   }
 }

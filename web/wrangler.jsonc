@@ -4,6 +4,8 @@
   "compatibility_date": "2026-10-05",
   "workers_dev": false,
   "preview_urls": false,
+  // Preserve the upload policy across Wrangler's default change.
+  "upload_source_maps": false,
   // Terraform in a2f0/a2f0.net owns the custom domain (nc.a2f0.net).
   "assets": {
     "directory": "./dist"
