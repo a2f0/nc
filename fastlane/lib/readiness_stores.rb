@@ -73,6 +73,10 @@ module Readiness
   end
 
   def self.android_store(report, key_path:, locales:, track: 'internal')
+    unless report.data[:artifact][:build_number]
+      report.add('store.candidate', 'unverified', 'Artifact version code could not be inspected; no latest-build substitution was made.')
+      return
+    end
     report.attempt('store.android') do
       require 'google/apis/androidpublisher_v3'
       require 'googleauth'
@@ -82,6 +86,12 @@ module Readiness
       File.open(key_path) do |file|
         service.authorization = Google::Auth::ServiceAccountCredentials.make_creds(json_key_io: file, scope: 'https://www.googleapis.com/auth/androidpublisher')
       end
+      android_store_records(report, service: service, locales: locales, track: track)
+    end
+  end
+
+  def self.android_store_records(report, service:, locales:, track:)
+    report.attempt('store.android') do
       package = 'net.a2f0.nc'
       with_play_edit(service, package) do |edit|
         number = report.data[:artifact][:build_number]

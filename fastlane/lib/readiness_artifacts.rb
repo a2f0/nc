@@ -40,7 +40,7 @@ module Readiness
         report.check('artifact.widget', targets.any? { |target| plist(File.join(target, 'Info.plist'))['CFBundleIdentifier'] == 'net.a2f0.nc.widget' }, 'Expected the widget extension in the IPA.')
         targets.each do |target|
           id = plist(File.join(target, 'Info.plist')).fetch('CFBundleIdentifier')
-          report.attempt("signature.#{id}") do
+          report.attempt("signature.#{id}", verification: true) do
             command('codesign', '--verify', '--deep', '--strict', target)
             entitlements = command('codesign', '--display', '--entitlements', ':-', target)
             path = File.join(dir, 'entitlements.plist')
@@ -89,10 +89,14 @@ module Readiness
       permissions = manifest.get_elements('uses-permission').map { |p| p.attributes['android:name'] }
       report.data[:artifact][:permissions] = permissions
       report.check('artifact.offline_permissions', !permissions.include?('android.permission.INTERNET'), 'Native playback/history should not request INTERNET.')
-      command(*tool, 'validate', "--bundle=#{artifact}")
-      report.add('artifact.bundle_structure', 'verified', 'bundletool validation passed.')
-      signature = command('jarsigner', '-verify', artifact)
-      report.check('artifact.signature', signature.include?('jar verified.'), 'AAB JAR signature must verify. This does not establish the Play upload-key identity.')
+      report.attempt('artifact.bundle_structure', verification: true) do
+        command(*tool, 'validate', "--bundle=#{artifact}")
+        report.add('artifact.bundle_structure', 'verified', 'bundletool validation passed.')
+      end
+      report.attempt('artifact.signature', verification: true) do
+        signature = command('jarsigner', '-verify', artifact)
+        report.check('artifact.signature', signature.include?('jar verified.') && !signature.include?('unsigned entries'), 'AAB JAR signature must verify with no unsigned entries. This does not establish the Play upload-key identity.')
+      end
       report.add('artifact.upload_key_identity', 'unverified', 'Compare signer certificate with the expected Play upload certificate.')
       Zip::File.open(artifact) do |zip|
         report.check('artifact.r8_mapping', zip.find_entry('BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map') != nil, 'Expected the release obfuscation mapping in the AAB.')

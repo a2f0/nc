@@ -353,7 +353,9 @@ platform :android do
     track = options.fetch(:track, 'internal').to_s
     UI.user_error!('Unsupported Play track') unless GOOGLE_PLAY_TRACKS.include?(track)
     report = Readiness::Report.new('android', artifact, REPO_ROOT)
-    Readiness.android_artifact(report, artifact, bundletool: options[:bundletool] || ENV['BUNDLETOOL_JAR'])
+    bundletool = options[:bundletool] || ENV['BUNDLETOOL_JAR']
+    bundletool = File.expand_path(bundletool, REPO_ROOT) if bundletool
+    Readiness.android_artifact(report, artifact, bundletool: bundletool)
     if options[:store].to_s == 'false'
       report.add('store.android', 'unverified', 'Store inspection explicitly skipped.')
     else

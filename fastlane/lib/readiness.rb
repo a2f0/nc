@@ -53,8 +53,10 @@ module Readiness
     end
 
     # Authentication/network/tool errors must leave a report, never a false pass.
-    def attempt(id)
+    def attempt(id, verification: false)
       yield
+    rescue CommandError => error
+      add(id, verification ? 'failed' : 'unverified', "#{error.message}; rerun the named tool locally for diagnostics.")
     rescue StandardError => error
       add(id, 'unverified', "Could not complete check (#{error.class.name}); check credentials, tools, and connectivity locally.")
     end

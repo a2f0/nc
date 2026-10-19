@@ -18,7 +18,7 @@ bundle exec fastlane ios readiness artifact:/absolute/path/candidate.ipa wait_ti
 bundle exec fastlane android readiness artifact:/absolute/path/candidate.aab bundletool:/absolute/path/bundletool.jar
 # Offline artifact inspection; store checks are explicitly unverified:
 bundle exec fastlane ios readiness store:false
-# Nonzero exit unless every required check is verified or not applicable:
+# Fail closed on any unknown evidence (currently always fails: manual checks remain):
 bundle exec fastlane android readiness strict:true
 ```
 

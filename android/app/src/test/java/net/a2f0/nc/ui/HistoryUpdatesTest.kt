@@ -69,7 +69,7 @@ class HistoryUpdatesTest {
             owner.registry.currentState = Lifecycle.State.DESTROYED
             main.idle()
             val destroyedCount = values.size
-            history.transition(null)
+            history.transition("brown")
             main.idleFor(Duration.ofSeconds(30))
             assertEquals(destroyedCount, values.size)
         } finally {
