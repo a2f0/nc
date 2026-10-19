@@ -25,6 +25,8 @@ struct HistoryTests {
         // The load is delivered back to the main actor after disk I/O.
         for _ in 0..<100 where restored.snapshot().count < 2 { await Task.yield() }
         precondition(restored.snapshot().first { $0.soundId == "fan" }!.updatedAt == 151_000)
+        precondition(historyTotals(restored.snapshot())["fan"] == 0.5)
+        precondition(historyTotals(history.snapshot())["fan"] == 1440.5)
         restored.transition(to: "pink")
         now -= 1000
         restored.transition(to: nil)
@@ -42,8 +44,6 @@ struct HistoryTests {
         ]
         precondition(historyTotals(totalRows) == ["white": 5, "fan": 0.5])
         precondition(historyTotals([]).isEmpty)
-        precondition(historyTotals(restored.snapshot())["fan"] == 0.5)
-        precondition(historyTotals(history.snapshot())["fan"]! > 1440)
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/New_York")!

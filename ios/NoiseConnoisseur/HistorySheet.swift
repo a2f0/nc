@@ -8,6 +8,7 @@ struct HistorySheet: View {
     private struct Bar: Identifiable {
         let id: String
         let label: String
+        let accessibilityLabel: String
         let description: String
         let minutes: [String: Double]
     }
@@ -23,12 +24,14 @@ struct HistorySheet: View {
             })
             let bars = allTime ? NoiseType.allCases.map { type in
                 Bar(id: type.rawValue, label: String(localized: type.shortTitle),
-                    description: String(localized: .historyValue(String(localized: type.title), formatted(totals[type.rawValue] ?? 0))),
+                    accessibilityLabel: String(localized: .historyValue(String(localized: type.title), formatted(totals[type.rawValue] ?? 0))),
+                    description: "",
                     minutes: [type.rawValue: totals[type.rawValue] ?? 0])
             } : days.map { day in
                 Bar(id: String(day.start.timeIntervalSince1970),
                     label: day.start.formatted(.dateTime.month(.twoDigits).day(.twoDigits)),
-                    description: day.start.formatted(date: .complete, time: .omitted) + ". " + dayDescription(day),
+                    accessibilityLabel: day.start.formatted(date: .complete, time: .omitted),
+                    description: dayDescription(day),
                     minutes: day.minutes)
             }
             ScrollView {
@@ -132,7 +135,8 @@ struct HistorySheet: View {
                                 }
                             }
                             .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(bar.description)
+                            .accessibilityLabel(bar.accessibilityLabel)
+                            .accessibilityValue(bar.description)
                         }
                     }
                     .frame(height: 180)

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,6 +45,7 @@ import net.a2f0.nc.history.ListeningHistory
 import net.a2f0.nc.history.historyDays
 import net.a2f0.nc.history.historyTotals
 import java.text.NumberFormat
+import java.time.ZoneId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -67,9 +70,15 @@ fun HistoryContent() {
         while (true) { delay(15_000); tick++ }
     }
     val sessions = remember(revision, tick) { history.snapshot() }
-    val days = historyDays(sessions, LocalDate.now().plusDays(offset.toLong()))
-    val soundTotals = if (allTime) historyTotals(sessions) else NoiseType.entries.associate { type ->
-        type.id to days.sumOf { it.minutes[type.id] ?: 0.0 }
+    val endDay = LocalDate.now().plusDays(offset.toLong())
+    val zone = ZoneId.systemDefault()
+    val days = remember(sessions, endDay, zone, allTime) {
+        if (allTime) emptyList() else historyDays(sessions, endDay, zone)
+    }
+    val soundTotals = remember(sessions, days, allTime) {
+        if (allTime) historyTotals(sessions) else NoiseType.entries.associate { type ->
+            type.id to days.sumOf { it.minutes[type.id] ?: 0.0 }
+        }
     }
     val number = NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 1 }
     val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
@@ -88,11 +97,15 @@ fun HistoryContent() {
     val totals = bars.map { bar -> NoiseType.entries.sumOf { bar.minutes[it.id] ?: 0.0 } }
     val maximum = maxOf(1.0, ceil(totals.max()))
 
+    val viewColors = FilterChipDefaults.filterChipColors(
+        selectedContainerColor = MaterialTheme.colorScheme.primary,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+    )
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = allTime, onClick = { allTime = true }, modifier = Modifier.weight(1f),
-            label = { Text(stringResource(R.string.history_all_time)) })
-        FilterChip(selected = !allTime, onClick = { allTime = false }, modifier = Modifier.weight(1f),
-            label = { Text(stringResource(R.string.history_calendar)) })
+        FilterChip(selected = allTime, onClick = { allTime = true }, modifier = Modifier.weight(1f), colors = viewColors,
+            label = { Text(stringResource(R.string.history_all_time), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) })
+        FilterChip(selected = !allTime, onClick = { allTime = false }, modifier = Modifier.weight(1f), colors = viewColors,
+            label = { Text(stringResource(R.string.history_calendar), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) })
     }
     if (!allTime) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
