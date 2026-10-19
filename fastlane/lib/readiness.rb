@@ -34,7 +34,8 @@ module Readiness
 
     def initialize(platform, artifact, root)
       @data = { schema_version: 1, platform: platform, audited_at: Time.now.utc.iso8601,
-                checkout: Readiness.source(root), artifact: { name: File.basename(artifact) }, checks: [] }
+                checkout: nil, artifact: { name: File.basename(artifact) }, checks: [] }
+      attempt('source.checkout') { @data[:checkout] = Readiness.source(root) }
       if File.file?(artifact)
         @data[:artifact][:sha256] = Digest::SHA256.file(artifact).hexdigest
         check('artifact.exists', true, 'Artifact is present.')
@@ -91,7 +92,11 @@ module Readiness
         if valid
           @data[:artifact][:build] = { 'source' => build['source'].slice('commit', 'dirty'), 'built_at' => build['built_at'] }
           check('artifact.clean_source', !build['source']['dirty'], 'A release candidate must be built from a clean checkout.')
-          check('artifact.current_commit', build['source']['commit'] == @data[:checkout]['commit'] && !@data[:checkout]['dirty'], 'Artifact source must match the audited clean checkout.')
+          if @data[:checkout]
+            check('artifact.current_commit', build['source']['commit'] == @data[:checkout]['commit'] && !@data[:checkout]['dirty'], 'Artifact source must match the audited clean checkout.')
+          else
+            add('artifact.current_commit', 'unverified', 'Checkout source could not be read; install git and run from the repository checkout.')
+          end
         end
       end
     end

@@ -42,7 +42,7 @@ module Readiness
           id = plist(File.join(target, 'Info.plist')).fetch('CFBundleIdentifier')
           report.attempt("signature.#{id}", verification: true) do
             command('codesign', '--verify', '--deep', '--strict', target)
-            entitlements = command('codesign', '--display', '--entitlements', ':-', target)
+            entitlements = command('codesign', '--display', '--entitlements', '-', '--xml', target)
             path = File.join(dir, 'entitlements.plist')
             File.write(path, entitlements)
             values = plist(path)

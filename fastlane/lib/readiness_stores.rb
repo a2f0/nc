@@ -77,7 +77,7 @@ module Readiness
       report.add('store.candidate', 'unverified', 'Artifact version code could not be inspected; no latest-build substitution was made.')
       return
     end
-    report.attempt('store.android') do
+    report.attempt('store.authentication') do
       require 'google/apis/androidpublisher_v3'
       require 'googleauth'
       service = Google::Apis::AndroidpublisherV3::AndroidPublisherService.new

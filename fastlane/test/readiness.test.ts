@@ -42,6 +42,7 @@ Dir.mktmpdir do |dir|
   # Offline readiness must not sign, build, authenticate, upload, or submit.
   lanes.run_lane(:ios, :readiness, artifact: artifact, output: output, store: false)
   results[:offline_lane] = JSON.parse(File.read(output))['result']
+  File.delete(output)
   begin
     lanes.run_lane(:ios, :readiness, artifact: artifact, output: output, store: false, strict: true)
   rescue UserError
@@ -198,6 +199,29 @@ Dir.mktmpdir do |dir|
   results[:play_unknown_code] = report.data
 end
 Readiness.define_singleton_method(:command, original_command)
+Dir.mktmpdir do |dir|
+  artifact = File.join(dir, 'candidate.ipa')
+  File.write(artifact, 'fixture')
+  Readiness.record_build(artifact, Readiness.source(dir))
+  original_source = Readiness.method(:source)
+  Readiness.define_singleton_method(:source) { |_| raise Errno::ENOENT }
+  report = Readiness::Report.new('ios', artifact, dir)
+  output = File.join(dir, 'missing-git.json')
+  report.write(output)
+  results[:missing_git] = JSON.parse(File.read(output))
+  lanes = FakeFastfile.new(File.join(ARGV[0], 'fastlane/Fastfile'), {})
+  begin
+    lanes.release_source
+  rescue UserError => error
+    results[:build_git_error] = error.message
+  end
+  Readiness.define_singleton_method(:source, original_source)
+  begin
+    lanes.run_lane(:ios, :readiness, wait_timeout: 'abc')
+  rescue UserError => error
+    results[:timeout_error] = error.message
+  end
+end
 puts JSON.generate(results)
 `;
 
@@ -282,4 +306,12 @@ describe("Android readiness verdicts", () => {
     expect(status(result.play_no_screenshots, "store.screenshots.en-US")).toBe("failed");
     expect(result.play_audit_cleanup).toEqual(Array.from({ length: 5 }, () => ["insert", "delete"]).flat());
   });
+});
+
+test("missing git still writes an audit report and invalid lane input gives an actionable error", () => {
+  expect(result.missing_git.result).toBe("incomplete");
+  expect(status(result.missing_git, "source.checkout")).toBe("unverified");
+  expect(status(result.missing_git, "artifact.current_commit")).toBe("unverified");
+  expect(result.build_git_error).toContain("install git");
+  expect(result.timeout_error).toBe("wait_timeout must be between 0 and 1800 seconds");
 });
