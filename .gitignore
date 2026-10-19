@@ -19,3 +19,6 @@ web/dist/
 
 # Wrangler local state
 .wrangler/
+
+# Private artifact-bound readiness reports
+.readiness/

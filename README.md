@@ -207,11 +207,16 @@ and the Android upload key (`nc-upload.keystore`, password in `app.env`).
 | `fastlane ios register_identifiers` | Registers the bundle IDs with App Groups (API key) |
 | `fastlane ios profiles` | Creates the match App Store profiles when missing or no longer valid (API key); `force:true` regenerates them, as after the bundle IDs' capabilities or the distribution certificate change |
 | `fastlane ios create_app` | One time, interactive (Apple ID + 2FA): App Store Connect app and App Group, then runs `profiles` |
+| `fastlane ios build_release` | Signed IPA with source/hash receipt, without uploading |
 | `fastlane ios beta` | Signed build to TestFlight |
-| `fastlane android build_release` | Signed release App Bundle |
+| `fastlane android build_release` | Signed release App Bundle with source/hash receipt |
 | `fastlane android internal` | Signed release App Bundle, rolled out to internal testers (`release_status:draft` uploads it without rolling it out) |
 | `fastlane ios listing` | App Store listing for the version being prepared: text and categories from `fastlane/metadata/ios/`, screenshots from `.screenshots/ios/` |
 | `fastlane android listing` | Google Play listing: text from `fastlane/metadata/android/`, screenshots from `.screenshots/android/phone/`, and the Play Store graphics |
+
+The `ios readiness` and `android readiness` lanes inspect artifacts and store state without
+submitting or publishing. See [readiness lanes](docs/readiness.md) for tools, options,
+report interpretation, and device regression checks.
 
 The listing text is committed under `fastlane/metadata/` (one file per field, in deliver's and
 supply's layouts); edit it there and rerun the lanes. Screenshots and graphics aren't committed,

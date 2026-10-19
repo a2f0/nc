@@ -20,10 +20,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,8 +40,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.delay
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
 import net.a2f0.nc.history.ListeningHistory
@@ -65,15 +65,12 @@ fun HistoryContent() {
     val previousLabel = stringResource(R.string.history_previous)
     val nextLabel = stringResource(R.string.history_next)
     val history = remember { ListeningHistory.get(context) }
-    val revision by history.revision.collectAsStateWithLifecycle()
-    val failed by history.storageFailed.collectAsStateWithLifecycle()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val updates = remember(history, lifecycle) { historyUpdates(history, lifecycle) }
+    val sessions by updates.collectAsState(initial = remember(history) { history.snapshot() })
+    val failed by history.storageFailed.collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
     var allTime by rememberSaveable { mutableStateOf(false) }
     var offset by rememberSaveable { mutableIntStateOf(0) }
-    var tick by remember { mutableLongStateOf(0) }
-    LaunchedEffect(Unit) {
-        while (true) { delay(15_000); tick++ }
-    }
-    val sessions = remember(revision, tick) { history.snapshot() }
     val endDay = LocalDate.now().plusDays(offset.toLong())
     val zone = ZoneId.systemDefault()
     val days = remember(sessions, endDay, zone, allTime) {
