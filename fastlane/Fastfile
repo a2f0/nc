@@ -6,6 +6,8 @@ require_relative 'lib/ios_signing_keychain'
 require_relative 'lib/play_version_code'
 require_relative 'lib/secrets'
 require_relative 'lib/store_listing'
+require_relative 'lib/readiness_artifacts'
+require_relative 'lib/readiness_stores'
 
 REPO_ROOT = File.expand_path('..', __dir__)
 APP_NAME = 'Noise Connoisseur'
@@ -109,6 +111,28 @@ rescue RuntimeError => e
   false
 end
 
+def readiness_options(options, platform, default_artifact)
+  artifact = File.expand_path(options.fetch(:artifact, default_artifact), REPO_ROOT)
+  output = File.expand_path(options.fetch(:output, ".readiness/#{platform}.json"), REPO_ROOT)
+  UI.user_error!('Report output must not overwrite its artifact or build receipt') if [artifact, "#{artifact}.build.json"].include?(output)
+  [artifact, output]
+end
+
+def release_source
+  Readiness.source(REPO_ROOT)
+rescue Readiness::CommandError, Errno::ENOENT
+  UI.user_error!('Could not read build source with git; install git and run from the repository checkout.')
+end
+
+def finish_readiness(report, output, options)
+  Readiness.manual_checks(report)
+  report.write(output)
+  UI.message("Readiness: #{report.result}; report: #{output}")
+  report.data[:checks].each { |check| UI.message("#{check[:status]} #{check[:id]}: #{check[:detail]}") }
+  UI.user_error!("Readiness is #{report.result}; see #{output}") if options[:strict].to_s == 'true' && report.result != 'ready_within_tested_scope'
+  report.data
+end
+
 platform :ios do
   desc 'Register the app and widget bundle IDs with App Groups enabled (App Store Connect API key)'
   lane :register_identifiers do
@@ -178,8 +202,9 @@ platform :ios do
     profiles
   end
 
-  desc 'Build, sign (match), and upload to TestFlight'
-  lane :beta do |options|
+  desc 'Build and sign an IPA with a source/hash receipt, without uploading'
+  lane :build_release do |options|
+    source = release_source
     load_store_secrets(IOS_SECRETS)
     team_id = required_env('TEAM_ID')
     api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
@@ -206,10 +231,55 @@ platform :ios do
       end
     end
 
+    Readiness.record_build(ipa, source, root: REPO_ROOT)
+    ipa
+  end
+
+  desc 'Build, sign (match), and upload to TestFlight'
+  lane :beta do |options|
+    ipa = build_release(options)
+    api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
     upload_to_testflight(
       api_key: api_key, app_identifier: APP_IDENTIFIER, ipa: ipa,
       skip_submission: true, skip_waiting_for_build_processing: true, uses_non_exempt_encryption: false
     )
+  end
+
+  desc 'Inspect an existing IPA and store state; write a redacted readiness report (no uploads or submission)'
+  lane :readiness do |options|
+    artifact, output = readiness_options(options, 'ios', File.join(IOS_OUTPUT_DIR, 'NoiseConnoisseur.ipa'))
+    timeout = begin
+      Integer(options.fetch(:wait_timeout, 0).to_s, 10)
+    rescue ArgumentError
+      UI.user_error!('wait_timeout must be between 0 and 1800 seconds')
+    end
+    UI.user_error!('wait_timeout must be between 0 and 1800 seconds') unless (0..1800).cover?(timeout)
+    report = Readiness::Report.new('ios', artifact, REPO_ROOT)
+    Readiness.ios_artifact(report, artifact)
+    if options[:store].to_s == 'false'
+      report.add('store.ios', 'unverified', 'Store inspection explicitly skipped.')
+    else
+      report.attempt('store.authentication') do
+        load_store_secrets(IOS_SECRETS)
+        api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
+        locales = Dir.children(IOS_METADATA_DIR).select { |entry| File.file?(File.join(IOS_METADATA_DIR, entry, 'description.txt')) }.sort
+        Readiness.ios_store(report, locales: locales, timeout: timeout)
+        if options[:precheck].to_s == 'false'
+          report.add('store.precheck', 'unverified', 'Metadata precheck explicitly skipped.')
+        else
+          report.attempt('store.precheck') do
+            begin
+              passed = precheck(api_key: api_key, app_identifier: APP_IDENTIFIER, include_in_app_purchases: false)
+              report.check('store.precheck', passed == true, 'Fastlane rules for the editable listing; exact candidate fields are checked separately. Not a full policy/accessibility audit.')
+            rescue FastlaneCore::Interface::FastlaneError => error
+              raise unless error.message.include?('found one or more potential problems that must be addressed')
+              report.check('store.precheck', false, 'Precheck rejected listing metadata; see its rule findings above.')
+            end
+          end
+        end
+      end
+    end
+    finish_readiness(report, output, options)
   end
 
   # Edits the version being prepared for submission; doesn't submit it. deliver
@@ -254,6 +324,7 @@ end
 platform :android do
   desc 'Build the release App Bundle, signed with the upload key'
   lane :build_release do |options|
+    source = release_source
     load_store_secrets(ANDROID_SECRETS)
     required_env('NC_ANDROID_KEYSTORE_PASS')
     UI.user_error!("Missing upload keystore: #{ANDROID_KEYSTORE_PATH}") unless File.file?(ANDROID_KEYSTORE_PATH)
@@ -266,6 +337,7 @@ platform :android do
       properties: { 'ncVersionCode' => version_code }, flags: '--console=plain'
     )
     UI.user_error!("App Bundle was not created: #{ANDROID_RELEASE_AAB}") unless File.file?(ANDROID_RELEASE_AAB)
+    Readiness.record_build(ANDROID_RELEASE_AAB, source, root: REPO_ROOT)
     UI.success("App Bundle: #{ANDROID_RELEASE_AAB}")
     ANDROID_RELEASE_AAB
   end
@@ -283,6 +355,24 @@ platform :android do
       skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
       skip_upload_images: true, skip_upload_screenshots: true
     )
+  end
+
+  desc 'Inspect an existing AAB and Play state; write a redacted readiness report (no uploads or committed edits)'
+  lane :readiness do |options|
+    artifact, output = readiness_options(options, 'android', ANDROID_RELEASE_AAB)
+    track = options.fetch(:track, 'internal').to_s
+    UI.user_error!('Unsupported Play track') unless GOOGLE_PLAY_TRACKS.include?(track)
+    report = Readiness::Report.new('android', artifact, REPO_ROOT)
+    bundletool = options[:bundletool] || ENV['BUNDLETOOL_JAR']
+    bundletool = File.expand_path(bundletool, REPO_ROOT) if bundletool
+    Readiness.android_artifact(report, artifact, bundletool: bundletool)
+    if options[:store].to_s == 'false'
+      report.add('store.android', 'unverified', 'Store inspection explicitly skipped.')
+    else
+      locales = Dir.children(ANDROID_METADATA_DIR).select { |entry| File.file?(File.join(ANDROID_METADATA_DIR, entry, 'title.txt')) }.sort
+      Readiness.android_store(report, key_path: GOOGLE_PLAY_JSON_KEY_PATH, locales: locales, track: track)
+    end
+    finish_readiness(report, output, options)
   end
 
   # supply only uploads a listing along with a release, so this attaches it to

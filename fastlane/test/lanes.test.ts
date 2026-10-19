@@ -28,14 +28,14 @@ end
 
 # match records the environment the signing keychain gives it, and the search
 # list it signs with.
-def fake_lanes(events, lock_path)
-  lanes = FakeFastfile.new(FASTFILE,
+def fake_lanes(events, lock_path, extra_stubs = {})
+  lanes = FakeFastfile.new(FASTFILE, {
     produce: ->(**) {}, app_store_connect_api_key: ->(**) { "api-key" },
     create_keychain: ->(**) {}, delete_keychain: ->(**) {}, sh: SECURITY,
     match: lambda do |**|
       events << ["match", ENV["MATCH_READONLY"], ENV["MATCH_KEYCHAIN_NAME"]]
       events << ["search", SEARCH_LIST.dup]
-    end)
+    end }.merge(extra_stubs))
   # The store credentials in .secrets aren't available to tests.
   lanes.stub_method(:load_store_secrets) { |_names| nil }
   lanes.stub_method(:app_store_connect_api_key_options) { { key_id: "KEY123" } }
@@ -70,6 +70,26 @@ lanes = fake_lanes(events, lock_path)
 lanes.run_lane(:ios, :create_app)
 results[:create_app] = { produce: lanes.calls_to(:produce), match: lanes.calls_to(:match), events: events }
 
+# Both paths must build once, with the same artifact receipt; only beta uploads.
+def Readiness.source(_root) = { 'commit' => 'a' * 40, 'dirty' => false }
+%i[build_release beta].each do |lane|
+  artifact = File.join(work, "#{lane}.ipa")
+  events = []
+  lanes = fake_lanes(events, lock_path,
+    latest_testflight_build_number: ->(**) { 11 },
+    build_app: ->(**) { File.write(artifact, 'signed fixture'); artifact },
+    upload_to_testflight: ->(**) { raise 'missing receipt before upload' unless File.file?("#{artifact}.build.json") })
+  lanes.stub_method(:with_manual_ios_signing) { |*_args, &block| block.call }
+  returned = lanes.run_lane(:ios, lane, build_number: '42')
+  results[lane] = {
+    builds: lanes.calls_to(:build_app), uploads: lanes.calls_to(:upload_to_testflight),
+    lookups: lanes.calls_to(:latest_testflight_build_number),
+    returned_artifact: returned == artifact,
+    receipt_hash: JSON.parse(File.read("#{artifact}.build.json"))['sha256'],
+    expected_hash: Digest::SHA256.file(artifact).hexdigest,
+    search_after: SEARCH_LIST.dup
+  }
+end
 puts JSON.generate(results)
 `;
 
@@ -146,4 +166,23 @@ describe("ios signing lanes", () => {
     ]);
     expect(match).toEqual([{ ...appStoreProfiles, force: false }]);
   });
+});
+
+test("release builds write receipts before beta uploads and preserve build options", () => {
+  for (const lane of ["build_release", "beta"]) {
+    const result = results[lane];
+    expect(result.builds).toHaveLength(1);
+    expect(result.builds[0].xcargs).toContain("CURRENT_PROJECT_VERSION=42");
+    expect(result.lookups).toEqual([]);
+    expect(result.receipt_hash).toBe(result.expected_hash);
+    expect(result.search_after).toEqual(["/keychains/login.keychain-db"]);
+  }
+  expect(results.build_release.returned_artifact).toBe(true);
+  expect(results.build_release.uploads).toEqual([]);
+  expect(results.beta.uploads).toEqual([
+    expect.objectContaining({
+      ipa: expect.stringContaining("beta.ipa"), api_key: "api-key",
+      skip_submission: true, skip_waiting_for_build_processing: true,
+    }),
+  ]);
 });
