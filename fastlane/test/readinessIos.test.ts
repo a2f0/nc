@@ -38,7 +38,7 @@ Dir.mktmpdir do |dir|
       raise "Unexpected command: #{args.first}"
     end
   end
-  %i[good development ad_hoc enterprise expired debuggable missing_group bad_privacy missing_codesign bad_signature].each do |scenario|
+  %i[good development ad_hoc enterprise expired debuggable missing_group bad_privacy missing_codesign bad_signature missing_profile missing_privacy].each do |scenario|
     mode = scenario
     artifact = File.join(dir, "#{mode}.ipa")
     Zip::File.open(artifact, create: true) do |zip|
@@ -48,6 +48,7 @@ Dir.mktmpdir do |dir|
         privacy = { 'NSPrivacyTracking' => mode == :bad_privacy, 'NSPrivacyCollectedDataTypes' => [],
                     'NSPrivacyAccessedAPITypes' => [{ 'NSPrivacyAccessedAPIType' => 'NSPrivacyAccessedAPICategoryUserDefaults', 'NSPrivacyAccessedAPITypeReasons' => ['CA92.1', '1C8F.1'] }] }
         { 'Info.plist' => xml(info), 'PrivacyInfo.xcprivacy' => xml(privacy), 'embedded.mobileprovision' => 'signed fixture' }.each do |name, contents|
+          next if (mode == :missing_profile && name == 'embedded.mobileprovision') || (mode == :missing_privacy && name == 'PrivacyInfo.xcprivacy')
           zip.get_output_stream("#{target}/#{name}") { |io| io.write(contents) }
         end
       end
@@ -101,16 +102,43 @@ Dir.mktmpdir do |dir|
     sets = [OpenStruct.new(screenshot_display_type: 'APP_IPHONE_67', app_screenshots: [shot.call(mode == :reserved_phone ? 'AWAITING_UPLOAD' : 'COMPLETE')])]
     sets << OpenStruct.new(screenshot_display_type: 'APP_IPAD_PRO_3GEN_129', app_screenshots: [shot.call('COMPLETE')]) unless mode == :missing_ipad
     entry = OpenStruct.new(locale: 'en-US', description: 'Description', support_url: 'https://example.test', get_app_screenshot_sets: sets)
+    translated = OpenStruct.new(locale: 'de-DE', description: 'Beschreibung', support_url: 'https://example.test')
+    translated.define_singleton_method(:get_app_screenshot_sets) { raise 'Only the upload locale needs screenshots' }
     review = OpenStruct.new(contact_first_name: 'First', contact_last_name: 'Last', contact_phone: '123', contact_email: 'private@example.test', notes: 'Offline background audio')
-    version = OpenStruct.new(build: mode == :wrong_selected ? OpenStruct.new(id: 'other') : build, get_app_store_version_localizations: [entry])
+    version = OpenStruct.new(build: mode == :wrong_selected ? OpenStruct.new(id: 'other') : build, get_app_store_version_localizations: [entry, translated])
     version.define_singleton_method(:fetch_app_store_review_detail) { raise 'No data' if mode == :no_review; review }
     app = OpenStruct.new(id: 'app')
     app.define_singleton_method(:get_app_store_versions) { |**| [version] }
     Spaceship::ConnectAPI::App.current = app
     report = Readiness::Report.new('ios', artifact, dir)
     report.data[:artifact].merge!(version: '1.0', build_number: '12')
-    Readiness.ios_store(report, locales: ['en-US'])
+    Readiness.ios_store(report, locales: ['en-US', 'de-DE'])
     results["store_#{mode}"] = report.data
+  end
+end
+module FastlaneCore
+  module Interface
+    class FastlaneError < StandardError; end
+  end
+end
+Dir.mktmpdir do |dir|
+  artifact = File.join(dir, 'candidate.ipa')
+  File.write(artifact, 'fixture')
+  Readiness.define_singleton_method(:ios_artifact) { |report, _| report.data[:artifact].merge!(version: '1.0', build_number: '12') }
+  %i[pass rejected error skipped].each do |mode|
+    lanes = FakeFastfile.new(File.join(ARGV[0], 'fastlane/Fastfile'),
+      app_store_connect_api_key: ->(**) { 'fixture-key' },
+      precheck: ->(**) {
+        raise FastlaneCore::Interface::FastlaneError, 'found one or more potential problems that must be addressed' if mode == :rejected
+        raise FastlaneCore::Interface::FastlaneError, 'private authentication diagnostic' if mode == :error
+        true
+      })
+    lanes.stub_method(:load_store_secrets) { |_| nil }
+    lanes.stub_method(:app_store_connect_api_key_options) { {} }
+    output = File.join(dir, "#{mode}.json")
+    lanes.run_lane(:ios, :readiness, artifact: artifact, output: output, precheck: mode != :skipped)
+    results["precheck_#{mode}"] = JSON.parse(File.read(output))
+    results["precheck_calls_#{mode}"] = lanes.calls_to(:precheck).length
   end
 end
 puts JSON.generate(results)
@@ -128,6 +156,8 @@ describe("iOS readiness verdicts", () => {
       expect(status(result.debuggable, `signature.${id}`)).toBe("failed");
       expect(status(result.missing_group, `app_group.${id}`)).toBe("failed");
       expect(status(result.bad_privacy, `privacy.${id}`)).toBe("failed");
+      expect(status(result.missing_profile, `distribution.${id}`)).toBe("failed");
+      expect(status(result.missing_privacy, `privacy.${id}`)).toBe("failed");
       expect(status(result.bad_signature, `signature.${id}`)).toBe("failed");
       expect(status(result.missing_codesign, `signature.${id}`)).toBe("unverified");
     }
@@ -141,6 +171,8 @@ describe("iOS readiness verdicts", () => {
   });
   test("requires the selected exact build and completed iPhone and iPad screenshots", () => {
     for (const id of ["store.processed_build", "store.selected_build", "store.review_contact", "store.review_notes", "store.listing.en-US", "store.screenshots.en-US"]) expect(status(result.store_good, id)).toBe("verified");
+    expect(status(result.store_good, "store.listing.de-DE")).toBe("verified");
+    expect(status(result.store_good, "store.screenshots.de-DE")).toBeUndefined();
     expect(status(result.store_wrong_selected, "store.selected_build")).toBe("failed");
     expect(status(result.store_reserved_phone, "store.screenshots.en-US")).toBe("failed");
     expect(status(result.store_missing_ipad, "store.screenshots.en-US")).toBe("failed");
@@ -149,4 +181,14 @@ describe("iOS readiness verdicts", () => {
     expect(status(result.store_no_review, "store.screenshots.en-US")).toBe("verified");
     expect(JSON.stringify(result.store_good)).not.toContain("private@example.test");
   });
+});
+
+test("iOS store lane distinguishes precheck rejection, setup errors, and an explicitly skipped check", () => {
+  expect(status(result.precheck_pass, "store.precheck")).toBe("verified");
+  expect(status(result.precheck_pass, "store.processed_build")).toBe("verified");
+  expect(status(result.precheck_rejected, "store.precheck")).toBe("failed");
+  expect(status(result.precheck_error, "store.precheck")).toBe("unverified");
+  expect(JSON.stringify(result.precheck_error)).not.toContain("private authentication diagnostic");
+  expect(status(result.precheck_skipped, "store.precheck")).toBe("unverified");
+  expect(result.precheck_calls_skipped).toBe(0);
 });

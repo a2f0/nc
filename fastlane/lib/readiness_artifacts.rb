@@ -52,6 +52,10 @@ module Readiness
           end
           report.attempt("distribution.#{id}") do
             profile = File.join(target, 'embedded.mobileprovision')
+            unless File.file?(profile)
+              report.check("distribution.#{id}", false, 'Packaged target is missing its distribution profile.')
+              next
+            end
             decoded = File.join(dir, 'profile.plist')
             File.write(decoded, command('security', 'cms', '-D', '-i', profile))
             profile_values = plist(decoded)
@@ -60,7 +64,12 @@ module Readiness
                          'Embedded profile must be for App Store distribution, not development/ad hoc/enterprise.')
           end
           report.attempt("privacy.#{id}") do
-            privacy = plist(File.join(target, 'PrivacyInfo.xcprivacy'))
+            privacy_path = File.join(target, 'PrivacyInfo.xcprivacy')
+            unless File.file?(privacy_path)
+              report.check("privacy.#{id}", false, 'Packaged target is missing its privacy manifest.')
+              next
+            end
+            privacy = plist(privacy_path)
             reasons = privacy.fetch('NSPrivacyAccessedAPITypes', []).select { |api| api['NSPrivacyAccessedAPIType'] == 'NSPrivacyAccessedAPICategoryUserDefaults' }
             report.check("privacy.#{id}", privacy['NSPrivacyTracking'] == false && privacy['NSPrivacyCollectedDataTypes'] == [] &&
                          reasons.any? { |api| %w[CA92.1 1C8F.1].all? { |reason| api.fetch('NSPrivacyAccessedAPITypeReasons', []).include?(reason) } },
@@ -93,11 +102,14 @@ module Readiness
         command(*tool, 'validate', "--bundle=#{artifact}")
         report.add('artifact.bundle_structure', 'verified', 'bundletool validation passed.')
       end
-      report.attempt('artifact.signature', verification: true) do
-        signature = command('jarsigner', '-verify', artifact)
-        report.check('artifact.signature', signature.include?('jar verified.') && !signature.include?('unsigned entries'), 'AAB JAR signature must verify with no unsigned entries. This does not establish the Play upload-key identity.')
-      end
-      report.add('artifact.upload_key_identity', 'unverified', 'Compare signer certificate with the expected Play upload certificate.')
+    end
+    report.attempt('artifact.signature', verification: true) do
+      signature = command('jarsigner', '-verify', artifact)
+      report.check('artifact.signature', signature.include?('jar verified.') && !signature.include?('unsigned entries'), 'AAB JAR signature must verify with no unsigned entries. This does not establish the Play upload-key identity.')
+    end
+    report.add('artifact.upload_key_identity', 'unverified', 'Compare signer certificate with the expected Play upload certificate.')
+    report.attempt('artifact.contents') do
+      require 'zip'
       Zip::File.open(artifact) do |zip|
         report.check('artifact.r8_mapping', zip.find_entry('BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map') != nil, 'Expected the release obfuscation mapping in the AAB.')
         native = zip.entries.map(&:name).grep(%r{^[^/]+/lib/.*\.so$})

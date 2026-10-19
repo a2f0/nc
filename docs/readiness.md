@@ -62,6 +62,8 @@ source edits during builds. Build numbering still follows the existing release l
 - Android: bundle manifest and structure, version/SDK/permissions, JAR signature, release
   mapping, native-library inventory; exact version code on the requested track, matching
   Play AAB hash, expected localized listings and phone screenshots.
+- Screenshot presence is checked in `StoreListing::LOCALE` (`en-US`), matching the
+  upload lanes; text is checked in every expected locale.
 - Missing tools, authentication/network problems and inaccessible data are unverified,
   not successful checks. Failed requirements make the result `not_ready`; otherwise any
   unknown requirement makes it `incomplete`.

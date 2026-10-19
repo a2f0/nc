@@ -176,12 +176,12 @@ Dir.mktmpdir do |dir|
   service.define_singleton_method(:delete_edit) { |*| events << 'delete' }
   service.define_singleton_method(:get_edit_track) { |*| OpenStruct.new(releases: [OpenStruct.new(version_codes: [track_number], status: release_status)]) }
   service.define_singleton_method(:list_edit_bundles) { |*| OpenStruct.new(bundles: [OpenStruct.new(version_code: 14, sha256: hash)]) }
-  service.define_singleton_method(:list_edit_listings) { |*| OpenStruct.new(listings: listing_present ? [OpenStruct.new(language: 'en-US', title: 'Title', short_description: 'Short', full_description: 'Full')] : []) }
-  service.define_singleton_method(:list_edit_images) { |*| OpenStruct.new(images: screenshots) }
+  service.define_singleton_method(:list_edit_listings) { |*| OpenStruct.new(listings: listing_present ? ['en-US', 'de-DE'].map { |locale| OpenStruct.new(language: locale, title: 'Title', short_description: 'Short', full_description: 'Full') } : []) }
+  service.define_singleton_method(:list_edit_images) { |_, _, locale, _| raise 'Only the upload locale needs screenshots' unless locale == 'en-US'; OpenStruct.new(images: screenshots) }
   audit = lambda do
     report = Readiness::Report.new('android', artifact, dir)
     report.data[:artifact][:build_number] = '14'
-    Readiness.android_store_records(report, service: service, locales: ['en-US'], track: 'internal')
+    Readiness.android_store_records(report, service: service, locales: ['en-US', 'de-DE'], track: 'internal')
     report.data
   end
   results[:play_good] = audit.call
@@ -291,6 +291,8 @@ describe("Android readiness verdicts", () => {
     expect(status(result.android_bad_signature, "artifact.r8_mapping")).toBe("verified");
     expect(status(result.android_unsigned, "artifact.signature")).toBe("failed");
     expect(status(result.android_missing_tool, "artifact.android")).toBe("unverified");
+    expect(status(result.android_missing_tool, "artifact.signature")).toBe("verified");
+    expect(status(result.android_missing_tool, "artifact.r8_mapping")).toBe("verified");
     expect(status(result.play_unknown_code, "store.candidate")).toBe("unverified");
     expect(status(result.play_unknown_code, "store.track_candidate")).toBeUndefined();
   });
@@ -298,6 +300,8 @@ describe("Android readiness verdicts", () => {
     for (const id of ["store.track_candidate", "store.bundle_hash", "store.listing.en-US", "store.screenshots.en-US"]) {
       expect(status(result.play_good, id)).toBe("verified");
     }
+    expect(status(result.play_good, "store.listing.de-DE")).toBe("verified");
+    expect(status(result.play_good, "store.screenshots.de-DE")).toBeUndefined();
     expect(status(result.play_wrong_code, "store.track_candidate")).toBe("failed");
     expect(status(result.play_draft, "store.track_candidate")).toBe("failed");
     expect(status(result.play_bad_listing_hash, "store.bundle_hash")).toBe("failed");

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'readiness'
+require_relative 'store_listing'
 
 module Readiness
   # Poll only the exact app version/build. An older successful build cannot satisfy it.
@@ -54,6 +55,7 @@ module Readiness
         entry = entries.find { |candidate| candidate.locale == locale }
         report.check("store.listing.#{locale}", entry && !entry.description.to_s.strip.empty? && !entry.support_url.to_s.strip.empty?, 'Expected localized description and support URL.')
         next unless entry
+        next unless locale == StoreListing::LOCALE
         sets = entry.get_app_screenshot_sets
         # Count only completed uploads, not reserved or failed screenshot slots.
         types = sets.select { |set| set.app_screenshots.to_a.any? { |shot| shot.asset_delivery_state&.fetch('state', nil) == 'COMPLETE' } }.map(&:screenshot_display_type)
@@ -105,6 +107,7 @@ module Readiness
         locales.each do |locale|
           listing = listings.find { |candidate| candidate.language == locale }
           report.check("store.listing.#{locale}", listing && %i[title short_description full_description].all? { |field| !listing.public_send(field).to_s.strip.empty? }, 'Expected localized title and descriptions.')
+          next unless locale == StoreListing::LOCALE
           unless listing
             report.check("store.screenshots.#{locale}", false, 'No listing exists for the expected screenshot locale.')
             next
