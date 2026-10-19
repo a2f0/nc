@@ -22,6 +22,26 @@ theirs with samples from the iOS one. Each app has its own volume slider on top 
 system volume: saved between launches, squared so halfway is about -12 dB, and ramped over
 about 50 ms so dragging doesn't crackle.
 
+## Listening history
+
+Open **More → Listening history** to see daily stacked bars for seven days and move through
+previous weeks. The X axis uses dates in the device's current time zone; the Y axis is minutes
+played, with a grayscale segment per sound. Overnight sessions are split at local midnight.
+
+History stays in the app's data container (`Application Support/listening-history-v1` on iOS,
+`files/listening-history-v1` on Android), or the browser's IndexedDB `listening-history` database.
+Each session has a UUID `id`, an immutable `soundId` (`white`, `pink`, `brown`, `waves`, `fan`),
+and UTC epoch-millisecond `startedAt`, nullable `endedAt`, and `updatedAt` timestamps. Display
+names can change without changing these sound IDs. Native sessions are atomic JSON files;
+web sessions are individual database rows, so different tabs cannot overwrite one another.
+No history is uploaded. The format keeps individual sessions for a future sync API.
+
+Playback starts, stops, sound switches, and interruptions delimit sessions. Active sessions
+checkpoint every 15 seconds while the process runs. After an unexpected exit, an unfinished
+session ends at its last saved checkpoint, so downtime is never added (the unsaved tail can
+be lost). Playback still works if storage fails; History shows a warning. Clearing app/site
+data removes the history; operating-system backups may include the native files.
+
 ## Setup
 
 ```sh

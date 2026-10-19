@@ -1,3 +1,4 @@
+import { setUpHistory } from "./historyView";
 import { bindVolume, setUpMenu } from "./controls";
 import { currentLocale, setPreferredLanguages, t, tParts } from "./l10n";
 import { NoisePlayer } from "./noisePlayer";
@@ -26,9 +27,18 @@ bindVolume([volume, element("settings-volume") as HTMLInputElement], player);
 const more = element("more");
 const closeButtons = [...document.querySelectorAll<HTMLElement>(".close")];
 setUpMenu(document, more, element("menu"), [
+  [element("open-history"), element("history") as HTMLDialogElement, element("close-history")],
   [element("open-settings"), element("settings") as HTMLDialogElement, element("close-settings")],
   [element("open-about"), element("about") as HTMLDialogElement, element("close-about")],
 ]);
+
+const renderHistory = setUpHistory(player.history);
+setInterval(() => player.history.checkpoint(), 15_000);
+addEventListener("pagehide", () => player.stop());
+document.addEventListener("visibilitychange", () => {
+  player.history.checkpoint();
+  if (document.visibilityState === "visible") void player.history.refresh();
+});
 
 const cards = new Map<NoiseType, HTMLButtonElement>(NOISE_TYPES.map((type) => [type, card(type)]));
 sounds.append(...cards.values());
@@ -58,6 +68,9 @@ function localize(): void {
   document.documentElement.lang = currentLocale().tag;
   volume.setAttribute("aria-label", t("volume"));
   more.setAttribute("aria-label", t("more"));
+  element("open-history").textContent = t("history");
+  element("history-title").textContent = t("history");
+  renderHistory();
   element("open-settings").textContent = t("settings");
   element("open-about").textContent = t("about");
   element("settings-title").textContent = t("settings");

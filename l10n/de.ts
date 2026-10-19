@@ -1,6 +1,17 @@
 import type { Translation } from "./strings";
 
 export default {
+  history: "Hörverlauf",
+  history_minutes: "Gespielte Minuten",
+  history_date: "Datum",
+  history_previous: "Vorherige Woche",
+  history_next: "Nächste Woche",
+  history_today: "Heute",
+  history_empty: "Für diesen Zeitraum wurde nichts aufgezeichnet.",
+  history_local: "Auf diesem Gerät gespeichert. Die laufende Wiedergabe wird alle 15 Sekunden aktualisiert.",
+  history_storage_failed: "Ein Teil des Hörverlaufs konnte nicht geladen oder gespeichert werden.",
+  history_value: "{noise}: {minutes} Min.",
+
   widget_description: "Jeden Klang mit einem Tippen starten und stoppen.",
   noise_white_title: "Weißes Rauschen",
   noise_pink_title: "Rosa Rauschen",

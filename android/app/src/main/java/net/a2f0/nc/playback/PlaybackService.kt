@@ -23,18 +23,30 @@ import androidx.core.content.ContextCompat
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import net.a2f0.nc.history.ListeningHistory
 import net.a2f0.nc.MainActivity
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
 import net.a2f0.nc.audio.NoiseEngine
+import net.a2f0.nc.audio.PlaybackEngine
 
 /**
  * Foreground media service that keeps noise playing while the app is in the background.
  * Owns the audio engine, audio focus, the media session (lock screen / headset controls),
  * and the playback notification.
  */
-class PlaybackService : Service() {
-    private val engine = NoiseEngine()
+open class PlaybackService : Service() {
+    private val engine by lazy {
+        createEngine(
+            onStarted = { type ->
+                scope.launch {
+                    if (nowPlaying == type && !pausedForFocusLoss) ListeningHistory.get(this@PlaybackService).transition(type.id)
+                }
+            },
+            onFailed = { scope.launch { stop() } },
+        )
+    }
     private val scope = MainScope()
     private lateinit var audioManager: AudioManager
     private lateinit var focusRequest: AudioFocusRequest
@@ -49,8 +61,18 @@ class PlaybackService : Service() {
     }
     private var noisyReceiverRegistered = false
 
+    internal open fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: () -> Unit): PlaybackEngine =
+        NoiseEngine(onStarted = onStarted, onFailed = onFailed)
+
     override fun onCreate() {
         super.onCreate()
+        val history = ListeningHistory.get(this)
+        scope.launch {
+            while (true) {
+                delay(15_000)
+                if (nowPlaying != null && !pausedForFocusLoss) history.checkpoint()
+            }
+        }
         val volume = NoisePlayer.volume(this)
         engine.setVolume(volume.value)
         scope.launch { volume.collect(engine::setVolume) }
@@ -99,6 +121,7 @@ class PlaybackService : Service() {
     override fun onDestroy() {
         scope.cancel()
         engine.stop()
+        ListeningHistory.get(this).transition(null)
         audioManager.abandonAudioFocusRequest(focusRequest)
         unregisterNoisyReceiver()
         session.release()
@@ -114,6 +137,7 @@ class PlaybackService : Service() {
             return
         }
         pausedForFocusLoss = false
+        if (nowPlaying != type) ListeningHistory.get(this).transition(null)
         nowPlaying = type
         engine.play(type)
         registerNoisyReceiver()
@@ -126,6 +150,7 @@ class PlaybackService : Service() {
 
     private fun stop() {
         engine.stop()
+        ListeningHistory.get(this).transition(null)
         audioManager.abandonAudioFocusRequest(focusRequest)
         unregisterNoisyReceiver()
         nowPlaying = null
@@ -142,10 +167,15 @@ class PlaybackService : Service() {
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> if (nowPlaying != null) {
                 pausedForFocusLoss = true
                 engine.stop()
+                ListeningHistory.get(this).transition(null)
+                session.setPlaybackState(playbackState(PlaybackState.STATE_PAUSED))
             }
             AudioManager.AUDIOFOCUS_GAIN -> if (pausedForFocusLoss) {
                 pausedForFocusLoss = false
-                nowPlaying?.let(engine::play)
+                nowPlaying?.let {
+                    engine.play(it)
+                    session.setPlaybackState(playbackState(PlaybackState.STATE_PLAYING))
+                }
             }
             // AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK: the system ducks our volume automatically.
         }

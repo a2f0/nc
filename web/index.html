@@ -22,6 +22,7 @@
           </svg>
         </button>
         <div id="menu" class="menu" hidden>
+          <button id="open-history" type="button">Listening history</button>
           <button id="open-settings" type="button">Settings</button>
           <button id="open-about" type="button">About</button>
         </div>
@@ -44,6 +45,17 @@
         </div>
       </div>
     </div>
+    <dialog id="history" class="sheet" aria-labelledby="history-title">
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <h2 id="history-title">Listening history</h2>
+          <button id="close-history" type="button" class="close" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </div>
+        <div id="history-content"></div>
+      </div>
+    </dialog>
     <dialog id="settings" class="sheet" aria-labelledby="settings-title">
       <div class="sheet-content">
         <div class="sheet-header">

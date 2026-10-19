@@ -2,6 +2,7 @@ import AVFoundation
 import MediaPlayer
 import Observation
 import WidgetKit
+import UIKit
 import os
 
 /// Owns the audio engine and session. Playback continues in the background (the app
@@ -11,9 +12,13 @@ import os
 @Observable
 final class NoisePlayer {
     static let shared = NoisePlayer()
+    let history = ListeningHistory()
+    @ObservationIgnored private var historyTimer: Timer?
 
     /// The noise currently playing, or nil when stopped.
-    private(set) var nowPlaying: NoiseType?
+    private(set) var nowPlaying: NoiseType? {
+        didSet { history.transition(to: nowPlaying?.rawValue) }
+    }
 
     /// The most recently played noise, which the play button and lock screen controls
     /// resume. Saved across launches.
@@ -67,6 +72,7 @@ final class NoisePlayer {
             if !engine.isRunning { try engine.start() }
         } catch {
             Self.log.error("Couldn't start playback: \(error)")
+            stop()
             return
         }
         nowPlaying = type
@@ -130,6 +136,12 @@ final class NoisePlayer {
             MainActor.assumeIsolated { self?.restartAfterConfigurationChange() }
         })
 
+        observers.append(center.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.stop() }
+        })
+        observers.append(center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.history.checkpoint() }
+        })
         Self.registerRemoteCommands(for: self)
     }
 
@@ -187,6 +199,16 @@ final class NoisePlayer {
     // MARK: - State
 
     private func publishState() {
+        if nowPlaying != nil && historyTimer == nil {
+            let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.history.checkpoint() }
+            }
+            historyTimer = timer
+            RunLoop.main.add(timer, forMode: .common)
+        } else if nowPlaying == nil {
+            historyTimer?.invalidate()
+            historyTimer = nil
+        }
         updateNowPlayingInfo()
         guard PlaybackStatus.nowPlaying != nowPlaying else { return }
         PlaybackStatus.nowPlaying = nowPlaying

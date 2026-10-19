@@ -44,6 +44,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -180,6 +181,7 @@ private fun NoiseScreen(
     sheet?.let { open ->
         SheetContent(open, onDismiss = { sheet = null }) {
             when (open) {
+                Sheet.HISTORY -> HistoryContent()
                 Sheet.SETTINGS -> SettingsContent(volume = volume, onVolumeChange = onVolumeChange)
                 Sheet.ABOUT -> AboutContent()
             }
@@ -189,6 +191,7 @@ private fun NoiseScreen(
 
 /** The sheets the menu opens. */
 private enum class Sheet(@StringRes val title: Int) {
+    HISTORY(R.string.history),
     SETTINGS(R.string.settings),
     ABOUT(R.string.about),
 }
@@ -207,6 +210,10 @@ private fun MoreMenu(onOpen: (Sheet) -> Unit, modifier: Modifier = Modifier) {
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.history)) },
+                onClick = { expanded = false; onOpen(Sheet.HISTORY) },
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.settings)) },
                 onClick = {
@@ -258,16 +265,20 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
                 // The sheet is its own window, outside the screen's semantics.
                 .semantics { testTagsAsResourceId = true },
         ) {
-            Text(
-                stringResource(sheet.title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.semantics { heading() },
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(sheet.title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f).semantics { heading() },
+                )
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
+            }
             content()
         }
     }

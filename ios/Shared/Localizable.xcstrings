@@ -99,7 +99,7 @@
       "shouldTranslate" : false
     },
     "close" : {
-      "comment" : "Screen reader label for the button that closes the Settings or About sheet.",
+      "comment" : "Label for the button that closes a sheet, such as History, Settings, or About.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -118,6 +118,246 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cerrar"
+          }
+        }
+      }
+    },
+    "history" : {
+      "comment" : "Title of the local listening-history screen and its menu entry.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörverlauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listening history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de escucha"
+          }
+        }
+      }
+    },
+    "history_date" : {
+      "comment" : "Horizontal axis of the listening-history bar chart; calendar dates in the current time zone.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fecha"
+          }
+        }
+      }
+    },
+    "history_empty" : {
+      "comment" : "Empty state for the selected date range in listening history.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für diesen Zeitraum wurde nichts aufgezeichnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No listening recorded for these dates."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay escuchas registradas para estas fechas."
+          }
+        }
+      }
+    },
+    "history_local" : {
+      "comment" : "Explanation below the local listening-history chart. No data is synced.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf diesem Gerät gespeichert. Die laufende Wiedergabe wird alle 15 Sekunden aktualisiert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved on this device. Active listening updates every 15 seconds."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado en este dispositivo. La escucha en curso se actualiza cada 15 segundos."
+          }
+        }
+      }
+    },
+    "history_minutes" : {
+      "comment" : "Vertical axis of the listening-history bar chart; durations in minutes.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gespielte Minuten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutes played"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutos reproducidos"
+          }
+        }
+      }
+    },
+    "history_next" : {
+      "comment" : "Button to move the listening-history chart seven days later.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nächste Woche"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana siguiente"
+          }
+        }
+      }
+    },
+    "history_previous" : {
+      "comment" : "Button to move the listening-history chart seven days earlier.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vorherige Woche"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semana anterior"
+          }
+        }
+      }
+    },
+    "history_storage_failed" : {
+      "comment" : "Visible warning when local history storage fails; playback can continue.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Teil des Hörverlaufs konnte nicht geladen oder gespeichert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some listening history could not be loaded or saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo cargar o guardar parte del historial de escucha."
+          }
+        }
+      }
+    },
+    "history_today" : {
+      "comment" : "Button to return the history chart to the seven days ending today.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Heute"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy"
+          }
+        }
+      }
+    },
+    "history_value" : {
+      "comment" : "History chart legend and accessibility label. Noise is the localized sound name; minutes is a localized decimal number.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@ Min."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@ min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@ min"
           }
         }
       }

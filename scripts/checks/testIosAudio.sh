@@ -20,3 +20,9 @@ xcrun swiftc -O -o "$build_dir/audio-tests" \
   "$REPO_ROOT/ios/Shared/NoiseRenderer.swift" \
   "$REPO_ROOT/ios/AudioTests/main.swift"
 "$build_dir/audio-tests"
+
+# The local history model has no UIKit dependency and can also be checked on macOS.
+xcrun swiftc -parse-as-library -o "$build_dir/history-tests" \
+  "$REPO_ROOT/ios/Shared/ListeningHistory.swift" \
+  "$REPO_ROOT/ios/HistoryTests/main.swift"
+"$build_dir/history-tests"

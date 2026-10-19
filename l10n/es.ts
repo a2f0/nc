@@ -2,6 +2,17 @@ import type { Translation } from "./strings";
 
 // Neutral Spanish, for Spain and Latin America alike.
 export default {
+  history: "Historial de escucha",
+  history_minutes: "Minutos reproducidos",
+  history_date: "Fecha",
+  history_previous: "Semana anterior",
+  history_next: "Semana siguiente",
+  history_today: "Hoy",
+  history_empty: "No hay escuchas registradas para estas fechas.",
+  history_local: "Guardado en este dispositivo. La escucha en curso se actualiza cada 15 segundos.",
+  history_storage_failed: "No se pudo cargar o guardar parte del historial de escucha.",
+  history_value: "{noise}: {minutes} min",
+
   widget_description: "Inicia y detén cada sonido con un toque.",
   noise_white_title: "Ruido blanco",
   noise_pink_title: "Ruido rosa",

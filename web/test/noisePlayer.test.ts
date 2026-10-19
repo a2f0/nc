@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { setPreferredLanguages } from "../src/l10n";
+import { ListeningHistory, type ListeningSession } from "../src/listeningHistory";
 import { NoisePlayer } from "../src/noisePlayer";
 import type { NoiseCommand, NoiseEvent } from "../src/noiseProtocol";
 
@@ -14,7 +15,7 @@ class FakeGainParam {
   }
 }
 
-class FakeAudioContext {
+class FakeAudioContext extends EventTarget {
   static instances: FakeAudioContext[] = [];
   state: AudioContextState = "running";
   currentTime = 12;
@@ -23,6 +24,7 @@ class FakeAudioContext {
   readonly audioWorklet = { addModule: () => this.moduleLoad.promise };
 
   constructor() {
+    super();
     FakeAudioContext.instances.push(this);
   }
 
@@ -66,13 +68,14 @@ class FakeWorkletNode {
   }
 }
 
-class FakeAudio {
+class FakeAudio extends EventTarget {
   static instances: FakeAudio[] = [];
   static playError: Error | null = null;
   paused = true;
   srcObject: unknown = null;
 
   constructor() {
+    super();
     FakeAudio.instances.push(this);
   }
 
@@ -131,11 +134,19 @@ beforeEach(() => {
   Object.defineProperty(globalThis, "navigator", { value: { mediaSession }, configurable: true });
 });
 
+function memoryHistory(): ListeningHistory {
+  const rows = new Map<string, ListeningSession>();
+  return new ListeningHistory({
+    async read() { return [...rows.values()]; },
+    async write(row) { rows.set(row.id, { ...row }); },
+  });
+}
+
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /** Starts a player and lets its worklet load. */
 async function loaded(): Promise<{ player: NoisePlayer; context: FakeAudioContext; node: FakeWorkletNode; audio: FakeAudio }> {
-  const player = new NoisePlayer();
+  const player = new NoisePlayer(memoryHistory());
   player.play("white");
   const context = FakeAudioContext.instances[0]!;
   context.moduleLoad.resolve();
@@ -145,7 +156,7 @@ async function loaded(): Promise<{ player: NoisePlayer; context: FakeAudioContex
 
 describe("NoisePlayer", () => {
   test("sends commands in order once the worklet loads", async () => {
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     player.play("white");
     player.play("pink");
     player.stop();
@@ -197,7 +208,7 @@ describe("NoisePlayer", () => {
 
   test("reports a worklet that fails to load, then starts over", async () => {
     const logged = spyOn(console, "error").mockImplementation(() => {});
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     let notified = 0;
     player.subscribe(() => notified++);
     player.play("white");
@@ -218,7 +229,7 @@ describe("NoisePlayer", () => {
   test("a blocked play() is a failure", async () => {
     const logged = spyOn(console, "error").mockImplementation(() => {});
     FakeAudio.playError = new DOMException("blocked", "NotAllowedError");
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     player.play("white");
     await settle();
     expect(player.failed).toBe(true);
@@ -228,7 +239,7 @@ describe("NoisePlayer", () => {
 
   test("a pause() that interrupts play() isn't a failure", async () => {
     FakeAudio.playError = new DOMException("interrupted", "AbortError");
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     player.play("white");
     await settle();
     expect(player.failed).toBe(false);
@@ -250,7 +261,7 @@ describe("NoisePlayer", () => {
   });
 
   test("the media controls follow a language change, playing or stopped", async () => {
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     setPreferredLanguages(["de-DE"]);
     try {
       player.updateMediaSession();
@@ -281,17 +292,17 @@ describe("NoisePlayer", () => {
   });
 
   test("remembers the last noise played", () => {
-    expect(new NoisePlayer().lastPlayed).toBe("white");
-    new NoisePlayer().play("waves");
+    expect(new NoisePlayer(memoryHistory()).lastPlayed).toBe("white");
+    new NoisePlayer(memoryHistory()).play("waves");
     expect(storage!.get("lastPlayed")).toBe("waves");
-    expect(new NoisePlayer().lastPlayed).toBe("waves");
+    expect(new NoisePlayer(memoryHistory()).lastPlayed).toBe("waves");
     storage!.set("lastPlayed", "not a noise");
-    expect(new NoisePlayer().lastPlayed).toBe("white");
+    expect(new NoisePlayer(memoryHistory()).lastPlayed).toBe("white");
   });
 
   test("starts at the saved volume", () => {
     storage!.set("volume", "0.5");
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     expect(player.volume).toBe(0.5);
     player.play("white");
     expect(FakeAudioContext.instances[0]!.volume.gain.value).toBe(0.25);
@@ -305,17 +316,17 @@ describe("NoisePlayer", () => {
   });
 
   test("keeps the volume between 0 and 1", () => {
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     player.setVolume(2);
     expect(player.volume).toBe(1);
     player.setVolume(-1);
     expect(player.volume).toBe(0);
     storage!.set("volume", "not a number");
-    expect(new NoisePlayer().volume).toBe(1);
+    expect(new NoisePlayer(memoryHistory()).volume).toBe(1);
   });
 
   test("a volume set before playing applies when it starts", () => {
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     player.setVolume(0.4);
     player.play("pink");
     expect(FakeAudioContext.instances[0]!.volume.gain.value).toBeCloseTo(0.16);
@@ -323,11 +334,71 @@ describe("NoisePlayer", () => {
 
   test("works without storage", () => {
     storage = null;
-    const player = new NoisePlayer();
+    const player = new NoisePlayer(memoryHistory());
     expect(player.volume).toBe(1);
     player.setVolume(0.3);
     expect(player.volume).toBe(0.3);
     player.play("fan");
     expect(player.lastPlayed).toBe("fan");
   });
+});
+
+
+test("history starts only after audio is ready and closes on switches and media pause", async () => {
+  const player = new NoisePlayer(memoryHistory());
+  player.play("white");
+  expect(player.history.snapshot()).toHaveLength(0);
+  FakeAudioContext.instances[0]!.moduleLoad.resolve();
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(1);
+  player.play("fan");
+  expect(player.history.snapshot()[0]!.endedAt).not.toBeNull();
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(2);
+  mediaSession.handlers.get("pause")!();
+  expect(player.history.snapshot().every((row) => row.endedAt !== null)).toBe(true);
+});
+
+test("failed starts and canceled pending starts do not create listening sessions", async () => {
+  const player = new NoisePlayer(memoryHistory());
+  player.play("white");
+  player.stop();
+  FakeAudioContext.instances[0]!.moduleLoad.resolve();
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(0);
+  const logged = spyOn(console, "error").mockImplementation(() => {});
+  FakeAudio.playError = new DOMException("blocked", "NotAllowedError");
+  player.play("fan");
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(0);
+  logged.mockRestore();
+});
+
+test("unexpected media pause and audio context suspension stop counting time", async () => {
+  const { player, context, audio } = await loaded();
+  expect(player.history.snapshot()).toHaveLength(1);
+  context.state = "suspended";
+  context.dispatchEvent(new Event("statechange"));
+  expect(player.history.snapshot()[0]!.endedAt).not.toBeNull();
+  context.state = "running";
+  context.dispatchEvent(new Event("statechange"));
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(2);
+  audio.paused = true;
+  audio.dispatchEvent(new Event("pause"));
+  expect(player.nowPlaying).toBeNull();
+  expect(player.history.snapshot().every((row) => row.endedAt !== null)).toBe(true);
+});
+
+
+test("a delayed pause event cannot stop a newer play", async () => {
+  const { player, node, audio } = await loaded();
+  player.stop();
+  node.emit({ silent: 2 });
+  player.play("fan");
+  await settle();
+  expect(audio.paused).toBe(false);
+  audio.dispatchEvent(new Event("pause"));
+  expect(player.nowPlaying).toBe("fan");
+  expect(player.history.snapshot().at(-1)!.endedAt).toBeNull();
 });

@@ -1,5 +1,6 @@
 import type { WebKey } from "./l10n";
 
+/** Permanent storage IDs; rename display strings without changing these keys. */
 export type NoiseType = "white" | "pink" | "brown" | "waves" | "fan";
 
 export const NOISE_TYPES: readonly NoiseType[] = ["white", "pink", "brown", "waves", "fan"];

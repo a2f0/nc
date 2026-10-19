@@ -94,3 +94,6 @@ private fun ColorScheme.grayscale(): ColorScheme = copy(
     onTertiaryFixed = onTertiaryFixed.toGray(),
     onTertiaryFixedVariant = onTertiaryFixedVariant.toGray(),
 )
+
+/** Stable chart order: white, pink, brown, waves, fan; also used by the legend. */
+internal val HistoryShades = listOf(0xff333333, 0xff666666, 0xff999999, 0xffbbbbbb, 0xffeeeeee).map { Color(it) }

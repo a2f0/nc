@@ -26,6 +26,15 @@ class ColorsTest {
     }
 
     @Test
+    fun historyShadesAreDistinctGrays() {
+        assertEquals(5, HistoryShades.distinct().size)
+        for (color in HistoryShades) {
+            assertEquals(color.red, color.green, 0f)
+            assertEquals(color.red, color.blue, 0f)
+        }
+    }
+
+    @Test
     fun graysStayTheSame() {
         for (gray in listOf(Color.Black, Color(0xFF1C1C1C), Color(0xFF6C6C6C), Color(0xFFF2F2F2), Color.White)) {
             assertEquals(gray, gray.toGray())

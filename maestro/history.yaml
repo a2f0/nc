@@ -1,0 +1,31 @@
+# Run on the dedicated test devices; verifies real playback and history across a relaunch.
+appId: net.a2f0.nc
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
+- tapOn: "More"
+- tapOn: "Listening history"
+- assertVisible: "No listening recorded for these dates."
+- tapOn: "Close"
+- tapOn: ".*White Noise.*"
+- tapOn: "More"
+- tapOn: "Listening history"
+- extendedWaitUntil:
+    visible: "White Noise: 0\\.[1-9] min"
+    timeout: 35000
+- tapOn: "Close"
+- tapOn:
+    id: "playback"
+- launchApp:
+    stopApp: true
+- tapOn: "More"
+- tapOn: "Listening history"
+- assertVisible: "White Noise: 0\\.[1-9] min"
+- tapOn: "Previous week"
+- assertVisible: "No listening recorded for these dates."
+- tapOn: "Today"
+- assertVisible: "White Noise: 0\\.[1-9] min"
