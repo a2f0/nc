@@ -38,6 +38,15 @@ func historyDays(_ sessions: [ListeningSession], ending endDay: Date, calendar: 
     }
 }
 
+/// Totals are independent of calendar windows; abandoned sessions end at their last checkpoint.
+func historyTotals(_ sessions: [ListeningSession]) -> [String: Double] {
+    var minutes: [String: Double] = [:]
+    for session in sessions {
+        minutes[session.soundId, default: 0] += max(0, (session.endedAt ?? session.updatedAt) - session.startedAt) / 60_000
+    }
+    return minutes
+}
+
 @MainActor
 @Observable
 final class ListeningHistory {

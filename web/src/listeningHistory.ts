@@ -154,3 +154,13 @@ export function historyDays(sessions: readonly ListeningSession[], endDay: Date)
     return { start, end: next, minutes };
   });
 }
+
+/** Entire saved duration, including old sessions and only the last checkpoint of abandoned plays. */
+export function historyTotals(sessions: readonly ListeningSession[]): Record<NoiseType, number> {
+  const minutes = Object.fromEntries(NOISE_TYPES.map((type) => [type, 0])) as Record<NoiseType, number>;
+  for (const row of sessions) {
+    if (!NOISE_TYPES.includes(row.soundId as NoiseType)) continue;
+    minutes[row.soundId as NoiseType] += Math.max(0, (row.endedAt ?? row.updatedAt) - row.startedAt) / 60_000;
+  }
+  return minutes;
+}

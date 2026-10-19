@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ListeningHistory, historyDays, isSession, type HistoryStorage, type ListeningSession } from "../src/listeningHistory";
+import { ListeningHistory, historyDays, historyTotals, isSession, type HistoryStorage, type ListeningSession } from "../src/listeningHistory";
 
 class MemoryStorage implements HistoryStorage {
   rows = new Map<string, ListeningSession>();
@@ -46,6 +46,8 @@ describe("listening history", () => {
     expect(second.snapshot()).toHaveLength(2);
     expect(second.snapshot().find((row) => row.soundId === "waves")!.updatedAt).toBe(46_000);
     expect(first.snapshot()[0]!.updatedAt).toBe(now);
+    expect(historyTotals(second.snapshot()).waves).toBe(0.75);
+    expect(historyTotals(first.snapshot()).waves).toBe(1440.75);
     second.transition(null);
     await second.flushed();
     expect(storage.rows.size).toBe(2);
@@ -143,4 +145,15 @@ test("IndexedDB retries a failed open and releases connections for upgrades", as
     if (original) Object.defineProperty(globalThis, "indexedDB", original);
     else Reflect.deleteProperty(globalThis, "indexedDB");
   }
+});
+
+test("all-time totals include old sessions and checkpointed plays without counting downtime", () => {
+  const rows: ListeningSession[] = [
+    { id: "old", soundId: "white", startedAt: 0, endedAt: 120_000, updatedAt: 180_000 },
+    { id: "recent", soundId: "white", startedAt: 1_800_000_000_000, endedAt: 1_800_000_180_000, updatedAt: 1_800_000_180_000 },
+    { id: "abandoned", soundId: "fan", startedAt: 1000, endedAt: null, updatedAt: 31_000 },
+    { id: "future", soundId: "unknown", startedAt: 0, endedAt: 600_000, updatedAt: 600_000 },
+  ];
+  expect(historyTotals(rows)).toEqual({ white: 5, pink: 0, brown: 0, waves: 0, fan: 0.5 });
+  expect(Object.values(historyTotals([])).every(value => value === 0)).toBe(true);
 });

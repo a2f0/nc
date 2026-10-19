@@ -7,6 +7,9 @@ enum Gray {
     /// Stable chart order: white, pink, brown, waves, fan; also used by the legend.
     static let historyShades = [0.2, 0.4, 0.6, 0.7333333333, 0.9333333333].map { Color(white: $0) }
 
+    /// Primary text and selected controls.
+    static let label = Color(uiColor: UIColor.label.grayscale)
+
     /// Secondary text and symbols.
     static let secondaryLabel = Color(uiColor: UIColor.secondaryLabel.grayscale)
     /// Button backgrounds.

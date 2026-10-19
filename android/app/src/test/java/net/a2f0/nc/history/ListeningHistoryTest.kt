@@ -34,6 +34,8 @@ class ListeningHistoryTest {
         val restored = ListeningHistory(directory) { now }
         restored.flush().get(5, TimeUnit.SECONDS)
         assertEquals(151_000L, restored.snapshot().first { it.soundId == "fan" }.updatedAt)
+        assertEquals(0.5, historyTotals(restored.snapshot())["fan"]!!, 0.001)
+        assertEquals(1440.5, historyTotals(history.snapshot())["fan"]!!, 0.001)
         restored.transition("pink")
         restored.transition(null)
         restored.transition(null)
@@ -68,6 +70,16 @@ class ListeningHistoryTest {
             assertEquals(minutes, days[5].minutes["fan"]!!, 0.001)
             assertEquals(45.0, days[6].minutes["fan"]!!, 0.001)
         }
+    }
+
+    @Test fun allTimeTotalsIncludeOldSessionsAndStopAtCheckpoints() {
+        val rows = listOf(
+            ListeningSession("old", "white", 0, 120_000, 180_000),
+            ListeningSession("recent", "white", 1_800_000_000_000, 1_800_000_180_000, 1_800_000_180_000),
+            ListeningSession("abandoned", "fan", 1000, null, 31_000),
+        )
+        assertEquals(mapOf("white" to 5.0, "fan" to 0.5), historyTotals(rows))
+        assertTrue(historyTotals(emptyList()).isEmpty())
     }
 
     @Test fun corruptFileDoesNotDiscardOtherSessions() {

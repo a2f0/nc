@@ -48,28 +48,23 @@ export const STRINGS = {
   },
   noise_white_short: {
     text: "White",
-    comment: "White noise's name on a home screen widget button, where there's little room.",
-    platforms: ["android", "ios"],
+    comment: "White noise's name on a widget button or chart axis, where there's little room.",
   },
   noise_pink_short: {
     text: "Pink",
-    comment: "Pink noise's name on a home screen widget button, where there's little room.",
-    platforms: ["android", "ios"],
+    comment: "Pink noise's name on a widget button or chart axis, where there's little room.",
   },
   noise_brown_short: {
     text: "Brown",
-    comment: "Brown noise's name on a home screen widget button, where there's little room.",
-    platforms: ["android", "ios"],
+    comment: "Brown noise's name on a widget button or chart axis, where there's little room.",
   },
   noise_fan_short: {
     text: "Fan",
-    comment: "The fan sound's name on a home screen widget button, where there's little room.",
-    platforms: ["android", "ios"],
+    comment: "The fan sound's name on a widget button or chart axis, where there's little room.",
   },
   noise_waves_short: {
     text: "Waves",
-    comment: "The ocean waves sound's name on a home screen widget button, where there's little room.",
-    platforms: ["android", "ios"],
+    comment: "The ocean waves sound's name on a widget button or chart axis, where there's little room.",
   },
   noise_white_blurb: {
     text: "Equal energy at every frequency. Bright and crisp.",
@@ -122,6 +117,22 @@ export const STRINGS = {
   history: {
     text: "Listening history",
     comment: "Title of the local listening-history screen and its menu entry.",
+  },
+  history_all_time: {
+    text: "All time",
+    comment: "History view selector: total minutes per sound across all saved listening sessions.",
+  },
+  history_calendar: {
+    text: "Calendar",
+    comment: "History view selector: daily listening totals with weekly date navigation.",
+  },
+  history_sound: {
+    text: "Sound",
+    comment: "Horizontal axis of the all-time listening chart; each bar is one sound.",
+  },
+  history_all_time_empty: {
+    text: "No listening recorded yet.",
+    comment: "Empty state when there is no listening time in the all-time history view.",
   },
   history_minutes: {
     text: "Minutes played",

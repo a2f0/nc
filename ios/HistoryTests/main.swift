@@ -35,6 +35,16 @@ struct HistoryTests {
         precondition(pink.startedAt == pink.endedAt)
         precondition(!restored.storageFailed)
 
+        let totalRows = [
+            ListeningSession(id: "old", soundId: "white", startedAt: 0, endedAt: 120_000, updatedAt: 180_000),
+            ListeningSession(id: "recent", soundId: "white", startedAt: 1_800_000_000_000, endedAt: 1_800_000_180_000, updatedAt: 1_800_000_180_000),
+            ListeningSession(id: "abandoned", soundId: "fan", startedAt: 1000, endedAt: nil, updatedAt: 31_000),
+        ]
+        precondition(historyTotals(totalRows) == ["white": 5, "fan": 0.5])
+        precondition(historyTotals([]).isEmpty)
+        precondition(historyTotals(restored.snapshot())["fan"] == 0.5)
+        precondition(historyTotals(history.snapshot())["fan"]! > 1440)
+
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/New_York")!
         for (month, day, expected) in [(3, 8, 1380.0), (11, 1, 1500.0)] {

@@ -409,11 +409,13 @@ button.toggle {
   line-height: 1.5;
 }
 
+.history-views,
 .history-navigation {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
+.history-views button,
 .history-navigation button {
   padding: 8px;
   border: 1px solid var(--separator);
@@ -440,3 +442,8 @@ button.toggle {
   --history-waves: #bbbbbb;
   --history-fan: #eeeeee;
 }
+
+.history-views { margin-bottom: 16px; }
+.history-views button { flex: 1; min-height: 44px; }
+.history-views button[aria-pressed="true"] { background: var(--primary); color: var(--background); }
+.history-navigation[hidden] { display: none; }

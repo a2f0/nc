@@ -35,6 +35,16 @@ fun historyDays(sessions: List<ListeningSession>, endDay: LocalDate, zone: ZoneI
         HistoryDay(date, minutes)
     }
 
+/** All saved time; abandoned sessions end at their last durable checkpoint. */
+fun historyTotals(sessions: List<ListeningSession>): Map<String, Double> {
+    val minutes = mutableMapOf<String, Double>()
+    for (row in sessions) {
+        val duration = ((row.endedAt ?: row.updatedAt) - row.startedAt).coerceAtLeast(0) / 60_000.0
+        minutes[row.soundId] = (minutes[row.soundId] ?: 0.0) + duration
+    }
+    return minutes
+}
+
 /** One atomic file per session; serialized disk I/O never blocks playback or the UI. */
 class ListeningHistory(private val directory: File, private val clock: () -> Long = System::currentTimeMillis) {
     private val sessions = linkedMapOf<String, ListeningSession>()

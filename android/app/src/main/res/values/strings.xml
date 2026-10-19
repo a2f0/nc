@@ -15,15 +15,15 @@
     <string name="noise_fan_title">Fan</string>
     <!-- Name of the sound of waves breaking on a beach. Also its title in the system's media controls. -->
     <string name="noise_waves_title">Ocean Waves</string>
-    <!-- White noise's name on a home screen widget button, where there's little room. -->
+    <!-- White noise's name on a widget button or chart axis, where there's little room. -->
     <string name="noise_white_short">White</string>
-    <!-- Pink noise's name on a home screen widget button, where there's little room. -->
+    <!-- Pink noise's name on a widget button or chart axis, where there's little room. -->
     <string name="noise_pink_short">Pink</string>
-    <!-- Brown noise's name on a home screen widget button, where there's little room. -->
+    <!-- Brown noise's name on a widget button or chart axis, where there's little room. -->
     <string name="noise_brown_short">Brown</string>
-    <!-- The fan sound's name on a home screen widget button, where there's little room. -->
+    <!-- The fan sound's name on a widget button or chart axis, where there's little room. -->
     <string name="noise_fan_short">Fan</string>
-    <!-- The ocean waves sound's name on a home screen widget button, where there's little room. -->
+    <!-- The ocean waves sound's name on a widget button or chart axis, where there's little room. -->
     <string name="noise_waves_short">Waves</string>
     <!-- Describes white noise, under its name. -->
     <string name="noise_white_blurb">Equal energy at every frequency. Bright and crisp.</string>
@@ -47,6 +47,14 @@
     <string name="more">More</string>
     <!-- Title of the local listening-history screen and its menu entry. -->
     <string name="history">Listening history</string>
+    <!-- History view selector: total minutes per sound across all saved listening sessions. -->
+    <string name="history_all_time">All time</string>
+    <!-- History view selector: daily listening totals with weekly date navigation. -->
+    <string name="history_calendar">Calendar</string>
+    <!-- Horizontal axis of the all-time listening chart; each bar is one sound. -->
+    <string name="history_sound">Sound</string>
+    <!-- Empty state when there is no listening time in the all-time history view. -->
+    <string name="history_all_time_empty">No listening recorded yet.</string>
     <!-- Vertical axis of the listening-history bar chart; durations in minutes. -->
     <string name="history_minutes">Minutes played</string>
     <!-- Horizontal axis of the listening-history bar chart; calendar dates in the current time zone. -->
