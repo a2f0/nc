@@ -1,16 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generated from l10n/ by `bun run l10n`; edit those files instead. -->
 <resources>
-    <string name="history">Historial de escucha</string>
-    <string name="history_minutes">Minutos reproducidos</string>
-    <string name="history_date">Fecha</string>
-    <string name="history_previous">Semana anterior</string>
-    <string name="history_next">Semana siguiente</string>
-    <string name="history_today">Hoy</string>
-    <string name="history_empty">No hay escuchas registradas para estas fechas.</string>
-    <string name="history_local">Guardado en este dispositivo. La escucha en curso se actualiza cada 15 segundos.</string>
-    <string name="history_storage_failed">No se pudo cargar o guardar parte del historial de escucha.</string>
-    <string name="history_value">%1$s: %2$s min</string>
     <string name="widget_description">Inicia y detén cada sonido con un toque.</string>
     <string name="noise_white_title">Ruido blanco</string>
     <string name="noise_pink_title">Ruido rosa</string>
@@ -32,6 +22,16 @@
     <string name="stop">Detener</string>
     <string name="volume">Volumen</string>
     <string name="more">Más</string>
+    <string name="history">Historial de escucha</string>
+    <string name="history_minutes">Minutos reproducidos</string>
+    <string name="history_date">Fecha</string>
+    <string name="history_previous">Semana anterior</string>
+    <string name="history_next">Semana siguiente</string>
+    <string name="history_today">Hoy</string>
+    <string name="history_empty">No hay escuchas registradas para estas fechas.</string>
+    <string name="history_local">Guardado en este dispositivo. La escucha en curso se actualiza cada 15 segundos.</string>
+    <string name="history_storage_failed">No se pudo cargar o guardar parte del historial de escucha.</string>
+    <string name="history_value">%1$s: %2$s min</string>
     <string name="settings">Ajustes</string>
     <string name="rate_app">Valorar la app</string>
     <string name="about">Acerca de</string>

@@ -25,7 +25,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -45,8 +44,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.ceil
-
-private val historyShades = listOf(0xff333333, 0xff666666, 0xff999999, 0xffbbbbbb, 0xffeeeeee).map { Color(it) }
 
 @Composable
 fun HistoryContent() {
@@ -102,7 +99,7 @@ fun HistoryContent() {
                                 val minutes = day.minutes[type.id] ?: 0.0
                                 if (minutes > 0) Box(
                                     Modifier.fillMaxWidth().height((180 * minutes / maximum).dp)
-                                        .background(historyShades[index]).border(0.5.dp, MaterialTheme.colorScheme.outline),
+                                        .background(HistoryShades[index]).border(0.5.dp, MaterialTheme.colorScheme.outline),
                                 )
                             }
                         }
@@ -118,7 +115,7 @@ fun HistoryContent() {
     if (totals.all { it == 0.0 }) Text(stringResource(R.string.history_empty))
     NoiseType.entries.forEachIndexed { index, type ->
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(12.dp).background(historyShades[index]).border(0.5.dp, MaterialTheme.colorScheme.outline))
+            Box(Modifier.size(12.dp).background(HistoryShades[index]).border(0.5.dp, MaterialTheme.colorScheme.outline))
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.history_value, labels[index], number.format(days.sumOf { it.minutes[type.id] ?: 0.0 })), style = MaterialTheme.typography.bodyMedium)
         }

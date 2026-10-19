@@ -3,7 +3,7 @@ import { historyDays, type ListeningHistory } from "./listeningHistory";
 import { NOISE_INFO, NOISE_TYPES } from "./noiseType";
 
 /** Shared ordering across platforms: white, pink, brown, waves, fan. Equal RGB components only. */
-const SHADES = ["#333333", "#666666", "#999999", "#bbbbbb", "#eeeeee"];
+const SHADES = NOISE_TYPES.map((type) => `var(--history-${type})`);
 
 export function setUpHistory(history: ListeningHistory): () => void {
   const content = document.getElementById("history-content")!;

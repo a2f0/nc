@@ -72,12 +72,14 @@ class ListeningHistoryTest {
 
     @Test fun corruptFileDoesNotDiscardOtherSessions() {
         val directory = temporary.newFolder()
+        val writer = ListeningHistory(directory) { 1000 }
+        writer.transition("brown")
+        writer.transition(null)
+        writer.flush().get(5, TimeUnit.SECONDS)
         java.io.File(directory, "broken.json").writeText("broken")
-        val history = ListeningHistory(directory) { 1000 }
-        history.transition("brown")
-        history.transition(null)
+        val history = ListeningHistory(directory) { 2000 }
         history.flush().get(5, TimeUnit.SECONDS)
         assertTrue(history.storageFailed.value)
-        assertEquals(1, history.snapshot().size)
+        assertEquals(writer.snapshot(), history.snapshot())
     }
 }

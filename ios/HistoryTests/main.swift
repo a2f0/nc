@@ -48,6 +48,25 @@ struct HistoryTests {
             precondition(days[5].minutes["fan"] == expected)
             precondition(days[6].minutes["fan"] == 45)
         }
+        try Data("broken".utf8).write(to: directory.appending(path: "broken.json"))
+        let invalid = ListeningSession(id: "invalid", soundId: "white", startedAt: 1000, endedAt: 900, updatedAt: 900)
+        try JSONEncoder().encode(invalid).write(to: directory.appending(path: "invalid.json"))
+        let recovered = ListeningHistory(directory: directory, clock: { now })
+        await recovered.flush()
+        for _ in 0..<100 where !recovered.storageFailed { await Task.yield() }
+        precondition(recovered.storageFailed)
+        precondition(recovered.snapshot().count == 3)
+        precondition(recovered.snapshot().contains { $0.id == pink.id })
+        let interrupted = ListeningHistory(directory: directory.appending(path: "interruptions"), clock: { now })
+        interrupted.transition(to: "waves")
+        now += 60_000
+        interrupted.transition(to: nil)
+        now += 600_000
+        interrupted.transition(to: "waves")
+        now += 30_000
+        interrupted.transition(to: nil)
+        precondition(interrupted.snapshot().reduce(0) { $0 + ($1.endedAt! - $1.startedAt) } == 90_000)
+        await interrupted.flush()
         print("Listening history: persistence, duplicate transitions, crash recovery, clock rollback, midnight and DST passed")
     }
 }

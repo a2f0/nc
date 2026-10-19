@@ -277,9 +277,7 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f).semantics { heading() },
                 )
-                if (sheet == Sheet.HISTORY) {
-                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
-                }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) }
             }
             content()
         }

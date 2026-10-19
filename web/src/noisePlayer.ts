@@ -129,7 +129,7 @@ export class NoisePlayer {
     const audio = new Audio();
     audio.srcObject = output.stream;
     audio.addEventListener("pause", () => {
-      if (engine === this.engine && this.nowPlaying !== null) this.stop();
+      if (engine === this.engine && audio.paused && this.nowPlaying !== null) this.stop();
     });
     context.addEventListener("statechange", () => {
       if (engine !== this.engine) return;

@@ -16,7 +16,9 @@ final class NoisePlayer {
     @ObservationIgnored private var historyTimer: Timer?
 
     /// The noise currently playing, or nil when stopped.
-    private(set) var nowPlaying: NoiseType?
+    private(set) var nowPlaying: NoiseType? {
+        didSet { history.transition(to: nowPlaying?.rawValue) }
+    }
 
     /// The most recently played noise, which the play button and lock screen controls
     /// resume. Saved across launches.
@@ -73,7 +75,6 @@ final class NoisePlayer {
             stop()
             return
         }
-        history.transition(to: type.rawValue)
         nowPlaying = type
         lastPlayed = type
         UserDefaults.standard.set(type.rawValue, forKey: Self.lastPlayedKey)
@@ -85,7 +86,6 @@ final class NoisePlayer {
     func stop() {
         interruptedNoise = nil
         if nowPlaying != nil {
-            history.transition(to: nil)
             nowPlaying = nil
             renderer.setFadingOut(true)
             fadeOutTask = Task {
@@ -174,7 +174,6 @@ final class NoisePlayer {
         case .began:
             // The system has already stopped the engine.
             guard let noise = nowPlaying else { return }
-            history.transition(to: nil)
             nowPlaying = nil
             interruptedNoise = noise
             publishState()
@@ -192,7 +191,6 @@ final class NoisePlayer {
             try engine.start()
         } catch {
             Self.log.error("Couldn't restart after configuration change: \(error)")
-            history.transition(to: nil)
             nowPlaying = nil
             publishState()
         }
@@ -202,9 +200,11 @@ final class NoisePlayer {
 
     private func publishState() {
         if nowPlaying != nil && historyTimer == nil {
-            historyTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.history.checkpoint() }
             }
+            historyTimer = timer
+            RunLoop.main.add(timer, forMode: .common)
         } else if nowPlaying == nil {
             historyTimer?.invalidate()
             historyTimer = nil

@@ -19,13 +19,22 @@ export class IndexedDBHistoryStorage implements HistoryStorage {
   private database?: Promise<IDBDatabase>;
 
   private open(): Promise<IDBDatabase> {
-    return this.database ??= new Promise((resolve, reject) => {
+    if (this.database) return this.database;
+    const opening = new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("listening-history", 1);
+      let blocked = false;
       request.onupgradeneeded = () => request.result.createObjectStore("sessions", { keyPath: "id" });
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => {
+        // A blocked open may succeed after its caller has already received a failure.
+        if (blocked) { request.result.close(); return; }
+        request.result.onversionchange = () => { request.result.close(); this.database = undefined; };
+        resolve(request.result);
+      };
       request.onerror = () => reject(request.error);
-      request.onblocked = () => reject(new Error("History database blocked"));
+      request.onblocked = () => { blocked = true; reject(new Error("History database blocked")); };
     });
+    this.database = opening.catch((error: unknown) => { this.database = undefined; throw error; });
+    return this.database;
   }
 
   async read(): Promise<ListeningSession[]> {

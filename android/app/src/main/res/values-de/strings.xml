@@ -1,16 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generated from l10n/ by `bun run l10n`; edit those files instead. -->
 <resources>
-    <string name="history">Hörverlauf</string>
-    <string name="history_minutes">Gespielte Minuten</string>
-    <string name="history_date">Datum</string>
-    <string name="history_previous">Vorherige Woche</string>
-    <string name="history_next">Nächste Woche</string>
-    <string name="history_today">Heute</string>
-    <string name="history_empty">Für diesen Zeitraum wurde nichts aufgezeichnet.</string>
-    <string name="history_local">Auf diesem Gerät gespeichert. Die laufende Wiedergabe wird alle 15 Sekunden aktualisiert.</string>
-    <string name="history_storage_failed">Ein Teil des Hörverlaufs konnte nicht geladen oder gespeichert werden.</string>
-    <string name="history_value">%1$s: %2$s Min.</string>
     <string name="widget_description">Jeden Klang mit einem Tippen starten und stoppen.</string>
     <string name="noise_white_title">Weißes Rauschen</string>
     <string name="noise_pink_title">Rosa Rauschen</string>
@@ -32,6 +22,16 @@
     <string name="stop">Stopp</string>
     <string name="volume">Lautstärke</string>
     <string name="more">Mehr</string>
+    <string name="history">Hörverlauf</string>
+    <string name="history_minutes">Gespielte Minuten</string>
+    <string name="history_date">Datum</string>
+    <string name="history_previous">Vorherige Woche</string>
+    <string name="history_next">Nächste Woche</string>
+    <string name="history_today">Heute</string>
+    <string name="history_empty">Für diesen Zeitraum wurde nichts aufgezeichnet.</string>
+    <string name="history_local">Auf diesem Gerät gespeichert. Die laufende Wiedergabe wird alle 15 Sekunden aktualisiert.</string>
+    <string name="history_storage_failed">Ein Teil des Hörverlaufs konnte nicht geladen oder gespeichert werden.</string>
+    <string name="history_value">%1$s: %2$s Min.</string>
     <string name="settings">Einstellungen</string>
     <string name="rate_app">App bewerten</string>
     <string name="about">Info</string>

@@ -4,7 +4,6 @@ struct HistorySheet: View {
     let history: ListeningHistory
     @State private var offset = 0
     @Environment(\.dismiss) private var dismiss
-    private let shades = [0.2, 0.4, 0.6, 0.7333333333, 0.9333333333]
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
@@ -16,8 +15,14 @@ struct HistorySheet: View {
                         Text(.history).font(.title2.bold()).accessibilityAddTraits(.isHeader)
                         Spacer()
                         Button { dismiss() } label: {
-                            Image(systemName: "xmark").frame(width: 44, height: 44)
-                        }.accessibilityLabel(Text(.close))
+                            Image(systemName: "xmark")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Gray.secondaryLabel)
+                                .frame(width: 32, height: 32)
+                                .background(Gray.secondaryFill, in: .circle)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(.rect)
+                        }.buttonStyle(.plain).accessibilityLabel(Text(.close))
                     }
                     HStack {
                         Button { offset -= 7 } label: {
@@ -28,7 +33,7 @@ struct HistorySheet: View {
                         Spacer()
                         Button { offset = min(0, offset + 7) } label: {
                             Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44)
-                        }.disabled(offset == 0).accessibilityLabel(Text(.historyNext))
+                        }.disabled(offset == 0).opacity(offset == 0 ? 0.4 : 1).accessibilityLabel(Text(.historyNext))
                     }
                     Text("\(days[0].start.formatted(date: .abbreviated, time: .omitted)) – \(days[6].start.formatted(date: .abbreviated, time: .omitted))")
                         .font(.subheadline).frame(maxWidth: .infinity)
@@ -38,7 +43,7 @@ struct HistorySheet: View {
                     }
                     ForEach(Array(NoiseType.allCases.enumerated()), id: \.element) { index, type in
                         HStack {
-                            Rectangle().fill(Color(white: shades[index])).frame(width: 12, height: 12)
+                            Rectangle().fill(Gray.historyShades[index]).frame(width: 12, height: 12)
                                 .overlay(Rectangle().stroke(Gray.secondaryLabel, lineWidth: 0.5)).accessibilityHidden(true)
                             Text(.historyValue(String(localized: type.title), formatted(days.reduce(0) { $0 + ($1.minutes[type.rawValue] ?? 0) })))
                                 .font(.subheadline)
@@ -80,7 +85,7 @@ struct HistorySheet: View {
                                     ForEach(Array(NoiseType.allCases.enumerated().reversed()), id: \.element) { index, type in
                                         let minutes = day.minutes[type.rawValue] ?? 0
                                         if minutes > 0 {
-                                            Rectangle().fill(Color(white: shades[index]))
+                                            Rectangle().fill(Gray.historyShades[index])
                                                 .frame(height: geometry.size.height * minutes / maximum)
                                                 .overlay(Rectangle().stroke(Gray.secondaryLabel, lineWidth: 0.5))
                                         }

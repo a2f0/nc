@@ -99,7 +99,7 @@ class NoiseEngineTest {
     }
 
     @Test
-    fun resumingDuringFadeReportsPlaybackAgain() {
+    fun quickResumeReportsPlaybackAgain() {
         val resumed = CountDownLatch(1)
         val released = CountDownLatch(1)
         lateinit var engine: NoiseEngine

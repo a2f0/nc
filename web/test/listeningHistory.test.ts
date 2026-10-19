@@ -105,3 +105,42 @@ describe("listening history", () => {
     expect(isSession({ ...row, updatedAt: NaN })).toBe(false);
   });
 });
+
+test("IndexedDB retries a failed open and releases connections for upgrades", async () => {
+  const { IndexedDBHistoryStorage } = await import("../src/listeningHistory");
+  const original = Object.getOwnPropertyDescriptor(globalThis, "indexedDB");
+  let opens = 0;
+  let closed = 0;
+  const db = {
+    onversionchange: null as (() => void) | null,
+    close() { closed++; },
+    transaction() {
+      return { objectStore() { return { getAll() {
+        const result = { result: [], onsuccess: null as (() => void) | null };
+        queueMicrotask(() => result.onsuccess?.());
+        return result;
+      } }; } };
+    },
+  };
+  Object.defineProperty(globalThis, "indexedDB", { configurable: true, value: {
+    open() {
+      const first = ++opens === 1;
+      const request = { result: db, error: new Error("temporary failure"), onerror: null as (() => void) | null, onsuccess: null as (() => void) | null };
+      queueMicrotask(() => first ? request.onerror?.() : request.onsuccess?.());
+      return request;
+    },
+  } });
+  try {
+    const storage = new IndexedDBHistoryStorage();
+    await expect(storage.read()).rejects.toThrow("temporary failure");
+    expect(await storage.read()).toEqual([]);
+    expect(opens).toBe(2);
+    db.onversionchange!();
+    expect(closed).toBe(1);
+    expect(await storage.read()).toEqual([]);
+    expect(opens).toBe(3);
+  } finally {
+    if (original) Object.defineProperty(globalThis, "indexedDB", original);
+    else Reflect.deleteProperty(globalThis, "indexedDB");
+  }
+});

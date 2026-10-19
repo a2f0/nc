@@ -21,6 +21,13 @@ internal interface AudioSink {
     fun release()
 }
 
+/** Playback controls, separated from the hardware for service lifecycle tests. */
+internal interface PlaybackEngine {
+    fun play(type: NoiseType)
+    fun stop()
+    fun setVolume(volume: Float)
+}
+
 /**
  * Streams generated stereo noise ([NoiseMixer]) to an [AudioTrack] on a dedicated thread.
  * Starting fades in and stopping fades out, so neither clicks. Switching noise type while
@@ -30,7 +37,7 @@ internal class NoiseEngine(
     private val onStarted: (NoiseType) -> Unit = {},
     private val onFailed: () -> Unit = {},
     private val openSink: () -> AudioSink = ::AudioTrackSink,
-) {
+) : PlaybackEngine {
     private val lock = Any()
     private var thread: Thread? = null
 
@@ -39,7 +46,7 @@ internal class NoiseEngine(
     @Volatile private var fadingOut = false
     @Volatile private var targetVolumeGain = 1f
 
-    fun play(type: NoiseType) = synchronized(lock) {
+    override fun play(type: NoiseType) = synchronized(lock) {
         this.type = type
         playVersion++
         fadingOut = false
@@ -49,12 +56,12 @@ internal class NoiseEngine(
     }
 
     /** Begins a fade-out; the audio thread releases the sink and exits once it's silent. */
-    fun stop() = synchronized(lock) {
+    override fun stop() = synchronized(lock) {
         if (thread != null) fadingOut = true
     }
 
     /** [volume] runs from 0 to 1; see [volumeGain]. */
-    fun setVolume(volume: Float) {
+    override fun setVolume(volume: Float) {
         targetVolumeGain = volumeGain(volume)
     }
 

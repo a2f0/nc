@@ -16,46 +16,6 @@ export interface SourceString {
 }
 
 export const STRINGS = {
-  history: {
-    text: "Listening history",
-    comment: "Title of the local listening-history screen and its menu entry.",
-  },
-  history_minutes: {
-    text: "Minutes played",
-    comment: "Vertical axis of the listening-history bar chart; durations in minutes.",
-  },
-  history_date: {
-    text: "Date",
-    comment: "Horizontal axis of the listening-history bar chart; calendar dates in the current time zone.",
-  },
-  history_previous: {
-    text: "Previous week",
-    comment: "Button to move the listening-history chart seven days earlier.",
-  },
-  history_next: {
-    text: "Next week",
-    comment: "Button to move the listening-history chart seven days later.",
-  },
-  history_today: {
-    text: "Today",
-    comment: "Button to return the history chart to the seven days ending today.",
-  },
-  history_empty: {
-    text: "No listening recorded for these dates.",
-    comment: "Empty state for the selected date range in listening history.",
-  },
-  history_local: {
-    text: "Saved on this device. Active listening updates every 15 seconds.",
-    comment: "Explanation below the local listening-history chart. No data is synced.",
-  },
-  history_storage_failed: {
-    text: "Some listening history could not be loaded or saved.",
-    comment: "Visible warning when local history storage fails; playback can continue.",
-  },
-  history_value: {
-    text: "{noise}: {minutes} min",
-    comment: "History chart legend and accessibility label. Noise is the localized sound name; minutes is a localized decimal number.",
-  },
   app_name: {
     text: "Noise Connoisseur",
     comment: "The app's name: on its screen and widget, and the artist in the system's media controls.",
@@ -158,6 +118,46 @@ export const STRINGS = {
   more: {
     text: "More",
     comment: "Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About.",
+  },
+  history: {
+    text: "Listening history",
+    comment: "Title of the local listening-history screen and its menu entry.",
+  },
+  history_minutes: {
+    text: "Minutes played",
+    comment: "Vertical axis of the listening-history bar chart; durations in minutes.",
+  },
+  history_date: {
+    text: "Date",
+    comment: "Horizontal axis of the listening-history bar chart; calendar dates in the current time zone.",
+  },
+  history_previous: {
+    text: "Previous week",
+    comment: "Button to move the listening-history chart seven days earlier.",
+  },
+  history_next: {
+    text: "Next week",
+    comment: "Button to move the listening-history chart seven days later.",
+  },
+  history_today: {
+    text: "Today",
+    comment: "Button to return the history chart to the seven days ending today.",
+  },
+  history_empty: {
+    text: "No listening recorded for these dates.",
+    comment: "Empty state for the selected date range in listening history.",
+  },
+  history_local: {
+    text: "Saved on this device. Active listening updates every 15 seconds.",
+    comment: "Explanation below the local listening-history chart. No data is synced.",
+  },
+  history_storage_failed: {
+    text: "Some listening history could not be loaded or saved.",
+    comment: "Visible warning when local history storage fails; playback can continue.",
+  },
+  history_value: {
+    text: "{noise}: {minutes} min",
+    comment: "History chart legend and accessibility label. Noise is the localized sound name; minutes is a localized decimal number.",
   },
   settings: {
     text: "Settings",
