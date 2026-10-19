@@ -2,6 +2,7 @@ import AVFoundation
 import MediaPlayer
 import Observation
 import WidgetKit
+import UIKit
 import os
 
 /// Owns the audio engine and session. Playback continues in the background (the app
@@ -11,6 +12,8 @@ import os
 @Observable
 final class NoisePlayer {
     static let shared = NoisePlayer()
+    let history = ListeningHistory()
+    @ObservationIgnored private var historyTimer: Timer?
 
     /// The noise currently playing, or nil when stopped.
     private(set) var nowPlaying: NoiseType?
@@ -67,8 +70,10 @@ final class NoisePlayer {
             if !engine.isRunning { try engine.start() }
         } catch {
             Self.log.error("Couldn't start playback: \(error)")
+            stop()
             return
         }
+        history.transition(to: type.rawValue)
         nowPlaying = type
         lastPlayed = type
         UserDefaults.standard.set(type.rawValue, forKey: Self.lastPlayedKey)
@@ -80,6 +85,7 @@ final class NoisePlayer {
     func stop() {
         interruptedNoise = nil
         if nowPlaying != nil {
+            history.transition(to: nil)
             nowPlaying = nil
             renderer.setFadingOut(true)
             fadeOutTask = Task {
@@ -130,6 +136,12 @@ final class NoisePlayer {
             MainActor.assumeIsolated { self?.restartAfterConfigurationChange() }
         })
 
+        observers.append(center.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.stop() }
+        })
+        observers.append(center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.history.checkpoint() }
+        })
         Self.registerRemoteCommands(for: self)
     }
 
@@ -162,6 +174,7 @@ final class NoisePlayer {
         case .began:
             // The system has already stopped the engine.
             guard let noise = nowPlaying else { return }
+            history.transition(to: nil)
             nowPlaying = nil
             interruptedNoise = noise
             publishState()
@@ -179,6 +192,7 @@ final class NoisePlayer {
             try engine.start()
         } catch {
             Self.log.error("Couldn't restart after configuration change: \(error)")
+            history.transition(to: nil)
             nowPlaying = nil
             publishState()
         }
@@ -187,6 +201,14 @@ final class NoisePlayer {
     // MARK: - State
 
     private func publishState() {
+        if nowPlaying != nil && historyTimer == nil {
+            historyTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated { self?.history.checkpoint() }
+            }
+        } else if nowPlaying == nil {
+            historyTimer?.invalidate()
+            historyTimer = nil
+        }
         updateNowPlayingInfo()
         guard PlaybackStatus.nowPlaying != nowPlaying else { return }
         PlaybackStatus.nowPlaying = nowPlaying

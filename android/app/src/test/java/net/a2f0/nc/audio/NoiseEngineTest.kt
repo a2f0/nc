@@ -67,4 +67,63 @@ class NoiseEngineTest {
         assertTrue("no noise was played: ${sink.loudestPlayed}", sink.loudestPlayed > 0.1f)
         assertEquals("released with the fade-out still queued", 0f, sink.loudestDiscarded, 0f)
     }
+
+    @Test
+    fun failedSinkDoesNotReportPlayback() {
+        val failed = CountDownLatch(1)
+        var starts = 0
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { failed.countDown() }) {
+            error("audio output unavailable")
+        }
+        engine.play(NoiseType.FAN)
+        assertTrue(failed.await(5, TimeUnit.SECONDS))
+        assertEquals(0, starts)
+    }
+
+    @Test
+    fun failedWriteClosesPlayback() {
+        val failed = CountDownLatch(1)
+        val released = CountDownLatch(1)
+        var starts = 0
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { failed.countDown() }) {
+            object : AudioSink {
+                override val bufferSizeInFrames = 1024
+                override fun write(buffer: FloatArray, size: Int) = -1
+                override fun release() { released.countDown() }
+            }
+        }
+        engine.play(NoiseType.WHITE)
+        assertTrue(failed.await(5, TimeUnit.SECONDS))
+        assertTrue(released.await(5, TimeUnit.SECONDS))
+        assertEquals(0, starts)
+    }
+
+    @Test
+    fun resumingDuringFadeReportsPlaybackAgain() {
+        val resumed = CountDownLatch(1)
+        val released = CountDownLatch(1)
+        lateinit var engine: NoiseEngine
+        var starts = 0
+        engine = NoiseEngine(onStarted = {
+            starts++
+            if (starts == 1) {
+                engine.stop()
+                engine.play(NoiseType.WHITE)
+            } else {
+                engine.stop()
+                resumed.countDown()
+            }
+        }) {
+            object : AudioSink {
+                override val bufferSizeInFrames = 1024
+                override fun write(buffer: FloatArray, size: Int) = size
+                override fun release() { released.countDown() }
+            }
+        }
+        engine.play(NoiseType.WHITE)
+        assertTrue(resumed.await(5, TimeUnit.SECONDS))
+        assertTrue(released.await(5, TimeUnit.SECONDS))
+        assertEquals(2, starts)
+    }
+
 }

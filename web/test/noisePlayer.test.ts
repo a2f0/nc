@@ -14,7 +14,7 @@ class FakeGainParam {
   }
 }
 
-class FakeAudioContext {
+class FakeAudioContext extends EventTarget {
   static instances: FakeAudioContext[] = [];
   state: AudioContextState = "running";
   currentTime = 12;
@@ -23,6 +23,7 @@ class FakeAudioContext {
   readonly audioWorklet = { addModule: () => this.moduleLoad.promise };
 
   constructor() {
+    super();
     FakeAudioContext.instances.push(this);
   }
 
@@ -66,13 +67,14 @@ class FakeWorkletNode {
   }
 }
 
-class FakeAudio {
+class FakeAudio extends EventTarget {
   static instances: FakeAudio[] = [];
   static playError: Error | null = null;
   paused = true;
   srcObject: unknown = null;
 
   constructor() {
+    super();
     FakeAudio.instances.push(this);
   }
 
@@ -330,4 +332,51 @@ describe("NoisePlayer", () => {
     player.play("fan");
     expect(player.lastPlayed).toBe("fan");
   });
+});
+
+
+test("history starts only after audio is ready and closes on switches and media pause", async () => {
+  const player = new NoisePlayer();
+  player.play("white");
+  expect(player.history.snapshot()).toHaveLength(0);
+  FakeAudioContext.instances[0]!.moduleLoad.resolve();
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(1);
+  player.play("fan");
+  expect(player.history.snapshot()[0]!.endedAt).not.toBeNull();
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(2);
+  mediaSession.handlers.get("pause")!();
+  expect(player.history.snapshot().every((row) => row.endedAt !== null)).toBe(true);
+});
+
+test("failed starts and canceled pending starts do not create listening sessions", async () => {
+  const player = new NoisePlayer();
+  player.play("white");
+  player.stop();
+  FakeAudioContext.instances[0]!.moduleLoad.resolve();
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(0);
+  const logged = spyOn(console, "error").mockImplementation(() => {});
+  FakeAudio.playError = new DOMException("blocked", "NotAllowedError");
+  player.play("fan");
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(0);
+  logged.mockRestore();
+});
+
+test("unexpected media pause and audio context suspension stop counting time", async () => {
+  const { player, context, audio } = await loaded();
+  expect(player.history.snapshot()).toHaveLength(1);
+  context.state = "suspended";
+  context.dispatchEvent(new Event("statechange"));
+  expect(player.history.snapshot()[0]!.endedAt).not.toBeNull();
+  context.state = "running";
+  context.dispatchEvent(new Event("statechange"));
+  await settle();
+  expect(player.history.snapshot()).toHaveLength(2);
+  audio.paused = true;
+  audio.dispatchEvent(new Event("pause"));
+  expect(player.nowPlaying).toBeNull();
+  expect(player.history.snapshot().every((row) => row.endedAt !== null)).toBe(true);
 });

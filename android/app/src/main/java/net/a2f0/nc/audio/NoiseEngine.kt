@@ -26,16 +26,22 @@ internal interface AudioSink {
  * Starting fades in and stopping fades out, so neither clicks. Switching noise type while
  * playing is instant.
  */
-internal class NoiseEngine(private val openSink: () -> AudioSink = ::AudioTrackSink) {
+internal class NoiseEngine(
+    private val onStarted: (NoiseType) -> Unit = {},
+    private val onFailed: () -> Unit = {},
+    private val openSink: () -> AudioSink = ::AudioTrackSink,
+) {
     private val lock = Any()
     private var thread: Thread? = null
 
     @Volatile private var type = NoiseType.WHITE
+    @Volatile private var playVersion = 0
     @Volatile private var fadingOut = false
     @Volatile private var targetVolumeGain = 1f
 
     fun play(type: NoiseType) = synchronized(lock) {
         this.type = type
+        playVersion++
         fadingOut = false
         if (thread == null) {
             thread = Thread(::run, "NoiseEngine").also { it.start() }
@@ -54,7 +60,9 @@ internal class NoiseEngine(private val openSink: () -> AudioSink = ::AudioTrackS
 
     private fun run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
-        val sink = openSink()
+        var sink: AudioSink? = null
+        var failed = false
+        var reportedVersion: Int? = null
 
         val mixer = NoiseMixer(
             SAMPLE_RATE,
@@ -65,9 +73,20 @@ internal class NoiseEngine(private val openSink: () -> AudioSink = ::AudioTrackS
         val buffer = FloatArray(FRAMES_PER_WRITE * 2)
 
         try {
+            sink = openSink()
             while (true) {
-                mixer.render(buffer, type, fadingOut, targetVolumeGain)
-                if (sink.write(buffer, buffer.size) < 0) break
+                val version = playVersion
+                val renderedType = type
+                mixer.render(buffer, renderedType, fadingOut, targetVolumeGain)
+                val written = sink.write(buffer, buffer.size)
+                if (written < 0) {
+                    failed = true
+                    break
+                }
+                if (written > 0 && !fadingOut && version != reportedVersion) {
+                    reportedVersion = version
+                    onStarted(renderedType)
+                }
 
                 if (mixer.fade == 0f && fadingOut) {
                     val exit = synchronized(lock) {
@@ -87,11 +106,15 @@ internal class NoiseEngine(private val openSink: () -> AudioSink = ::AudioTrackS
                     }
                 }
             }
+        } catch (_: Exception) {
+            failed = true
         } finally {
-            synchronized(lock) {
-                if (thread == Thread.currentThread()) thread = null
+            val current = synchronized(lock) {
+                (thread == Thread.currentThread()).also { if (it) thread = null }
             }
-            sink.release()
+            try { sink?.release() } finally {
+                if (failed && current) onFailed()
+            }
         }
     }
 

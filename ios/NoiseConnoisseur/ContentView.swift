@@ -43,6 +43,7 @@ struct ContentView: View {
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
+            case .history: HistorySheet(history: player.history)
             case .settings: SettingsSheet(player: player)
             case .about: AboutSheet()
             }
@@ -52,6 +53,7 @@ struct ContentView: View {
 
 /// The sheets the menu opens.
 private enum Sheet: Identifiable {
+    case history
     case settings
     case about
 
@@ -69,6 +71,9 @@ private struct MoreMenu: View {
 
     var body: some View {
         Menu {
+            Button { sheet = .history } label: {
+                Label { Text(.history) } icon: { Image(systemName: "chart.bar") }
+            }
             Button { sheet = .settings } label: {
                 Label { Text(.settings) } icon: { Image(systemName: "gearshape") }
             }

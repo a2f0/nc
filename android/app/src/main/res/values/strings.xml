@@ -1,6 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Generated from l10n/ by `bun run l10n`; edit those files instead. -->
 <resources>
+    <!-- Title of the local listening-history screen and its menu entry. -->
+    <string name="history">Listening history</string>
+    <!-- Vertical axis of the listening-history bar chart; durations in minutes. -->
+    <string name="history_minutes">Minutes played</string>
+    <!-- Horizontal axis of the listening-history bar chart; calendar dates in the current time zone. -->
+    <string name="history_date">Date</string>
+    <!-- Button to move the listening-history chart seven days earlier. -->
+    <string name="history_previous">Previous week</string>
+    <!-- Button to move the listening-history chart seven days later. -->
+    <string name="history_next">Next week</string>
+    <!-- Button to return the history chart to the seven days ending today. -->
+    <string name="history_today">Today</string>
+    <!-- Empty state for the selected date range in listening history. -->
+    <string name="history_empty">No listening recorded for these dates.</string>
+    <!-- Explanation below the local listening-history chart. No data is synced. -->
+    <string name="history_local">Saved on this device. Active listening updates every 15 seconds.</string>
+    <!-- Visible warning when local history storage fails; playback can continue. -->
+    <string name="history_storage_failed">Some listening history could not be loaded or saved.</string>
+    <!-- History chart legend and accessibility label. Noise is the localized sound name; minutes is a localized decimal number. -->
+    <string name="history_value">%1$s: %2$s min</string>
     <!-- The app's name: on its screen and widget, and the artist in the system's media controls. -->
     <string name="app_name" translatable="false">Noise Connoisseur</string>
     <!-- Describes the home screen widget in the system's widget gallery. -->
@@ -59,6 +79,8 @@
     <string name="platform_ios" translatable="false">iOS</string>
     <!-- Link to the website, which fills {web} in the About sheet's “Also available on {android} and {web}.” or “Also available on {ios} and {web}.” -->
     <string name="platform_web">the web</string>
+    <!-- Label for the button that closes a sheet, such as History, Settings, or About. -->
+    <string name="close">Close</string>
     <!-- Name of the playback notification's category in the system's notification settings. -->
     <string name="notification_channel_name">Playback</string>
 </resources>

@@ -6,6 +6,7 @@ import {
   PROCESSOR_NAME,
 } from "./noiseProtocol";
 import { t } from "./l10n";
+import { ListeningHistory } from "./listeningHistory";
 import { NOISE_INFO, NOISE_TYPES, type NoiseType } from "./noiseType";
 
 /**
@@ -52,7 +53,7 @@ export class NoisePlayer {
   private commandId = 0;
   private readonly listeners = new Set<() => void>();
 
-  constructor() {
+  constructor(readonly history = new ListeningHistory()) {
     this.setActionHandler("play", () => this.play(this.lastPlayed));
     this.setActionHandler("pause", () => this.stop());
     this.setActionHandler("stop", () => this.stop());
@@ -80,16 +81,22 @@ export class NoisePlayer {
    * let audio start then.
    */
   play(type: NoiseType): void {
+    if (this.nowPlaying !== type) this.history.transition(null);
     this.nowPlaying = type;
     this.lastPlayed = type;
     save(LAST_PLAYED_KEY, type);
     this.failed = false;
 
     const engine = (this.engine ??= this.createEngine());
-    void engine.context.resume();
-    engine.audio.play().catch((error: unknown) => {
+    const request = this.commandId + 1;
+    Promise.all([engine.context.resume(), engine.audio.play(), engine.node]).then(() => {
+      if (engine === this.engine && request === this.commandId && this.nowPlaying === type
+        && engine.context.state === "running" && !engine.audio.paused) {
+        this.history.transition(type);
+      }
+    }).catch((error: unknown) => {
       // A pause() that lands before play() settles is a stop, not a failure.
-      if (!(error instanceof DOMException && error.name === "AbortError")) this.fail(engine, error);
+      if (request === this.commandId && !(error instanceof DOMException && error.name === "AbortError")) this.fail(engine, error);
     });
     this.send(engine, true);
     this.publish();
@@ -97,6 +104,7 @@ export class NoisePlayer {
 
   stop(): void {
     if (this.nowPlaying === null) return;
+    this.history.transition(null);
     this.nowPlaying = null;
     if (this.engine !== null) this.send(this.engine, false);
     this.publish();
@@ -120,6 +128,20 @@ export class NoisePlayer {
     volume.connect(output);
     const audio = new Audio();
     audio.srcObject = output.stream;
+    audio.addEventListener("pause", () => {
+      if (engine === this.engine && this.nowPlaying !== null) this.stop();
+    });
+    context.addEventListener("statechange", () => {
+      if (engine !== this.engine) return;
+      if (context.state !== "running") this.history.transition(null);
+      else if (!audio.paused && this.nowPlaying !== null) {
+        void node.then(() => {
+          if (engine === this.engine && context.state === "running" && !audio.paused) {
+            this.history.transition(this.nowPlaying);
+          }
+        }, () => {});
+      }
+    });
 
     // Starting from a resolved promise turns a missing audioWorklet (old browsers) into a
     // rejection, which fail() reports, rather than an exception in the click handler.
@@ -160,6 +182,7 @@ export class NoisePlayer {
   private fail(engine: Engine, error: unknown): void {
     if (engine !== this.engine) return;
     console.error("Couldn't start audio", error);
+    this.history.transition(null);
     this.engine = null;
     engine.audio.pause();
     void engine.context.close();

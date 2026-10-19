@@ -1,11 +1,12 @@
 import AppIntents
 
+/// Raw values are permanent storage/intent IDs; changing a display name must never change them.
 enum NoiseType: String, CaseIterable, Codable, Identifiable, Sendable {
-    case white
-    case pink
-    case brown
-    case waves
-    case fan
+    case white = "white"
+    case pink = "pink"
+    case brown = "brown"
+    case waves = "waves"
+    case fan = "fan"
 
     var id: Self { self }
 
