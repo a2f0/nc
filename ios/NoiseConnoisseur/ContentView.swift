@@ -213,6 +213,7 @@ private struct SheetContent<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         }
+        .scrollBounceBehavior(.basedOnSize)
         .presentationDetents(height > 0 ? [.height(height)] : [.medium])
         .presentationBackground(Gray.background)
     }

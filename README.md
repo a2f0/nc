@@ -168,8 +168,7 @@ for upgrade procedures and compatibility boundaries.
 
 Use [app-store-readiness](.agents/skills/app-store-readiness/SKILL.md) for an iOS, Android,
 and web pre-release assessment. It checks current policy, interface/accessibility behavior,
-and submission evidence; the [first audit](docs/app-readiness-2026-10-19.md) records tested
-coverage and remaining store prerequisites.
+and submission evidence; record each candidate’s findings and remaining prerequisites in its PR.
 
 ## Screenshots
 
