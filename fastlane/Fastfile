@@ -225,7 +225,7 @@ platform :ios do
       end
     end
 
-    Readiness.record_build(ipa, source)
+    Readiness.record_build(ipa, source, root: REPO_ROOT)
     ipa
   end
 
@@ -327,7 +327,7 @@ platform :android do
       properties: { 'ncVersionCode' => version_code }, flags: '--console=plain'
     )
     UI.user_error!("App Bundle was not created: #{ANDROID_RELEASE_AAB}") unless File.file?(ANDROID_RELEASE_AAB)
-    Readiness.record_build(ANDROID_RELEASE_AAB, source)
+    Readiness.record_build(ANDROID_RELEASE_AAB, source, root: REPO_ROOT)
     UI.success("App Bundle: #{ANDROID_RELEASE_AAB}")
     ANDROID_RELEASE_AAB
   end

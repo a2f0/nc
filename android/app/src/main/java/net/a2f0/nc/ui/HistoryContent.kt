@@ -49,7 +49,7 @@ import net.a2f0.nc.history.ListeningHistory
 import net.a2f0.nc.history.historyDays
 import net.a2f0.nc.history.historyTotals
 import java.text.NumberFormat
-import java.time.LocalDate
+import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -67,12 +67,13 @@ fun HistoryContent() {
     val history = remember { ListeningHistory.get(context) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val updates = remember(history, lifecycle) { historyUpdates(history, lifecycle) }
-    val sessions by updates.collectAsState(initial = remember(history) { history.snapshot() })
+    val update by updates.collectAsState(initial = remember(history) { HistoryUpdate(history.snapshot(), System.currentTimeMillis()) })
+    val sessions = update.sessions
     val failed by history.storageFailed.collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
     var allTime by rememberSaveable { mutableStateOf(false) }
     var offset by rememberSaveable { mutableIntStateOf(0) }
-    val endDay = LocalDate.now().plusDays(offset.toLong())
     val zone = ZoneId.systemDefault()
+    val endDay = Instant.ofEpochMilli(update.refreshedAt).atZone(zone).toLocalDate().plusDays(offset.toLong())
     val days = remember(sessions, endDay, zone, allTime) {
         if (allTime) emptyList() else historyDays(sessions, endDay, zone)
     }

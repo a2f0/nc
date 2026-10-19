@@ -12,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import net.a2f0.nc.history.ListeningHistory
-import net.a2f0.nc.history.ListeningSession
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,19 +33,19 @@ class HistoryUpdatesTest {
         }
         val main = shadowOf(Looper.getMainLooper())
         val scope = CoroutineScope(Dispatchers.Main.immediate)
-        val values = mutableListOf<List<ListeningSession>>()
+        val values = mutableListOf<HistoryUpdate>()
         try {
             owner.registry.currentState = Lifecycle.State.CREATED
-            scope.launch { historyUpdates(history, owner.lifecycle).collect { values.add(it) } }
+            scope.launch { historyUpdates(history, owner.lifecycle) { now }.collect { values.add(it) } }
             history.transition("white")
             main.idle()
             assertTrue(values.isEmpty())
             owner.registry.currentState = Lifecycle.State.RESUMED
             main.idle()
-            assertEquals("white", values.last().single().soundId)
+            assertEquals("white", values.last().sessions.single().soundId)
             now += 15_000
             main.idleFor(Duration.ofSeconds(15))
-            assertEquals(now, values.last().single().updatedAt)
+            assertEquals(now, values.last().sessions.single().updatedAt)
             // ON_PAUSE is enough: do not wait for ON_STOP after the transition.
             owner.registry.currentState = Lifecycle.State.STARTED
             main.idle()
@@ -58,8 +57,15 @@ class HistoryUpdatesTest {
             assertEquals(pausedCount, values.size)
             owner.registry.currentState = Lifecycle.State.RESUMED
             main.idle()
-            assertEquals("pink", values.last().last().soundId)
-            assertEquals(now, values.last().last().startedAt)
+            assertEquals("pink", values.last().sessions.last().soundId)
+            assertEquals(now, values.last().sessions.last().startedAt)
+            history.transition(null)
+            main.idle()
+            val stopped = values.last()
+            now += 15_000
+            main.idleFor(Duration.ofSeconds(15))
+            assertEquals(stopped.sessions, values.last().sessions)
+            assertTrue(values.last().refreshedAt > stopped.refreshedAt)
             owner.registry.currentState = Lifecycle.State.DESTROYED
             main.idle()
             val destroyedCount = values.size

@@ -22,7 +22,8 @@ module Readiness
       'dirty' => !command('git', '-C', root, 'status', '--porcelain').strip.empty? }
   end
 
-  def self.record_build(artifact, source)
+  def self.record_build(artifact, source, root: nil)
+    source = source.merge('dirty' => true) if root && source != self.source(root)
     data = { 'schema_version' => 1, 'sha256' => Digest::SHA256.file(artifact).hexdigest,
              'source' => source, 'built_at' => Time.now.utc.iso8601 }
     File.write("#{artifact}.build.json", JSON.pretty_generate(data) + "\n", perm: 0o600)
@@ -88,7 +89,7 @@ module Readiness
         if valid
           @data[:artifact][:build] = { 'source' => build['source'].slice('commit', 'dirty'), 'built_at' => build['built_at'] }
           check('artifact.clean_source', !build['source']['dirty'], 'A release candidate must be built from a clean checkout.')
-          check('artifact.current_commit', build['source']['commit'] == @data[:checkout]['commit'], 'Artifact source must match the audited checkout commit.')
+          check('artifact.current_commit', build['source']['commit'] == @data[:checkout]['commit'] && !@data[:checkout]['dirty'], 'Artifact source must match the audited clean checkout.')
         end
       end
     end
