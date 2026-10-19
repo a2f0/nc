@@ -71,6 +71,7 @@ lanes.run_lane(:ios, :create_app)
 results[:create_app] = { produce: lanes.calls_to(:produce), match: lanes.calls_to(:match), events: events }
 
 # Both paths must build once, with the same artifact receipt; only beta uploads.
+def Readiness.source(_root) = { 'commit' => 'a' * 40, 'dirty' => false }
 %i[build_release beta].each do |lane|
   artifact = File.join(work, "#{lane}.ipa")
   events = []

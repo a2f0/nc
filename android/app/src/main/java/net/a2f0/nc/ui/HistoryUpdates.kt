@@ -17,6 +17,8 @@ internal data class HistoryUpdate(
 
 /** Freeze chart updates during Home/Recents transitions and refresh immediately on return.
  * Playback and durable checkpoints continue in the service while this UI is inactive.
+ * RESUMED also pauses refreshes when visible behind a dialog or in an unfocused
+ * split-screen pane on older Android versions; resuming catches up immediately.
  */
 internal fun historyUpdates(
     history: ListeningHistory,
