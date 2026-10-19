@@ -3,6 +3,10 @@ import type { Translation } from "./strings";
 // Neutral Spanish, for Spain and Latin America alike.
 export default {
   history: "Historial de escucha",
+  history_all_time: "Todo el tiempo",
+  history_calendar: "Calendario",
+  history_sound: "Sonido",
+  history_all_time_empty: "Aún no hay escuchas registradas.",
   history_minutes: "Minutos reproducidos",
   history_date: "Fecha",
   history_previous: "Semana anterior",

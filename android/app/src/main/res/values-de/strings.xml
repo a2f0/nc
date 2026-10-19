@@ -23,6 +23,10 @@
     <string name="volume">Lautstärke</string>
     <string name="more">Mehr</string>
     <string name="history">Hörverlauf</string>
+    <string name="history_all_time">Gesamter Zeitraum</string>
+    <string name="history_calendar">Kalender</string>
+    <string name="history_sound">Klang</string>
+    <string name="history_all_time_empty">Noch nichts aufgezeichnet.</string>
     <string name="history_minutes">Gespielte Minuten</string>
     <string name="history_date">Datum</string>
     <string name="history_previous">Vorherige Woche</string>

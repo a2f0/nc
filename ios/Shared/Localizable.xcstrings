@@ -146,6 +146,78 @@
         }
       }
     },
+    "history_all_time" : {
+      "comment" : "History view selector: total minutes per sound across all saved listening sessions.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gesamter Zeitraum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All time"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo el tiempo"
+          }
+        }
+      }
+    },
+    "history_all_time_empty" : {
+      "comment" : "Empty state when there is no listening time in the all-time history view.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nichts aufgezeichnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No listening recorded yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay escuchas registradas."
+          }
+        }
+      }
+    },
+    "history_calendar" : {
+      "comment" : "History view selector: daily listening totals with weekly date navigation.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalender"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendario"
+          }
+        }
+      }
+    },
     "history_date" : {
       "comment" : "Horizontal axis of the listening-history bar chart; calendar dates in the current time zone.",
       "extractionState" : "manual",
@@ -286,6 +358,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Semana anterior"
+          }
+        }
+      }
+    },
+    "history_sound" : {
+      "comment" : "Horizontal axis of the all-time listening chart; each bar is one sound.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klang"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sound"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonido"
           }
         }
       }
@@ -531,7 +627,7 @@
       }
     },
     "noise_brown_short" : {
-      "comment" : "Brown noise's name on a home screen widget button, where there's little room.",
+      "comment" : "Brown noise's name on a widget button or chart axis, where there's little room.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -603,7 +699,7 @@
       }
     },
     "noise_fan_short" : {
-      "comment" : "The fan sound's name on a home screen widget button, where there's little room.",
+      "comment" : "The fan sound's name on a widget button or chart axis, where there's little room.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -675,7 +771,7 @@
       }
     },
     "noise_pink_short" : {
-      "comment" : "Pink noise's name on a home screen widget button, where there's little room.",
+      "comment" : "Pink noise's name on a widget button or chart axis, where there's little room.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -747,7 +843,7 @@
       }
     },
     "noise_waves_short" : {
-      "comment" : "The ocean waves sound's name on a home screen widget button, where there's little room.",
+      "comment" : "The ocean waves sound's name on a widget button or chart axis, where there's little room.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -819,7 +915,7 @@
       }
     },
     "noise_white_short" : {
-      "comment" : "White noise's name on a home screen widget button, where there's little room.",
+      "comment" : "White noise's name on a widget button or chart axis, where there's little room.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {

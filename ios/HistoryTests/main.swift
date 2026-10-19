@@ -25,6 +25,8 @@ struct HistoryTests {
         // The load is delivered back to the main actor after disk I/O.
         for _ in 0..<100 where restored.snapshot().count < 2 { await Task.yield() }
         precondition(restored.snapshot().first { $0.soundId == "fan" }!.updatedAt == 151_000)
+        precondition(historyTotals(restored.snapshot())["fan"] == 0.5)
+        precondition(historyTotals(history.snapshot())["fan"] == 1440.5)
         restored.transition(to: "pink")
         now -= 1000
         restored.transition(to: nil)
@@ -34,6 +36,14 @@ struct HistoryTests {
         let pink = restored.snapshot().first { $0.soundId == "pink" }!
         precondition(pink.startedAt == pink.endedAt)
         precondition(!restored.storageFailed)
+
+        let totalRows = [
+            ListeningSession(id: "old", soundId: "white", startedAt: 0, endedAt: 120_000, updatedAt: 180_000),
+            ListeningSession(id: "recent", soundId: "white", startedAt: 1_800_000_000_000, endedAt: 1_800_000_180_000, updatedAt: 1_800_000_180_000),
+            ListeningSession(id: "abandoned", soundId: "fan", startedAt: 1000, endedAt: nil, updatedAt: 31_000),
+        ]
+        precondition(historyTotals(totalRows) == ["white": 5, "fan": 0.5])
+        precondition(historyTotals([]).isEmpty)
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/New_York")!

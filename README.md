@@ -24,9 +24,11 @@ about 50 ms so dragging doesn't crackle.
 
 ## Listening history
 
-Open **More → Listening history** to see daily stacked bars for seven days and move through
-previous weeks. The X axis uses dates in the device's current time zone; the Y axis is minutes
-played, with a grayscale segment per sound. Overnight sessions are split at local midnight.
+Open **More → Listening history** and choose **All time** for a bar per sound showing its
+total minutes across all saved sessions, or **Calendar** for daily stacked bars and weekly
+navigation. Both charts use grayscale and minutes played on the Y axis. Calendar uses dates
+in the device's current time zone on the X axis and splits overnight sessions at local
+midnight. Switching views preserves the selected week.
 
 History stays in the app's data container (`Application Support/listening-history-v1` on iOS,
 `files/listening-history-v1` on Android), or the browser's IndexedDB `listening-history` database.

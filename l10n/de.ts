@@ -2,6 +2,10 @@ import type { Translation } from "./strings";
 
 export default {
   history: "Hörverlauf",
+  history_all_time: "Gesamter Zeitraum",
+  history_calendar: "Kalender",
+  history_sound: "Klang",
+  history_all_time_empty: "Noch nichts aufgezeichnet.",
   history_minutes: "Gespielte Minuten",
   history_date: "Datum",
   history_previous: "Vorherige Woche",
