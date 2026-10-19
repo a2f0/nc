@@ -115,8 +115,9 @@ private struct SettingsSheet: View {
     }
 }
 
-/// The app's name, version, and build, with links to the Android app and the website.
+/// App identity, other platforms, privacy, and support.
 private struct AboutSheet: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .title3) private var logoSize = 64
 
     private static let info = Bundle.main.infoDictionary ?? [:]
@@ -129,7 +130,10 @@ private struct AboutSheet: View {
     var body: some View {
         SheetContent(title: .about) {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 16) {
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
+                    : AnyLayout(HStackLayout(spacing: 16))
+                layout {
                     Image(.logo)
                         .resizable()
                         .frame(width: logoSize, height: logoSize)
@@ -148,6 +152,12 @@ private struct AboutSheet: View {
                     .foregroundStyle(Gray.secondaryLabel)
                     // Links take the tint, which would otherwise be the blue accent color.
                     .tint(Gray.secondaryLabel)
+                Link(destination: Self.webURL.appending(path: "privacy")) {
+                    Text(.privacyPolicy).underline().frame(minHeight: 44, alignment: .leading)
+                }.tint(Gray.label)
+                Link(destination: Self.webURL.appending(path: "support")) {
+                    Text(.support).underline().frame(minHeight: 44, alignment: .leading)
+                }.tint(Gray.label)
             }
         }
     }
@@ -174,33 +184,35 @@ private struct SheetContent<Content: View>: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(title)
-                    .font(.title2.bold())
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 16)
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Gray.secondaryLabel)
-                        .frame(width: 32, height: 32)
-                        .background(Gray.secondaryFill, in: .circle)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(.rect)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text(title)
+                        .font(.title2.bold())
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: 16)
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(Gray.secondaryLabel)
+                            .frame(width: 32, height: 32)
+                            .background(Gray.secondaryFill, in: .circle)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    // Lines up with the contents' trailing edge, as in the title.
+                    .padding(.trailing, -6)
+                    .accessibilityLabel(Text(.close))
                 }
-                .buttonStyle(.plain)
-                // Lines up with the contents' trailing edge, as in the title.
-                .padding(.trailing, -6)
-                .accessibilityLabel(Text(.close))
+                content
             }
-            content
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 16)
-        .padding(.bottom, 24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
         .presentationDetents(height > 0 ? [.height(height)] : [.medium])
         .presentationBackground(Gray.background)
     }

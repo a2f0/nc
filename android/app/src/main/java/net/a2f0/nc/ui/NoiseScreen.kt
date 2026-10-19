@@ -56,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -298,9 +299,10 @@ private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
     }
 }
 
-/** The app's name, version, and build, with links to the iOS app and the website. */
+/** App identity, other platforms, privacy, and support. */
 @Composable
 private fun AboutContent() {
+    val uriHandler = LocalUriHandler.current
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             // The app icon's corners, as beside the title.
@@ -327,6 +329,12 @@ private fun AboutContent() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        TextButton(onClick = { uriHandler.openUri("$WEB_URL/privacy") }) {
+            Text(stringResource(R.string.privacy_policy), textDecoration = TextDecoration.Underline)
+        }
+        TextButton(onClick = { uriHandler.openUri("$WEB_URL/support") }) {
+            Text(stringResource(R.string.support), textDecoration = TextDecoration.Underline)
+        }
     }
 }
 

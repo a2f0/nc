@@ -44,4 +44,6 @@
     <string name="platform_web">Web</string>
     <string name="close">Schließen</string>
     <string name="notification_channel_name">Wiedergabe</string>
+    <string name="support">Support</string>
+    <string name="privacy_policy">Datenschutzerklärung</string>
 </resources>

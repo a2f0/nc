@@ -9,29 +9,33 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -45,8 +49,8 @@ import net.a2f0.nc.history.ListeningHistory
 import net.a2f0.nc.history.historyDays
 import net.a2f0.nc.history.historyTotals
 import java.text.NumberFormat
-import java.time.ZoneId
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.ceil
@@ -97,15 +101,20 @@ fun HistoryContent() {
     val totals = bars.map { bar -> NoiseType.entries.sumOf { bar.minutes[it.id] ?: 0.0 } }
     val maximum = maxOf(1.0, ceil(totals.max()))
 
-    val viewColors = FilterChipDefaults.filterChipColors(
-        selectedContainerColor = MaterialTheme.colorScheme.primary,
-        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-    )
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = allTime, onClick = { allTime = true }, modifier = Modifier.weight(1f), colors = viewColors,
-            label = { Text(stringResource(R.string.history_all_time), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) })
-        FilterChip(selected = !allTime, onClick = { allTime = false }, modifier = Modifier.weight(1f), colors = viewColors,
-            label = { Text(stringResource(R.string.history_calendar), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center) })
+    Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(true, false).forEach { value ->
+            val selected = allTime == value
+            Text(
+                stringResource(if (value) R.string.history_all_time else R.string.history_calendar),
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
+                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                    .selectable(selected = selected, role = Role.RadioButton, onClick = { allTime = value })
+                    .heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 12.dp),
+                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
     if (!allTime) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
