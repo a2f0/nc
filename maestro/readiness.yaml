@@ -1,0 +1,29 @@
+# Run on dedicated devices at normal and large accessibility text sizes.
+appId: net.a2f0.nc
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
+- tapOn: "More"
+- tapOn: "About"
+- scrollUntilVisible:
+    element: "Privacy policy"
+    direction: DOWN
+- assertVisible: "Privacy policy"
+- scrollUntilVisible:
+    element: "Support"
+    direction: DOWN
+- assertVisible: "Support"
+- scrollUntilVisible:
+    element: "Close"
+    direction: UP
+- tapOn: "Close"
+- tapOn: "More"
+- tapOn: "Listening history"
+- tapOn: "All time"
+- assertVisible: "No listening recorded yet."
+- tapOn: "Calendar"
+- assertVisible: "Previous week"

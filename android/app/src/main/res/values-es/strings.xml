@@ -44,4 +44,6 @@
     <string name="platform_web">la web</string>
     <string name="close">Cerrar</string>
     <string name="notification_channel_name">Reproducción</string>
+    <string name="support">Soporte</string>
+    <string name="privacy_policy">Política de privacidad</string>
 </resources>

@@ -91,4 +91,8 @@
     <string name="close">Close</string>
     <!-- Name of the playback notification's category in the system's notification settings. -->
     <string name="notification_channel_name">Playback</string>
+    <!-- Link to the support page, in About on mobile and the website footer. -->
+    <string name="support">Support</string>
+    <!-- Link to the privacy policy, in About on mobile and the website footer. -->
+    <string name="privacy_policy">Privacy policy</string>
 </resources>

@@ -1035,6 +1035,30 @@
         }
       }
     },
+    "privacy_policy" : {
+      "comment" : "Link to the privacy policy, in About on mobile and the website footer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenschutzerklärung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy policy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Política de privacidad"
+          }
+        }
+      }
+    },
     "rate_app" : {
       "comment" : "Item in the three-dot menu that opens the app's page in the App Store or Google Play, to rate it.",
       "extractionState" : "manual",
@@ -1103,6 +1127,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Detener %1$@"
+          }
+        }
+      }
+    },
+    "support" : {
+      "comment" : "Link to the support page, in About on mobile and the website footer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Support"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soporte"
           }
         }
       }

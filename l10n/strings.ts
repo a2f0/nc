@@ -261,13 +261,11 @@ export const STRINGS = {
   },
   support: {
     text: "Support",
-    comment: "Footer link to the support page.",
-    platforms: ["web"],
+    comment: "Link to the support page, in About on mobile and the website footer.",
   },
   privacy_policy: {
     text: "Privacy policy",
-    comment: "Footer link to the privacy policy.",
-    platforms: ["web"],
+    comment: "Link to the privacy policy, in About on mobile and the website footer.",
   },
 } as const satisfies Readonly<Record<string, SourceString>>;
 

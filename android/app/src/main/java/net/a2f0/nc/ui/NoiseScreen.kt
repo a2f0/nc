@@ -10,6 +10,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -56,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -298,9 +300,17 @@ private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
     }
 }
 
-/** The app's name, version, and build, with links to the iOS app and the website. */
+/** App identity, other platforms, privacy, and support. */
 @Composable
 private fun AboutContent() {
+    val uriHandler = LocalUriHandler.current
+    fun openInfoPage(path: String) {
+        try {
+            uriHandler.openUri("$WEB_URL/$path")
+        } catch (_: IllegalArgumentException) {
+            // As with inline links, stay in the app if no browser can handle the URL.
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             // The app icon's corners, as beside the title.
@@ -327,6 +337,12 @@ private fun AboutContent() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        TextButton(onClick = { openInfoPage("privacy") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
+            Text(stringResource(R.string.privacy_policy), textDecoration = TextDecoration.Underline)
+        }
+        TextButton(onClick = { openInfoPage("support") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
+            Text(stringResource(R.string.support), textDecoration = TextDecoration.Underline)
+        }
     }
 }
 

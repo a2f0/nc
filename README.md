@@ -166,6 +166,10 @@ Coding agents follow [AGENTS.md](AGENTS.md) for command capture, managed skills,
 and review and shipping policy. See [dependency maintenance](docs/dependency-upgrades.md)
 for upgrade procedures and compatibility boundaries.
 
+Use [app-store-readiness](.agents/skills/app-store-readiness/SKILL.md) for an iOS, Android,
+and web pre-release assessment. It checks current policy, interface/accessibility behavior,
+and submission evidence; record each candidate’s findings and remaining prerequisites in its PR.
+
 ## Screenshots
 
 ```sh
