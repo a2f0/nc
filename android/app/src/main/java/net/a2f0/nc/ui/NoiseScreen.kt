@@ -46,6 +46,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -279,6 +283,17 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
             isAppearanceLightNavigationBars = lightSystemBars,
         ),
     ) {
+        // Material 3 1.4 applies the properties only when creating its window.
+        // Update that same window when appearance changes while the sheet is open.
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect {
+            window?.let {
+                WindowCompat.getInsetsController(it, it.decorView).apply {
+                    isAppearanceLightStatusBars = lightSystemBars
+                    isAppearanceLightNavigationBars = lightSystemBars
+                }
+            }
+        }
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
