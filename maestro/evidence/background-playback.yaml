@@ -1,7 +1,10 @@
 appId: net.a2f0.nc
 ---
 - pressKey: Home
-- openNotifications
+- swipe:
+    start: 50%, 0%
+    end: 50%, 90%
+    duration: 600
 - assertVisible: "White Noise"
 - assertVisible: "Noise Connoisseur"
 - assertVisible: "Pause"
