@@ -21,6 +21,7 @@ import net.a2f0.nc.ui.NoiseScreen
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(base: Context) {
+        LanguagePreferences.migrate(base)
         super.attachBaseContext(if (Build.VERSION.SDK_INT < 33) LanguagePreferences.localized(base) else base)
     }
 

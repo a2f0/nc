@@ -144,8 +144,10 @@ the remaining work before adding a broad set of languages.
 
 To try one, use Settings → Language. To test the device default, choose Device language,
 then on iOS set the scheme's App Language (Edit Scheme → Run → Options); on Android,
-`adb shell cmd locale set-app-locales net.a2f0.nc --locales <tag>`; on the web, the browser's
-language settings. The privacy policy and support pages are in English only.
+change the system language in device Settings; on the web, change the browser's language
+settings. On Android 13+, `adb shell cmd locale set-app-locales net.a2f0.nc --locales <tag>`
+tests an explicit per-app choice, not the device default. The privacy policy and support
+pages are in English only.
 
 ## No binary files
 

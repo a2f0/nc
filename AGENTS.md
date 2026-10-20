@@ -69,7 +69,8 @@ hide release-only crashes.
 - Strings: every user-facing string is in `l10n/strings.ts`, with a comment for translators,
   and `bun run l10n` writes each platform's string files from it and the translations; never
   edit `strings.xml` or `Localizable.xcstrings` directly. Use `R.string.*` on Android, the
-  generated symbols on iOS (`Text(.volume)`, or `LocalizedStringResource("key")` in App
+  generated symbols on iOS (`localizedText(.volume)` or `LanguageSettings.string(.volume)`,
+  or `LocalizedStringResource("key")` in App
   Intents' metadata), and `t()` from `web/src/l10n.ts` on the web. See "Localization" in
   `README.md`.
 - Keep the apps' behavior in step: a feature or fix on one platform usually needs the same

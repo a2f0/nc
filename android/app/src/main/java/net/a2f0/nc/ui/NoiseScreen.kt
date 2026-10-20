@@ -78,6 +78,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
@@ -324,12 +325,17 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
 private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
     val languages = LocalLanguageControl.current
     var languageMenu by remember { mutableStateOf(false) }
+    val languageTitle = stringResource(R.string.language)
+    val selectedLanguage = if (languages.selected == Language.DEVICE) stringResource(R.string.language_device) else languages.selected.nativeName
     Column {
-        Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium,
+        Text(languageTitle, style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() })
         Box {
-            TextButton(onClick = { languageMenu = true }, modifier = Modifier.testTag("language-picker")) {
-                Text(if (languages.selected == Language.DEVICE) stringResource(R.string.language_device) else languages.selected.nativeName)
+            TextButton(onClick = { languageMenu = true }, modifier = Modifier.testTag("language-picker").semantics {
+                contentDescription = languageTitle
+                stateDescription = selectedLanguage
+            }) {
+                Text(selectedLanguage)
             }
             DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false },
                 modifier = Modifier.heightIn(max = 320.dp)) {
