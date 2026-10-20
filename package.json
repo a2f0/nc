@@ -1,6 +1,6 @@
 {
   "name": "nc",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "private": true,
   "license": "UNLICENSED",
   "packageManager": "bun@1.4.3",
