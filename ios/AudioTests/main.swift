@@ -104,4 +104,36 @@ do {
     check(false, "rendering failed: \(error)")
 }
 
+// Seeded acoustic regression: the backwash must remain audible while losing the
+// breaker's brightness. These fixed windows do not inspect generator state.
+for rate in [44_100, 48_000, 96_000] {
+    var generator = NoiseGenerator(sampleRate: Double(rate), leftSeed: 1, rightSeed: 2)
+    var power = [Double](repeating: 0, count: 3)
+    var differences = [Double](repeating: 0, count: 3)
+    var counts = [Int](repeating: 0, count: 3)
+    var previous: Float = 0
+    var peak: Float = 0
+    var jump: Float = 0
+    var finite = true
+    for frame in 0..<(60 * rate) {
+        let (left, right) = generator.next(.waves)
+        finite = finite && left.isFinite && right.isFinite
+        peak = max(peak, abs(left), abs(right))
+        jump = max(jump, abs(left - previous))
+        let second = Double(frame) / Double(rate)
+        let window = second < 1 ? 0 : (second >= 4.5 && second < 5.5 ? 1 : (second >= 7 && second < 9 ? 2 : -1))
+        if window >= 0 {
+            power[window] += Double(left) * Double(left)
+            differences[window] += Double(left - previous) * Double(left - previous)
+            counts[window] += 1
+        }
+        previous = left
+    }
+    let rms = (0..<3).map { sqrt(power[$0] / Double(counts[$0])) }
+    let brightness = (0..<3).map { differences[$0] / power[$0] * pow(Double(rate) / 48_000, 2) }
+    check(finite && peak < 0.9 && jump < 0.12, "waves stay finite, unclipped and without jumps at \(rate) Hz")
+    check(rms[2] > 1.5 * rms[0] && rms[2] < 0.65 * rms[1], "waves retain an audible, quieter backwash at \(rate) Hz")
+    check(brightness[2] < 0.6 * brightness[1] && brightness[2] < 0.003, "waves lose high-frequency hiss during backwash at \(rate) Hz")
+}
+
 exit(failures == 0 ? 0 : 1)

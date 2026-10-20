@@ -5,7 +5,8 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.floor
-import kotlin.math.min
+import kotlin.math.max
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
@@ -33,23 +34,26 @@ internal class NoiseGenerator(private val sampleRate: Int, leftSeed: Int, rightS
     private val fanHum = Resonator(FAN_ROTATION_HZ * FAN_BLADES, FAN_HUM_Q, sampleRate)
     private val fanHumOvertone = Resonator(2 * FAN_ROTATION_HZ * FAN_BLADES, FAN_HUM_Q, sampleRate)
 
-    // The current wave. `waveLevel` runs from 0 (calm) to the wave's peak.
+    // Integer frame counts keep multi-second phase boundaries stable at every sample rate.
     private val waveDarkCoefficient = lowPassCoefficient(WAVE_DARK_HZ, sampleRate)
     private val waveBrightCoefficient = lowPassCoefficient(WAVE_BRIGHT_HZ, sampleRate)
-    private val waveFoamCoefficient = lowPassCoefficient(WAVE_FOAM_CUTOFF_HZ, sampleRate)
+    private val waveFoamDarkCoefficient = lowPassCoefficient(WAVE_FOAM_DARK_HZ, sampleRate)
+    private val waveFoamBrightCoefficient = lowPassCoefficient(WAVE_FOAM_BRIGHT_HZ, sampleRate)
+    private val waveWashCoefficient = lowPassCoefficient(WAVE_WASH_HZ, sampleRate)
+    private val waveLowCoefficient = lowPassCoefficient(WAVE_LOW_HZ, sampleRate)
     private val wavePanCoefficient = (1 / (WAVE_PAN_SECONDS * sampleRate)).toFloat()
-    private var waveLevel = 0f
-    private var waveStart = 0f
+    private val waveTextureCoefficient = (1 / (0.045 * sampleRate)).toFloat()
+    // Independent of the wave schedule and fan excitation; texture can't alter their timing.
+    private val waveTextureRandom = Random(leftSeed xor rightSeed xor 0x85EBCA6BL.toInt())
+    private var waveFrame = 0
+    private var waveRiseFrames = 1
+    private var waveFallFrames = 1
     private var wavePeak = 0f
-    private var waveRising = true
-    private var waveProgress = 0f
-    private var waveRiseStep = 0f
-    private var waveFallStep = 0f
-    private var waveDecay = 1f
-    private var waveFoam = 0f
-    private var waveFoamDecay = 1f
     private var wavePan = 0f
     private var wavePanTarget = 0f
+    private var waveTexture = 0.85f
+    private var waveTextureTarget = 0.85f
+    private var waveTextureFrames = 0
 
     init {
         startWave()
@@ -88,55 +92,57 @@ internal class NoiseGenerator(private val sampleRate: Int, leftSeed: Int, rightS
     }
 
     private fun waves() {
-        if (waveRising) {
-            waveProgress += waveRiseStep
-            // Swells slowly at first, then faster, up to the break.
-            val progress = min(waveProgress, 1f)
-            waveLevel = waveStart + (wavePeak - waveStart) * progress * progress
-            if (waveProgress >= 1f) {
-                waveRising = false
-                waveProgress = 0f
-                waveFoam = wavePeak
-            }
-        } else {
-            waveProgress += waveFallStep
-            waveLevel *= waveDecay
-            if (waveProgress >= 1f) startWave()
+        val rising = waveFrame < waveRiseFrames
+        val progress = if (rising) waveFrame.toFloat() / waveRiseFrames else (waveFrame - waveRiseFrames).toFloat() / waveFallFrames
+        val swell = if (rising) smooth(progress) else 1f - smooth(progress / 0.78f)
+        val body = wavePeak * swell * swell
+        val breaking = if (rising) smooth((progress - 0.65f) / 0.35f) else 1f - smooth(progress / 0.55f)
+        val foam = wavePeak * breaking * breaking
+        // Water starts drawing back after the breaker, overlapping its soft tail.
+        val wash = if (rising) 0f else wavePeak * smooth((progress - 0.12f) / 0.23f) * (1f - smooth((progress - 0.35f) / 0.65f))
+        if (waveTextureFrames <= 0) {
+            waveTextureTarget = 0.55f + 0.3f * (waveTextureRandom.white() + 1f)
+            waveTextureFrames = max(1, ((0.07f + 0.085f * (waveTextureRandom.white() + 1f)).toDouble() * sampleRate).roundToInt())
         }
-        waveFoam *= waveFoamDecay
+        waveTextureFrames--
+        waveTexture += (waveTextureTarget - waveTexture) * waveTextureCoefficient
         wavePan += (wavePanTarget - wavePan) * wavePanCoefficient
-
-        val brightness = waveDarkCoefficient + (waveBrightCoefficient - waveDarkCoefficient) * waveLevel
-        val surf = WAVE_BED + waveLevel
-        val foam = WAVE_FOAM * waveFoam
-        left = leftChannel.surf(brightness, surf, waveFoamCoefficient, foam) * (1f - wavePan) * WAVES_GAIN
-        right = rightChannel.surf(brightness, surf, waveFoamCoefficient, foam) * (1f + wavePan) * WAVES_GAIN
+        val brightness = waveDarkCoefficient + (waveBrightCoefficient - waveDarkCoefficient) * body
+        val foamCoefficient = waveFoamDarkCoefficient + (waveFoamBrightCoefficient - waveFoamDarkCoefficient) * foam
+        val bodyLevel = body * (0.9f + 0.1f * waveTexture)
+        val foamLevel = foam * (0.75f + 0.25f * waveTexture)
+        val washLevel = 0.55f * wash * waveTexture
+        left = leftChannel.surf(
+            brightness, bodyLevel, foamCoefficient, foamLevel,
+            waveDarkCoefficient, waveWashCoefficient, waveLowCoefficient, washLevel,
+        ) * (1f - wavePan) * WAVES_GAIN
+        right = rightChannel.surf(
+            brightness, bodyLevel, foamCoefficient, foamLevel,
+            waveDarkCoefficient, waveWashCoefficient, waveLowCoefficient, washLevel,
+        ) * (1f + wavePan) * WAVES_GAIN
+        waveFrame++
+        if (waveFrame >= waveRiseFrames + waveFallFrames) startWave()
     }
 
-    /** Picks the next wave's size, timing, and place, and starts it swelling from the current level. */
+    /** New wave parameters; filter and texture states continue smoothly across events. */
     private fun startWave() {
         val riseSeconds = shared.between(WAVE_RISE_SECONDS).toDouble()
         val fallSeconds = shared.between(WAVE_FALL_SECONDS).toDouble()
         wavePeak = shared.between(WAVE_PEAK)
         wavePanTarget = WAVE_PAN * shared.white()
-        waveStart = waveLevel
-        waveRising = true
-        waveProgress = 0f
-        waveRiseStep = (1 / (riseSeconds * sampleRate)).toFloat()
-        waveFallStep = (1 / (fallSeconds * sampleRate)).toFloat()
-        // Down to about 5% (three time constants) by the next wave; the foam lingers.
-        waveDecay = exp(-3 / (fallSeconds * sampleRate)).toFloat()
-        waveFoamDecay = exp(-2 / (fallSeconds * sampleRate)).toFloat()
+        waveFrame = 0
+        waveRiseFrames = max(1, (riseSeconds * sampleRate).roundToInt())
+        waveFallFrames = max(1, (fallSeconds * sampleRate).roundToInt())
     }
 
     private companion object {
         // Each noise lands at roughly the same RMS level (about -17 dBFS) with headroom for
-        // peaks. Waves average about -23 dBFS, so their crests, at about -14, don't clip.
+        // peaks. Waves average about -23 dBFS, leaving headroom for their crests.
         const val WHITE_GAIN = 0.25f
         const val PINK_GAIN = 0.08f
         const val BROWN_GAIN = 2.46f
         const val FAN_GAIN = 0.093f
-        const val WAVES_GAIN = 0.085f
+        const val WAVES_GAIN = 0.09f
 
         // Fan: a five-blade fan at 1,200 RPM. The air is pink noise with its highs rolled
         // off, throbbing slightly each time a blade passes, over a low hum at the blade rate.
@@ -151,20 +157,18 @@ internal class NoiseGenerator(private val sampleRate: Int, leftSeed: Int, rightS
         const val FAN_HUM = 40f
         const val FAN_HUM_OVERTONE = 20f
 
-        // Waves: each swells for 3.5 to 6 seconds, breaks, and washes out over 4 to 7
-        // seconds, louder and brighter as it swells, over a quiet, dark bed of distant surf.
-        // Foam hisses as each one washes out.
+        // A swell rolls into a broad breaker, followed by a delayed, darker backwash.
+        // The distant bed is independent of the moving layers; foam never becomes raw hiss.
         val WAVE_RISE_SECONDS = 3.5f..6f
         val WAVE_FALL_SECONDS = 4f..7f
         val WAVE_PEAK = 0.55f..1f
-        const val WAVE_BED = 0.3f
         const val WAVE_DARK_HZ = 350.0
-        const val WAVE_BRIGHT_HZ = 2_500.0
-        const val WAVE_FOAM = 0.3f
-        const val WAVE_FOAM_CUTOFF_HZ = 3_000.0
-
-        /** How far a wave can sit to one side: 0 is centered, 1 is all the way. */
-        const val WAVE_PAN = 0.25f
+        const val WAVE_BRIGHT_HZ = 2_200.0
+        const val WAVE_FOAM_DARK_HZ = 580.0
+        const val WAVE_FOAM_BRIGHT_HZ = 2_200.0
+        const val WAVE_WASH_HZ = 700.0
+        const val WAVE_LOW_HZ = 120.0
+        const val WAVE_PAN = 0.18f
         const val WAVE_PAN_SECONDS = 1.5
     }
 }
@@ -208,7 +212,14 @@ private class Channel(seed: Int) {
     private var air2 = 0f
     private var surf1 = 0f
     private var surf2 = 0f
+    private var bed1 = 0f
+    private var bed2 = 0f
+    private var foam1 = 0f
+    private var foam2 = 0f
     private var foamLow = 0f
+    private var wash1 = 0f
+    private var wash2 = 0f
+    private var washLow = 0f
 
     fun white(): Float = random.white()
 
@@ -239,13 +250,20 @@ private class Channel(seed: Int) {
         return air2
     }
 
-    /** Surf: pink noise through a two-pole low-pass filter, plus foam: high-passed white noise. */
-    fun surf(brightness: Float, level: Float, foamCoefficient: Float, foam: Float): Float {
-        surf1 += (pink() - surf1) * brightness
+    /** Separate distant surf, body, band-limited foam, and low-mid backwash. */
+    fun surf(brightness: Float, body: Float, foamCoefficient: Float, foam: Float, bedCoefficient: Float, washCoefficient: Float, lowCoefficient: Float, wash: Float): Float {
+        val pink = pink()
+        bed1 += (pink - bed1) * bedCoefficient
+        bed2 += (bed1 - bed2) * bedCoefficient
+        surf1 += (pink - surf1) * brightness
         surf2 += (surf1 - surf2) * brightness
-        val w = white()
-        foamLow += (w - foamLow) * foamCoefficient
-        return surf2 * level + (w - foamLow) * foam
+        foam1 += (white() - foam1) * foamCoefficient
+        foam2 += (foam1 - foam2) * foamCoefficient
+        foamLow += (foam2 - foamLow) * lowCoefficient
+        wash1 += (pink - wash1) * washCoefficient
+        wash2 += (wash1 - wash2) * washCoefficient
+        washLow += (wash2 - washLow) * lowCoefficient
+        return 0.2f * bed2 + surf2 * body + (foam2 - foamLow) * foam + (wash2 - washLow) * wash
     }
 }
 
@@ -271,4 +289,10 @@ private fun lowPassCoefficient(hz: Double, sampleRate: Int): Float = (1 - exp(-2
 private fun sine(phase: Float): Float {
     val x = 2 * phase - 1
     return 4 * x * (abs(x) - 1)
+}
+
+/** Smoothstep with zero slope at both ends: no abrupt break or backwash onset. */
+private fun smooth(value: Float): Float {
+    val x = value.coerceIn(0f, 1f)
+    return x * x * (3f - 2f * x)
 }
