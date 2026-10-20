@@ -1,0 +1,42 @@
+# Dedicated test devices only. Selection must survive process termination.
+appId: net.a2f0.nc
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- tapOn: "More"
+- tapOn: "Settings"
+- assertVisible: "Appearance"
+- assertVisible:
+    id: "appearance-system"
+    selected: true
+- tapOn:
+    id: "appearance-dark"
+- assertVisible:
+    id: "appearance-dark"
+    selected: true
+- launchApp:
+    stopApp: true
+- tapOn: "More"
+- tapOn: "Settings"
+- assertVisible:
+    id: "appearance-dark"
+    selected: true
+- tapOn:
+    id: "appearance-light"
+- launchApp:
+    stopApp: true
+- tapOn: "More"
+- tapOn: "Settings"
+- assertVisible:
+    id: "appearance-light"
+    selected: true
+- tapOn:
+    id: "appearance-system"
+- launchApp:
+    stopApp: true
+- tapOn: "More"
+- tapOn: "Settings"
+- assertVisible:
+    id: "appearance-system"
+    selected: true

@@ -39,6 +39,10 @@
     <string name="history_storage_failed">Ein Teil des Hörverlaufs konnte nicht geladen oder gespeichert werden.</string>
     <string name="history_value">%1$s: %2$s Min.</string>
     <string name="settings">Einstellungen</string>
+    <string name="appearance">Erscheinungsbild</string>
+    <string name="appearance_system">System</string>
+    <string name="appearance_light">Hell</string>
+    <string name="appearance_dark">Dunkel</string>
     <string name="rate_app">App bewerten</string>
     <string name="about">Info</string>
     <string name="about_version">Version %1$s (%2$s)</string>

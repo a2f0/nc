@@ -79,6 +79,14 @@
     <string name="history_value">%1$s: %2$s min</string>
     <!-- Item in the three-dot menu, and the title of the sheet it opens. -->
     <string name="settings">Settings</string>
+    <!-- Settings section for the app's saved light or dark appearance. -->
+    <string name="appearance">Appearance</string>
+    <!-- Appearance option that follows the device's light or dark mode automatically. -->
+    <string name="appearance_system">System</string>
+    <!-- Appearance option that always uses the light theme. -->
+    <string name="appearance_light">Light</string>
+    <!-- Appearance option that always uses the dark theme. -->
+    <string name="appearance_dark">Dark</string>
     <!-- Item in the three-dot menu that opens the app's page in the App Store or Google Play, to rate it. -->
     <string name="rate_app">Rate App</string>
     <!-- Item in the three-dot menu, and the title of the sheet it opens, which shows the app's name and version. -->

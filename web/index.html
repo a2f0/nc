@@ -7,6 +7,7 @@
     <meta name="description" content="White, pink, and brown noise, a fan, and ocean waves, generated in real time." />
     <title>Noise Connoisseur</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <script src="appearance-init.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="main.js"></script>
   </head>
@@ -64,6 +65,13 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
+        <fieldset class="appearance-options">
+          <legend id="appearance-title">Appearance</legend>
+          <label><input id="appearance-system" name="appearance" type="radio" value="system" /><span id="appearance-label-system">System</span></label>
+          <label><input id="appearance-light" name="appearance" type="radio" value="light" /><span id="appearance-label-light">Light</span></label>
+          <label><input id="appearance-dark" name="appearance" type="radio" value="dark" /><span id="appearance-label-dark">Dark</span></label>
+        </fieldset>
+        <p id="appearance-storage-failed" role="status"></p>
         <label class="setting" for="settings-volume">Volume</label>
         <div class="volume">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9v6h4l5 5V4l-5 5H7z" /></svg>

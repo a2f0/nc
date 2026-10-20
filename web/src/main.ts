@@ -1,4 +1,5 @@
 import { setUpHistory } from "./historyView";
+import { setUpAppearance } from "./appearanceView";
 import { bindVolume, setUpMenu } from "./controls";
 import { currentLocale, setPreferredLanguages, t, tParts } from "./l10n";
 import { NoisePlayer } from "./noisePlayer";
@@ -33,6 +34,7 @@ setUpMenu(document, more, element("menu"), [
 ]);
 
 const renderHistory = setUpHistory(player.history);
+const renderAppearance = setUpAppearance();
 setInterval(() => player.history.checkpoint(), 15_000);
 addEventListener("pagehide", () => player.stop());
 document.addEventListener("visibilitychange", () => {
@@ -71,6 +73,7 @@ function localize(): void {
   element("open-history").textContent = t("history");
   element("history-title").textContent = t("history");
   renderHistory();
+  renderAppearance();
   element("open-settings").textContent = t("settings");
   element("open-about").textContent = t("about");
   element("settings-title").textContent = t("settings");

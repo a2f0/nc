@@ -96,12 +96,32 @@ private struct MoreMenu: View {
     }
 }
 
-/// Settings: for now, the volume.
+/// Local playback and appearance preferences.
 private struct SettingsSheet: View {
     let player: NoisePlayer
+    @AppStorage("appearance") private var appearance = Appearance.system.rawValue
 
     var body: some View {
         SheetContent(title: .settings) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(.appearance).font(.headline).accessibilityAddTraits(.isHeader)
+                ForEach(Appearance.allCases) { option in
+                    let selected = (Appearance(rawValue: appearance) ?? .system) == option
+                    Button { appearance = option.rawValue } label: {
+                        HStack {
+                            Text(option.title)
+                            Spacer()
+                            Image(systemName: "checkmark").opacity(selected ? 1 : 0)
+                                .accessibilityHidden(true)
+                        }
+                        .foregroundStyle(Gray.label)
+                        .frame(minHeight: 44).contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+                    .accessibilityIdentifier("appearance-\(option.rawValue)")
+                }
+            }
             VStack(alignment: .leading, spacing: 8) {
                 // The slider reads its own label.
                 Text(.volume)
