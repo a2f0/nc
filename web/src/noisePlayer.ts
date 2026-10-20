@@ -121,7 +121,10 @@ export class NoisePlayer {
   }
 
   private createEngine(): Engine {
-    const context = new AudioContext({ latencyHint: "playback" });
+    // This context feeds a live MediaStream, not the speakers directly. Large
+    // "playback" buffers arrive in bursts that can starve the stream's consumer.
+    // Keep its producer cadence short, even on devices with large output buffers.
+    const context = new AudioContext({ latencyHint: "interactive" });
     const volume = context.createGain();
     volume.gain.value = volumeGain(this.volume);
     const output = context.createMediaStreamDestination();
