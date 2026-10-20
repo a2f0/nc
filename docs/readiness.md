@@ -89,3 +89,79 @@ afterward. For iOS, use `xcrun simctl ui <udid> content_size accessibility-extra
 and restore its original size afterward. The background flow checks live history across
 Home/foreground transitions, including retaining the selected view/week and continuing
 playback. It supplements visual recording; assertions alone do not prove absence of flicker.
+
+## Android foreground-service video
+
+Google Play's [foreground-service declaration](https://support.google.com/googleplay/android-developer/answer/13392821?hl=en)
+requires a video showing how the user triggers the feature. Our media-playback demonstration
+starts White Noise, returns Home, opens the media notification while audio continues, then
+uses its Pause control and returns to the stopped app.
+
+The public review page is **https://nc.a2f0.net/review/android-media-playback**.
+The stable direct-video link is **https://nc.a2f0.net/review/android-media-playback.mp4**.
+Both follow the current recording. The page also links the immutable MP4 and a JSON
+manifest identifying its version, source commits, AAB/APK/video hashes and recording date.
+Use the immutable MP4 link when a submission must stay pinned to one candidate.
+
+### Record and publish
+
+Use a clean committed checkout, the existing release AAB and its `.build.json` receipt.
+Build/upload with the usual Android lane first if the candidate changed. Recording does
+not rebuild or upload the AAB. It accepts an older clean build only when its Android and
+brand asset trees still match this checkout, allowing subsequent web-only releases.
+
+Install `scrcpy` and `ffmpeg` (`brew install scrcpy ffmpeg` on macOS), Maestro, the Android
+SDK emulator/platform/command-line tools and a JDK. Install the
+`system-images;android-35;google_apis_playstore;arm64-v8a` SDK image (or set
+`ANDROID_EVIDENCE_SYSTEM_IMAGE` for the host architecture). Supply Google's bundletool JAR
+as for readiness. The standard `$HOME/.android/debug.keystore` must exist; a Gradle debug
+build creates it. No release signing credentials are needed for capture.
+
+```sh
+bundle exec fastlane android foreground_service_video bundletool:/absolute/path/bundletool-all.jar
+# Inspect .store-evidence/android-media-playback/android-media-playback.mp4 with sound.
+bundle exec fastlane android publish_foreground_service_video reviewed:true
+bundle exec fastlane android readiness bundletool:/absolute/path/bundletool-all.jar
+```
+
+The recorder creates/uses only the dedicated `NoiseConnoisseur_Evidence` AVD on port 5586,
+refuses an occupied port or already-running AVD, resets the app on that emulator and
+stops its emulator afterward. It generates an APK from the release AAB with bundletool,
+using the public local debug key for installation. Release code/resources and minification
+are retained; the APK's signing identity is intentionally different and recorded in the manifest.
+
+Maestro drives accessible controls. scrcpy captures video and the device's output audio,
+without microphone input or a replacement soundtrack. The script checks Android's foreground
+media-playback service while backgrounded, its shutdown after Pause, audible background
+audio and silence at the end. It preserves the full timeline while encoding a grayscale,
+browser-compatible H.264/AAC MP4. These checks supplement watching the result with sound.
+
+All binaries and raw diagnostics stay in gitignored `.store-evidence/`. Publishing checks
+the local MP4's hash/size and the exact candidate AAB hash, uploads the immutable video
+first, and updates the current manifest last. `artifact:` overrides the AAB on both lanes;
+`manifest:` overrides the publication manifest. Never publish an unreviewed recording.
+
+### Storage and freshness
+
+The private Cloudflare R2 bucket `nc-store-evidence` holds
+`android-media-playback/<video-sha256>.mp4` and `android-media-playback/current.json`.
+One-time provisioning is `bunx wrangler r2 bucket create nc-store-evidence`, using the
+same Cloudflare account as the `nc` Worker. `web/wrangler.jsonc` binds the bucket as
+`PLAY_EVIDENCE`. Public bucket access is unnecessary: the Worker exposes only the review
+page, current manifest and immutable video paths, with byte ranges for seeking.
+Normal `bun run web:deploy` publishes the app/Worker without modifying the stored evidence.
+Keep old immutable objects while their links are in store submissions.
+
+Android readiness downloads the public manifest and its immutable video, verifies bytes
+against the video SHA-256 and checks the AAB SHA-256 against the inspected candidate.
+A new AAB without a matching recording fails `evidence.android_video_candidate`.
+Missing/unreachable evidence is unverified, never a pass. `store:false` skips this network
+read too; `evidence:/absolute/path/manifest.json` checks local evidence in either mode.
+Local evidence does not prove the public link is accessible. Existing build-provenance
+checks still require auditing from the artifact's own clean source commit.
+
+Readiness never records or publishes as a side effect. After each new candidate, rerun
+capture, watch the result, publish, and audit. In Play Console, manually select the
+media-playback use case, explain the feature and paste the video link into the foreground
+service declaration. Review the public link while signed out. The lanes do not fill out
+that declaration or establish Google's approval.

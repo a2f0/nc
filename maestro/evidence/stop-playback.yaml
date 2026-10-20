@@ -1,0 +1,8 @@
+appId: net.a2f0.nc
+---
+- tapOn: "Pause"
+- assertVisible: "Play"
+- pressKey: Back
+- launchApp:
+    stopApp: false
+- assertVisible: "Play White Noise"

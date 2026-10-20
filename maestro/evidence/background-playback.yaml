@@ -1,0 +1,7 @@
+appId: net.a2f0.nc
+---
+- pressKey: Home
+- openNotifications
+- assertVisible: "White Noise"
+- assertVisible: "Noise Connoisseur"
+- assertVisible: "Pause"

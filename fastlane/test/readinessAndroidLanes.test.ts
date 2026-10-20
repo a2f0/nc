@@ -7,6 +7,8 @@ require 'tmpdir'
 require 'json'
 require 'fake_fastlane'
 require File.join(ARGV[0], 'fastlane/lib/readiness')
+require File.join(ARGV[0], 'fastlane/lib/play_evidence')
+def PlayEvidence.fetch(*) = raise('Unexpected network request in fixture')
 def Readiness.source(_root) = { 'commit' => 'a' * 40, 'dirty' => false }
 results = {}
 Dir.mktmpdir do |dir|

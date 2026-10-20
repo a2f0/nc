@@ -26,3 +26,6 @@ web/dist/
 
 # Private artifact-bound readiness reports
 .readiness/
+
+# Generated store-review recordings and private capture diagnostics
+.store-evidence/

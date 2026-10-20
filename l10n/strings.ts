@@ -16,6 +16,56 @@ export interface SourceString {
 }
 
 export const STRINGS = {
+  review_title: {
+    text: "Android background playback",
+    comment: "Heading of the public Google Play foreground-service demonstration page.",
+    platforms: ["web"],
+  },
+  review_intro: {
+    text: "This recording demonstrates user-started audio continuing while Noise Connoisseur is in the background. Turn on sound to hear playback.",
+    comment: "Introduction to the Google Play review video; asks the viewer to enable sound.",
+    platforms: ["web"],
+  },
+  review_start: {
+    text: "Tap Play White Noise in the app.",
+    comment: "First step shown in the English Android review recording.",
+    platforms: ["web"],
+  },
+  review_background: {
+    text: "Return to the home screen and open notifications. White Noise continues playing, with media controls visible.",
+    comment: "Second step shown in the background-playback review recording.",
+    platforms: ["web"],
+  },
+  review_stop: {
+    text: "Tap Pause in the notification. The audio stops; returning to the app shows playback is stopped.",
+    comment: "Final step shown in the background-playback review recording.",
+    platforms: ["web"],
+  },
+  review_capture: {
+    text: "Recorded on an Android emulator using an APK generated from the release App Bundle and signed for local testing. The recording includes the device audio.",
+    comment: "Explains how the public evidence recording was made, including local signing.",
+    platforms: ["web"],
+  },
+  review_build: {
+    text: "Version (build)",
+    comment: "Label before the Android app version and build number on the review page.",
+    platforms: ["web"],
+  },
+  review_recorded: {
+    text: "Recorded",
+    comment: "Label before the UTC recording timestamp on the review page.",
+    platforms: ["web"],
+  },
+  review_download: {
+    text: "Download video",
+    comment: "Link to download the foreground-service demonstration MP4.",
+    platforms: ["web"],
+  },
+  review_details: {
+    text: "Recording details",
+    comment: "Link to the public JSON recording provenance and checksums.",
+    platforms: ["web"],
+  },
   app_name: {
     text: "Noise Connoisseur",
     comment: "The app's name: on its screen and widget, and the artist in the system's media controls.",

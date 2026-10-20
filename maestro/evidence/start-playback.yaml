@@ -1,0 +1,6 @@
+# The app is already open and stopped when recording begins.
+appId: net.a2f0.nc
+---
+- assertVisible: "Play White Noise"
+- tapOn: "Play White Noise"
+- assertVisible: "Stop White Noise"
