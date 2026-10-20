@@ -1,12 +1,12 @@
 import type { NoiseType } from "./noiseType";
 
 // Each noise lands at roughly the same RMS level (about -17 dBFS) with headroom for peaks.
-// Waves average about -23 dBFS, so their crests, at about -14, don't clip.
+// Waves average about -23 dBFS, leaving headroom for their crests.
 const WHITE_GAIN = 0.25;
 const PINK_GAIN = 0.08;
 const BROWN_GAIN = 2.46;
 const FAN_GAIN = 0.093;
-const WAVES_GAIN = 0.085;
+const WAVES_GAIN = 0.09;
 
 // Fan: a five-blade fan at 1,200 RPM. The air is pink noise with its highs rolled off,
 // throbbing slightly each time a blade passes, over a low hum at the blade rate.
@@ -20,19 +20,19 @@ const FAN_HUM_Q = 16;
 const FAN_HUM = 40;
 const FAN_HUM_OVERTONE = 20;
 
-// Waves: each swells for 3.5 to 6 seconds, breaks, and washes out over 4 to 7 seconds,
-// louder and brighter as it swells, over a quiet, dark bed of distant surf. Foam hisses
-// as each one washes out.
+// A swell rolls into a broad breaker, followed by a delayed, darker backwash.
+// The distant bed is independent of the moving layers; foam never becomes raw hiss.
 const WAVE_RISE_SECONDS = [3.5, 6] as const;
 const WAVE_FALL_SECONDS = [4, 7] as const;
 const WAVE_PEAK = [0.55, 1] as const;
-const WAVE_BED = 0.3;
+const WAVE_BED = 0.2;
 const WAVE_DARK_HZ = 350;
-const WAVE_BRIGHT_HZ = 2_500;
-const WAVE_FOAM = 0.3;
-const WAVE_FOAM_CUTOFF_HZ = 3_000;
-/** How far a wave can sit to one side: 0 is centered, 1 is all the way. */
-const WAVE_PAN = 0.25;
+const WAVE_BRIGHT_HZ = 2_200;
+const WAVE_FOAM_DARK_HZ = 580;
+const WAVE_FOAM_BRIGHT_HZ = 2_200;
+const WAVE_WASH_HZ = 700;
+const WAVE_LOW_HZ = 120;
+const WAVE_PAN = 0.18;
 const WAVE_PAN_SECONDS = 1.5;
 
 /**
@@ -60,23 +60,25 @@ export class NoiseGenerator {
   private readonly fanHum: Resonator;
   private readonly fanHumOvertone: Resonator;
 
-  // The current wave. `waveLevel` runs from 0 (calm) to the wave's peak.
+  // Integer frame counts keep multi-second phase boundaries stable at every sample rate.
   private readonly waveDarkCoefficient: number;
   private readonly waveBrightCoefficient: number;
-  private readonly waveFoamCoefficient: number;
+  private readonly waveFoamDarkCoefficient: number;
+  private readonly waveFoamBrightCoefficient: number;
+  private readonly waveWashCoefficient: number;
+  private readonly waveLowCoefficient: number;
   private readonly wavePanCoefficient: number;
-  private waveLevel = 0;
-  private waveStart = 0;
+  private readonly waveTextureCoefficient: number;
+  private readonly waveTextureRandom: Random;
+  private waveFrame = 0;
+  private waveRiseFrames = 1;
+  private waveFallFrames = 1;
   private wavePeak = 0;
-  private waveRising = true;
-  private waveProgress = 0;
-  private waveRiseStep = 0;
-  private waveFallStep = 0;
-  private waveDecay = 1;
-  private waveFoam = 0;
-  private waveFoamDecay = 1;
   private wavePan = 0;
   private wavePanTarget = 0;
+  private waveTexture = 0.85;
+  private waveTextureTarget = 0.85;
+  private waveTextureFrames = 0;
 
   constructor(sampleRate: number, leftSeed: number, rightSeed: number) {
     this.sampleRate = sampleRate;
@@ -91,7 +93,13 @@ export class NoiseGenerator {
 
     this.waveDarkCoefficient = lowPassCoefficient(WAVE_DARK_HZ, sampleRate);
     this.waveBrightCoefficient = lowPassCoefficient(WAVE_BRIGHT_HZ, sampleRate);
-    this.waveFoamCoefficient = lowPassCoefficient(WAVE_FOAM_CUTOFF_HZ, sampleRate);
+    this.waveFoamDarkCoefficient = lowPassCoefficient(WAVE_FOAM_DARK_HZ, sampleRate);
+    this.waveFoamBrightCoefficient = lowPassCoefficient(WAVE_FOAM_BRIGHT_HZ, sampleRate);
+    this.waveWashCoefficient = lowPassCoefficient(WAVE_WASH_HZ, sampleRate);
+    this.waveLowCoefficient = lowPassCoefficient(WAVE_LOW_HZ, sampleRate);
+    this.waveTextureCoefficient = 1 / (0.045 * sampleRate);
+    // Independent of the wave schedule and fan excitation; texture can't alter their timing.
+    this.waveTextureRandom = new Random(leftSeed ^ rightSeed ^ 0x85ebca6b);
     this.wavePanCoefficient = 1 / (WAVE_PAN_SECONDS * sampleRate);
     this.startWave();
   }
@@ -133,47 +141,49 @@ export class NoiseGenerator {
   }
 
   private waves(): void {
-    if (this.waveRising) {
-      this.waveProgress += this.waveRiseStep;
-      // Swells slowly at first, then faster, up to the break.
-      const progress = Math.min(this.waveProgress, 1);
-      this.waveLevel = this.waveStart + (this.wavePeak - this.waveStart) * progress * progress;
-      if (this.waveProgress >= 1) {
-        this.waveRising = false;
-        this.waveProgress = 0;
-        this.waveFoam = this.wavePeak;
-      }
-    } else {
-      this.waveProgress += this.waveFallStep;
-      this.waveLevel *= this.waveDecay;
-      if (this.waveProgress >= 1) this.startWave();
+    const rising = this.waveFrame < this.waveRiseFrames;
+    const progress = rising
+      ? this.waveFrame / this.waveRiseFrames
+      : (this.waveFrame - this.waveRiseFrames) / this.waveFallFrames;
+    const swell = rising ? smooth(progress) : 1 - smooth(progress / 0.78);
+    const body = this.wavePeak * swell * swell;
+    const breaking = rising ? smooth((progress - 0.65) / 0.35) : 1 - smooth(progress / 0.55);
+    const foam = this.wavePeak * breaking * breaking;
+    // Water starts drawing back after the breaker, overlapping its soft tail.
+    const wash = rising ? 0 : this.wavePeak * smooth((progress - 0.12) / 0.23) * (1 - smooth((progress - 0.35) / 0.65));
+    if (this.waveTextureFrames <= 0) {
+      this.waveTextureTarget = 0.55 + 0.3 * (this.waveTextureRandom.white() + 1);
+      this.waveTextureFrames = Math.max(1, Math.round((0.07 + 0.085 * (this.waveTextureRandom.white() + 1)) * this.sampleRate));
     }
-    this.waveFoam *= this.waveFoamDecay;
+    this.waveTextureFrames--;
+    this.waveTexture += (this.waveTextureTarget - this.waveTexture) * this.waveTextureCoefficient;
     this.wavePan += (this.wavePanTarget - this.wavePan) * this.wavePanCoefficient;
-
-    const brightness =
-      this.waveDarkCoefficient + (this.waveBrightCoefficient - this.waveDarkCoefficient) * this.waveLevel;
-    const surf = WAVE_BED + this.waveLevel;
-    const foam = WAVE_FOAM * this.waveFoam;
-    this.left = this.leftChannel.surf(brightness, surf, this.waveFoamCoefficient, foam) * (1 - this.wavePan) * WAVES_GAIN;
-    this.right =
-      this.rightChannel.surf(brightness, surf, this.waveFoamCoefficient, foam) * (1 + this.wavePan) * WAVES_GAIN;
+    const brightness = this.waveDarkCoefficient + (this.waveBrightCoefficient - this.waveDarkCoefficient) * body;
+    const foamCoefficient = this.waveFoamDarkCoefficient + (this.waveFoamBrightCoefficient - this.waveFoamDarkCoefficient) * foam;
+    const bodyLevel = body * (0.9 + 0.1 * this.waveTexture);
+    const foamLevel = foam * (0.75 + 0.25 * this.waveTexture);
+    const washLevel = 0.55 * wash * this.waveTexture;
+    this.left = this.leftChannel.surf(
+      brightness, bodyLevel, foamCoefficient, foamLevel,
+      this.waveDarkCoefficient, this.waveWashCoefficient, this.waveLowCoefficient, washLevel,
+    ) * (1 - this.wavePan) * WAVES_GAIN;
+    this.right = this.rightChannel.surf(
+      brightness, bodyLevel, foamCoefficient, foamLevel,
+      this.waveDarkCoefficient, this.waveWashCoefficient, this.waveLowCoefficient, washLevel,
+    ) * (1 + this.wavePan) * WAVES_GAIN;
+    this.waveFrame++;
+    if (this.waveFrame >= this.waveRiseFrames + this.waveFallFrames) this.startWave();
   }
 
-  /** Picks the next wave's size, timing, and place, and starts it swelling from the current level. */
+  /** New wave parameters; filter and texture states continue smoothly across events. */
   private startWave(): void {
     const riseSeconds = this.shared.between(WAVE_RISE_SECONDS);
     const fallSeconds = this.shared.between(WAVE_FALL_SECONDS);
     this.wavePeak = this.shared.between(WAVE_PEAK);
     this.wavePanTarget = WAVE_PAN * this.shared.white();
-    this.waveStart = this.waveLevel;
-    this.waveRising = true;
-    this.waveProgress = 0;
-    this.waveRiseStep = 1 / (riseSeconds * this.sampleRate);
-    this.waveFallStep = 1 / (fallSeconds * this.sampleRate);
-    // Down to about 5% (three time constants) by the next wave; the foam lingers.
-    this.waveDecay = Math.exp(-3 / (fallSeconds * this.sampleRate));
-    this.waveFoamDecay = Math.exp(-2 / (fallSeconds * this.sampleRate));
+    this.waveFrame = 0;
+    this.waveRiseFrames = Math.max(1, Math.round(riseSeconds * this.sampleRate));
+    this.waveFallFrames = Math.max(1, Math.round(fallSeconds * this.sampleRate));
   }
 }
 
@@ -221,7 +231,14 @@ class Channel {
   private air2 = 0;
   private surf1 = 0;
   private surf2 = 0;
+  private bed1 = 0;
+  private bed2 = 0;
+  private foam1 = 0;
+  private foam2 = 0;
   private foamLow = 0;
+  private wash1 = 0;
+  private wash2 = 0;
+  private washLow = 0;
 
   constructor(seed: number) {
     this.random = new Random(seed);
@@ -258,13 +275,20 @@ class Channel {
     return this.air2;
   }
 
-  /** Surf: pink noise through a two-pole low-pass filter, plus foam: high-passed white noise. */
-  surf(brightness: number, level: number, foamCoefficient: number, foam: number): number {
-    this.surf1 += (this.pink() - this.surf1) * brightness;
+  /** Separate distant surf, body, band-limited foam, and low-mid backwash. */
+  surf(brightness: number, body: number, foamCoefficient: number, foam: number, bedCoefficient: number, washCoefficient: number, lowCoefficient: number, wash: number): number {
+    const pink = this.pink();
+    this.bed1 += (pink - this.bed1) * bedCoefficient;
+    this.bed2 += (this.bed1 - this.bed2) * bedCoefficient;
+    this.surf1 += (pink - this.surf1) * brightness;
     this.surf2 += (this.surf1 - this.surf2) * brightness;
-    const w = this.white();
-    this.foamLow += (w - this.foamLow) * foamCoefficient;
-    return this.surf2 * level + (w - this.foamLow) * foam;
+    this.foam1 += (this.white() - this.foam1) * foamCoefficient;
+    this.foam2 += (this.foam1 - this.foam2) * foamCoefficient;
+    this.foamLow += (this.foam2 - this.foamLow) * lowCoefficient;
+    this.wash1 += (pink - this.wash1) * washCoefficient;
+    this.wash2 += (this.wash1 - this.wash2) * washCoefficient;
+    this.washLow += (this.wash2 - this.washLow) * lowCoefficient;
+    return WAVE_BED * this.bed2 + this.surf2 * body + (this.foam2 - this.foamLow) * foam + (this.wash2 - this.washLow) * wash;
   }
 }
 
@@ -297,4 +321,10 @@ function lowPassCoefficient(hz: number, sampleRate: number): number {
 function sine(phase: number): number {
   const x = 2 * phase - 1;
   return 4 * x * (Math.abs(x) - 1);
+}
+
+/** Smoothstep with zero slope at both ends: no abrupt break or backwash onset. */
+function smooth(value: number): number {
+  const x = Math.max(0, Math.min(1, value));
+  return x * x * (3 - 2 * x);
 }

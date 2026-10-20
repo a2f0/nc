@@ -5,12 +5,12 @@ import Foundation
 /// shared. Owned by the audio render thread; not thread-safe.
 struct NoiseGenerator {
     // Each noise lands at roughly the same RMS level (about -17 dBFS) with headroom for
-    // peaks. Waves average about -23 dBFS, so their crests, at about -14, don't clip.
+    // peaks. Waves average about -23 dBFS, leaving headroom for their crests.
     private static let whiteGain: Float = 0.25
     private static let pinkGain: Float = 0.08
     private static let brownGain: Float = 2.46
     private static let fanGain: Float = 0.093
-    private static let wavesGain: Float = 0.085
+    private static let wavesGain: Float = 0.09
 
     // Fan: a five-blade fan at 1,200 RPM. The air is pink noise with its highs rolled off,
     // throbbing slightly each time a blade passes, over a low hum at the blade rate.
@@ -24,19 +24,18 @@ struct NoiseGenerator {
     private static let fanHum: Float = 40
     private static let fanHumOvertone: Float = 20
 
-    // Waves: each swells for 3.5 to 6 seconds, breaks, and washes out over 4 to 7 seconds,
-    // louder and brighter as it swells, over a quiet, dark bed of distant surf. Foam
-    // hisses as each one washes out.
+    // A swell rolls into a broad breaker, followed by a delayed, darker backwash.
+    // The distant bed is independent of the moving layers; foam never becomes raw hiss.
     private static let waveRiseSeconds: ClosedRange<Float> = 3.5...6
     private static let waveFallSeconds: ClosedRange<Float> = 4...7
     private static let wavePeak: ClosedRange<Float> = 0.55...1
-    private static let waveBed: Float = 0.3
     private static let waveDarkHz: Double = 350
-    private static let waveBrightHz: Double = 2_500
-    private static let waveFoam: Float = 0.3
-    private static let waveFoamCutoffHz: Double = 3_000
-    /// How far a wave can sit to one side: 0 is centered, 1 is all the way.
-    private static let wavePan: Float = 0.25
+    private static let waveBrightHz: Double = 2_200
+    private static let waveFoamDarkHz: Double = 580
+    private static let waveFoamBrightHz: Double = 2_200
+    private static let waveWashHz: Double = 700
+    private static let waveLowHz: Double = 120
+    private static let wavePan: Float = 0.18
     private static let wavePanSeconds: Double = 1.5
 
     private var leftChannel: Channel
@@ -52,23 +51,25 @@ struct NoiseGenerator {
     private var fanHum: Resonator
     private var fanHumOvertone: Resonator
 
-    // The current wave. `waveLevel` runs from 0 (calm) to the wave's peak.
+    // Integer frame counts keep multi-second phase boundaries stable at every sample rate.
     private let waveDarkCoefficient: Float
     private let waveBrightCoefficient: Float
-    private let waveFoamCoefficient: Float
+    private let waveFoamDarkCoefficient: Float
+    private let waveFoamBrightCoefficient: Float
+    private let waveWashCoefficient: Float
+    private let waveLowCoefficient: Float
     private let wavePanCoefficient: Float
-    private var waveLevel: Float = 0
-    private var waveStart: Float = 0
+    private let waveTextureCoefficient: Float
+    private var waveTextureRandom: Random
+    private var waveFrame = 0
+    private var waveRiseFrames = 1
+    private var waveFallFrames = 1
     private var wavePeak: Float = 0
-    private var waveRising = true
-    private var waveProgress: Float = 0
-    private var waveRiseStep: Float = 0
-    private var waveFallStep: Float = 0
-    private var waveDecay: Float = 1
-    private var waveFoam: Float = 0
-    private var waveFoamDecay: Float = 1
     private var wavePan: Float = 0
     private var wavePanTarget: Float = 0
+    private var waveTexture: Float = 0.85
+    private var waveTextureTarget: Float = 0.85
+    private var waveTextureFrames = 0
 
     init(sampleRate: Double, leftSeed: UInt32, rightSeed: UInt32) {
         self.sampleRate = sampleRate
@@ -84,7 +85,13 @@ struct NoiseGenerator {
 
         waveDarkCoefficient = lowPassCoefficient(hz: Self.waveDarkHz, sampleRate: sampleRate)
         waveBrightCoefficient = lowPassCoefficient(hz: Self.waveBrightHz, sampleRate: sampleRate)
-        waveFoamCoefficient = lowPassCoefficient(hz: Self.waveFoamCutoffHz, sampleRate: sampleRate)
+        waveFoamDarkCoefficient = lowPassCoefficient(hz: Self.waveFoamDarkHz, sampleRate: sampleRate)
+        waveFoamBrightCoefficient = lowPassCoefficient(hz: Self.waveFoamBrightHz, sampleRate: sampleRate)
+        waveWashCoefficient = lowPassCoefficient(hz: Self.waveWashHz, sampleRate: sampleRate)
+        waveLowCoefficient = lowPassCoefficient(hz: Self.waveLowHz, sampleRate: sampleRate)
+        waveTextureCoefficient = Float(1 / (0.045 * sampleRate))
+        // Independent of the wave schedule and fan excitation; texture can't alter their timing.
+        waveTextureRandom = Random(seed: leftSeed ^ rightSeed ^ 0x85EB_CA6B)
         wavePanCoefficient = Float(1 / (Self.wavePanSeconds * sampleRate))
         startWave()
     }
@@ -115,49 +122,48 @@ struct NoiseGenerator {
     }
 
     private mutating func waves() -> (left: Float, right: Float) {
-        if waveRising {
-            waveProgress += waveRiseStep
-            // Swells slowly at first, then faster, up to the break.
-            let progress = min(waveProgress, 1)
-            waveLevel = waveStart + (wavePeak - waveStart) * progress * progress
-            if waveProgress >= 1 {
-                waveRising = false
-                waveProgress = 0
-                waveFoam = wavePeak
-            }
-        } else {
-            waveProgress += waveFallStep
-            waveLevel *= waveDecay
-            if waveProgress >= 1 { startWave() }
+        let rising = waveFrame < waveRiseFrames
+        let progress = rising
+            ? Float(waveFrame) / Float(waveRiseFrames)
+            : Float(waveFrame - waveRiseFrames) / Float(waveFallFrames)
+        let swell = rising ? smooth(progress) : 1 - smooth(progress / 0.78)
+        let body = wavePeak * swell * swell
+        let breaking = rising ? smooth((progress - 0.65) / 0.35) : 1 - smooth(progress / 0.55)
+        let foam = wavePeak * breaking * breaking
+        // Water starts drawing back after the breaker, overlapping its soft tail.
+        let wash: Float = rising ? 0 : wavePeak * smooth((progress - 0.12) / 0.23) * (1 - smooth((progress - 0.35) / 0.65))
+        if waveTextureFrames <= 0 {
+            waveTextureTarget = 0.55 + 0.3 * (waveTextureRandom.white() + 1)
+            waveTextureFrames = max(1, Int((Double(0.07 + 0.085 * (waveTextureRandom.white() + 1)) * sampleRate).rounded()))
         }
-        waveFoam *= waveFoamDecay
+        waveTextureFrames -= 1
+        waveTexture += (waveTextureTarget - waveTexture) * waveTextureCoefficient
         wavePan += (wavePanTarget - wavePan) * wavePanCoefficient
-
-        let brightness = waveDarkCoefficient + (waveBrightCoefficient - waveDarkCoefficient) * waveLevel
-        let surf = Self.waveBed + waveLevel
-        let foam = Self.waveFoam * waveFoam
-        return (
-            leftChannel.surf(brightness: brightness, level: surf, foamCoefficient: waveFoamCoefficient, foam: foam)
-                * (1 - wavePan) * Self.wavesGain,
-            rightChannel.surf(brightness: brightness, level: surf, foamCoefficient: waveFoamCoefficient, foam: foam)
-                * (1 + wavePan) * Self.wavesGain
-        )
+        let brightness = waveDarkCoefficient + (waveBrightCoefficient - waveDarkCoefficient) * body
+        let foamCoefficient = waveFoamDarkCoefficient + (waveFoamBrightCoefficient - waveFoamDarkCoefficient) * foam
+        let bodyLevel = body * (0.9 + 0.1 * waveTexture)
+        let foamLevel = foam * (0.75 + 0.25 * waveTexture)
+        let washLevel = 0.55 * wash * waveTexture
+        let left = leftChannel.surf(brightness: brightness, body: bodyLevel, foamCoefficient: foamCoefficient, foam: foamLevel,
+                                    bedCoefficient: waveDarkCoefficient, washCoefficient: waveWashCoefficient, lowCoefficient: waveLowCoefficient, wash: washLevel)
+            * (1 - wavePan) * Self.wavesGain
+        let right = rightChannel.surf(brightness: brightness, body: bodyLevel, foamCoefficient: foamCoefficient, foam: foamLevel,
+                                     bedCoefficient: waveDarkCoefficient, washCoefficient: waveWashCoefficient, lowCoefficient: waveLowCoefficient, wash: washLevel)
+            * (1 + wavePan) * Self.wavesGain
+        waveFrame += 1
+        if waveFrame >= waveRiseFrames + waveFallFrames { startWave() }
+        return (left, right)
     }
 
-    /// Picks the next wave's size, timing, and place, and starts it swelling from the current level.
+    /// New wave parameters; filter and texture states continue smoothly across events.
     private mutating func startWave() {
         let riseSeconds = Double(shared.between(Self.waveRiseSeconds))
         let fallSeconds = Double(shared.between(Self.waveFallSeconds))
         wavePeak = shared.between(Self.wavePeak)
         wavePanTarget = Self.wavePan * shared.white()
-        waveStart = waveLevel
-        waveRising = true
-        waveProgress = 0
-        waveRiseStep = Float(1 / (riseSeconds * sampleRate))
-        waveFallStep = Float(1 / (fallSeconds * sampleRate))
-        // Down to about 5% (three time constants) by the next wave; the foam lingers.
-        waveDecay = Float(exp(-3 / (fallSeconds * sampleRate)))
-        waveFoamDecay = Float(exp(-2 / (fallSeconds * sampleRate)))
+        waveFrame = 0
+        waveRiseFrames = max(1, Int((riseSeconds * sampleRate).rounded()))
+        waveFallFrames = max(1, Int((fallSeconds * sampleRate).rounded()))
     }
 }
 
@@ -203,7 +209,14 @@ private struct Channel {
     private var air2: Float = 0
     private var surf1: Float = 0
     private var surf2: Float = 0
+    private var bed1: Float = 0
+    private var bed2: Float = 0
+    private var foam1: Float = 0
+    private var foam2: Float = 0
     private var foamLow: Float = 0
+    private var wash1: Float = 0
+    private var wash2: Float = 0
+    private var washLow: Float = 0
 
     init(seed: UInt32) {
         random = Random(seed: seed)
@@ -240,13 +253,21 @@ private struct Channel {
         return air2
     }
 
-    /// Surf: pink noise through a two-pole low-pass filter, plus foam: high-passed white noise.
-    mutating func surf(brightness: Float, level: Float, foamCoefficient: Float, foam: Float) -> Float {
-        surf1 += (pink() - surf1) * brightness
+    /// Separate distant surf, body, band-limited foam, and low-mid backwash.
+    mutating func surf(brightness: Float, body: Float, foamCoefficient: Float, foam: Float,
+                       bedCoefficient: Float, washCoefficient: Float, lowCoefficient: Float, wash: Float) -> Float {
+        let pink = self.pink()
+        bed1 += (pink - bed1) * bedCoefficient
+        bed2 += (bed1 - bed2) * bedCoefficient
+        surf1 += (pink - surf1) * brightness
         surf2 += (surf1 - surf2) * brightness
-        let w = white()
-        foamLow += (w - foamLow) * foamCoefficient
-        return surf2 * level + (w - foamLow) * foam
+        foam1 += (white() - foam1) * foamCoefficient
+        foam2 += (foam1 - foam2) * foamCoefficient
+        foamLow += (foam2 - foamLow) * lowCoefficient
+        wash1 += (pink - wash1) * washCoefficient
+        wash2 += (wash1 - wash2) * washCoefficient
+        washLow += (wash2 - washLow) * lowCoefficient
+        return 0.2 * bed2 + surf2 * body + (foam2 - foamLow) * foam + (wash2 - washLow) * wash
     }
 }
 
@@ -279,4 +300,10 @@ private func lowPassCoefficient(hz: Double, sampleRate: Double) -> Float {
 private func sine(_ phase: Float) -> Float {
     let x = 2 * phase - 1
     return 4 * x * (abs(x) - 1)
+}
+
+/// Smoothstep with zero slope at both ends: no abrupt break or backwash onset.
+private func smooth(_ value: Float) -> Float {
+    let x = max(0, min(1, value))
+    return x * x * (3 - 2 * x)
 }
