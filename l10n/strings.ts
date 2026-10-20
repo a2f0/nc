@@ -122,6 +122,14 @@ export const STRINGS = {
     text: "All time",
     comment: "History view selector: total minutes per sound across all saved listening sessions.",
   },
+  history_daily: {
+    text: "{noise} daily listening history",
+    comment: "Heading for the daily bar chart of a single sound. {noise} is the localized sound name.",
+  },
+  history_back: {
+    text: "Back to all sounds",
+    comment: "Button returning from a sound's daily history to the previous listening history overview.",
+  },
   history_calendar: {
     text: "Calendar",
     comment: "History view selector: daily listening totals with weekly date navigation.",

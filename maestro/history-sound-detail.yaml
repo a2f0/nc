@@ -1,0 +1,59 @@
+# Run on dedicated test devices. The base flow records real playback and tests persistence.
+appId: net.a2f0.nc
+---
+- runFlow: history.yaml
+- tapOn: "Previous week"
+- scrollUntilVisible:
+    element:
+      id: "history-sound-white"
+    direction: DOWN
+- tapOn:
+    id: "history-sound-white"
+- assertVisible: "White Noise daily listening history"
+- assertVisible: "No listening recorded for these dates."
+- assertNotVisible: "All time"
+- tapOn: "Today"
+- assertNotVisible: "No listening recorded for these dates."
+- tapOn: "Back to all sounds"
+- assertVisible: "No listening recorded for these dates."
+- tapOn: "All time"
+- scrollUntilVisible:
+    element:
+      id: "history-sound-white"
+    direction: DOWN
+- tapOn:
+    id: "history-sound-white"
+- assertVisible: "White Noise daily listening history"
+- assertVisible: "Previous week"
+- assertNotVisible: "No listening recorded for these dates."
+- tapOn: "Previous week"
+- assertVisible: "No listening recorded for these dates."
+- tapOn: "Back to all sounds"
+- assertNotVisible: "Previous week"
+- scrollUntilVisible:
+    element:
+      id: "history-sound-pink"
+    direction: DOWN
+- tapOn:
+    id: "history-sound-pink"
+- assertVisible: "Pink Noise daily listening history"
+- assertVisible: "No listening recorded for these dates."
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - pressKey: Home
+      - launchApp:
+          stopApp: false
+      - assertVisible: "Pink Noise daily listening history"
+      - pressKey: Back
+      - assertVisible: "All time"
+      - scrollUntilVisible:
+          element:
+            id: "history-sound-pink"
+          direction: DOWN
+      - tapOn:
+          id: "history-sound-pink"
+      - assertVisible: "Pink Noise daily listening history"
+- tapOn: "Back to all sounds"
+- assertNotVisible: "Previous week"

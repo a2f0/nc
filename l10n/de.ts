@@ -4,6 +4,8 @@ export default {
   history: "Hörverlauf",
   history_all_time: "Gesamter Zeitraum",
   history_calendar: "Kalender",
+  history_daily: "Täglicher Hörverlauf für {noise}",
+  history_back: "Zurück zu allen Klängen",
   history_sound: "Klang",
   history_all_time_empty: "Noch nichts aufgezeichnet.",
   history_minutes: "Gespielte Minuten",

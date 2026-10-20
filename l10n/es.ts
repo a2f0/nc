@@ -5,6 +5,8 @@ export default {
   history: "Historial de escucha",
   history_all_time: "Todo el tiempo",
   history_calendar: "Calendario",
+  history_daily: "Historial de escucha diario de {noise}",
+  history_back: "Volver a todos los sonidos",
   history_sound: "Sonido",
   history_all_time_empty: "Aún no hay escuchas registradas.",
   history_minutes: "Minutos reproducidos",

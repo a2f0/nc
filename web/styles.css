@@ -416,6 +416,7 @@ button.toggle {
   gap: 8px;
 }
 .history-views button,
+.history-detail button,
 .history-navigation button {
   padding: 8px;
   border: 1px solid var(--separator);
@@ -428,12 +429,13 @@ button.toggle {
 .history-views { margin-bottom: 16px; }
 .history-views button { flex: 1; min-height: 44px; }
 .history-views button[aria-pressed="true"] { background: var(--primary); color: var(--background); }
-.history-navigation[hidden] { display: none; }
+.history-navigation[hidden], .history-views[hidden], .history-legend[hidden] { display: none; }
 .history-navigation button:disabled { opacity: 0.4; cursor: default; }
 .history-range { text-align: center; }
 .history-chart { display: block; width: 100%; }
 .history-legend { display: flex; flex-wrap: wrap; gap: 12px 20px; padding: 0; list-style: none; }
-.history-legend li { display: flex; align-items: center; gap: 8px; }
+.history-legend button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px; border: 1px solid var(--secondary); border-radius: 8px; color: var(--primary); background: var(--background); font: inherit; text-align: start; cursor: pointer; }
+.history-detail h3 { font-size: 18px; }
 .history-swatch { width: 12px; height: 12px; border: 1px solid var(--secondary); flex: none; }
 #history-content > p { color: var(--secondary); font-size: 14px; }
 #history-content > p:empty { display: none; }
