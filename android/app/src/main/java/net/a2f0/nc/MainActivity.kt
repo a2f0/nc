@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
             SideEffect {
                 enableEdgeToEdge(
                     statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
-                    navigationBarStyle = SystemBarStyle.auto(0xffe6e6e6.toInt(), 0x801b1b1b.toInt()) { dark },
+                    navigationBarStyle = SystemBarStyle.auto(Color.argb(0xe6, 0xff, 0xff, 0xff), 0x801b1b1b.toInt()) { dark },
                 )
             }
             CompositionLocalProvider(LocalAppearancePreferences provides preferences) {

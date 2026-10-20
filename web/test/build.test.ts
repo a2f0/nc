@@ -2,6 +2,7 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { runInNewContext } from "node:vm";
 import { build } from "../build";
 
 const BRAND_DIR = join(import.meta.dir, "../../assets/brand");
@@ -44,4 +45,46 @@ test("every page's favicon is the app icon without the mark's unlit segments", a
   for (const page of ["index.html", "privacy.html", "support.html"]) {
     expect(await readFile(join(dir, page), "utf8")).toContain('<link rel="icon" href="icon.svg" type="image/svg+xml" />');
   }
+});
+
+test("every app page applies the saved appearance before styles and the main script", async () => {
+  const script = await readFile(join(dir, "appearance-init.js"), "utf8");
+  for (const page of ["index.html", "privacy.html", "support.html"]) {
+    const html = await readFile(join(dir, page), "utf8");
+    const position = html.indexOf('<script src="appearance-init.js"></script>');
+    expect(position).toBeGreaterThan(-1);
+    expect(position).toBeLessThan(html.indexOf('<link rel="stylesheet"'));
+    if (page === "index.html") expect(position).toBeLessThan(html.indexOf('src="main.js"'));
+  }
+
+  // Execute the real emitted classic script with no app bundle or DOM body present.
+  let saved: string | null = "dark";
+  const localStorage = { getItem: () => saved };
+  const root = { dataset: {} as Record<string, string> };
+  let listener!: (event: { key: string | null; storageArea: unknown }) => void;
+  const window = { addEventListener(type: string, callback: typeof listener) {
+    expect(type).toBe("storage");
+    listener = callback;
+  } };
+  runInNewContext(script, { localStorage, document: { documentElement: root }, window });
+  expect(root.dataset.appearance).toBe("dark");
+  saved = "light";
+  listener({ key: "appearance", storageArea: {} }); // Session storage must not affect the app.
+  listener({ key: "volume", storageArea: localStorage });
+  expect(root.dataset.appearance).toBe("dark");
+  listener({ key: "appearance", storageArea: localStorage });
+  expect(root.dataset.appearance).toBe("light");
+  saved = null;
+  listener({ key: null, storageArea: localStorage }); // localStorage.clear() in another tab.
+  expect(root.dataset.appearance).toBe("system");
+  saved = "future-mode";
+  listener({ key: "appearance", storageArea: localStorage });
+  expect(root.dataset.appearance).toBe("system");
+
+  root.dataset.appearance = "dark";
+  runInNewContext(script, {
+    get localStorage() { throw new Error("Blocked storage"); },
+    document: { documentElement: root }, window,
+  });
+  expect(root.dataset.appearance).toBe("system");
 });

@@ -4,16 +4,19 @@ import { t } from "./l10n";
 export function setUpAppearance(): () => void {
   let selected = readAppearance();
   let failed = false;
-  const inputs = APPEARANCES.map((option) =>
-    document.getElementById(`appearance-${option}`) as HTMLInputElement);
-  const failure = document.getElementById("appearance-storage-failed")!;
+  const inputs = APPEARANCES.map((option) => {
+    const input = element(`appearance-${option}`);
+    if (!(input instanceof HTMLInputElement)) throw new Error(`Expected radio input #appearance-${option}`);
+    return input;
+  });
+  const failure = element("appearance-storage-failed");
   function render(): void {
     applyAppearance(selected);
-    document.getElementById("appearance-title")!.textContent = t("appearance");
+    element("appearance-title").textContent = t("appearance");
     inputs.forEach((input, index) => {
       const option = APPEARANCES[index]!;
       input.checked = selected === option;
-      document.getElementById(`appearance-label-${option}`)!.textContent = t(`appearance_${option}`);
+      element(`appearance-label-${option}`).textContent = t(`appearance_${option}`);
     });
     failure.textContent = failed ? t("appearance_storage_failed") : "";
   }
@@ -30,4 +33,10 @@ export function setUpAppearance(): () => void {
     render();
   });
   return render;
+}
+
+function element(id: string): HTMLElement {
+  const found = document.getElementById(id);
+  if (found === null) throw new Error(`Missing #${id}`);
+  return found;
 }

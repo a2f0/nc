@@ -1,0 +1,17 @@
+# Native accessibility exposes a radio as checked on Android and a selected button on iOS.
+appId: net.a2f0.nc
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - assertVisible:
+          id: "appearance-${APPEARANCE}"
+          checked: true
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - assertVisible:
+          id: "appearance-${APPEARANCE}"
+          selected: true

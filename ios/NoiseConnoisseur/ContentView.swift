@@ -5,6 +5,7 @@ struct ContentView: View {
     // Scales with the title, for Dynamic Type.
     @ScaledMetric(relativeTo: .largeTitle) private var logoSize = 40
     @State private var sheet: Sheet?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ScrollView {
@@ -42,11 +43,16 @@ struct ContentView: View {
             PlayerBar(player: player)
         }
         .sheet(item: $sheet) { sheet in
-            switch sheet {
-            case .history: HistorySheet(history: player.history)
-            case .settings: SettingsSheet(player: player)
-            case .about: AboutSheet()
+            Group {
+                switch sheet {
+                case .history: HistorySheet(history: player.history)
+                case .settings: SettingsSheet(player: player)
+                case .about: AboutSheet()
+                }
             }
+            // Presentations can retain their initial traits. Keep them in step with
+            // the window's resolved appearance, including live system changes.
+            .preferredColorScheme(colorScheme)
         }
     }
 }

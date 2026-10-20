@@ -81,7 +81,13 @@ Android APK. Run:
 ```sh
 maestro --device <device-id> test maestro/readiness.yaml
 maestro --device <android-device-id> test maestro/history-background.yaml
+maestro --device <device-id> test maestro/appearance.yaml
 ```
+
+The appearance flow verifies System/Light/Dark selection across process restarts on both
+platforms. Also inspect the visible colors while Settings is open, switch the device's
+appearance while System is selected, and reboot the dedicated device with an explicit
+choice saved. Selection assertions alone do not prove that a presented sheet repainted.
 
 Repeat the first flow at normal and large text sizes. For Android, set
 `adb -s <serial> shell settings put system font_scale 2.0` and restore the original value

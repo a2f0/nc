@@ -45,6 +45,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -267,10 +268,16 @@ private fun openStoreListing(context: Context) {
 private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composable (() -> Unit) -> Unit) {
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
+    val lightSystemBars = !LocalAppearancePreferences.current.appearance.isDark(isSystemInDarkTheme())
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
+        // The sheet owns a separate window, so its system bars need the same override.
+        properties = ModalBottomSheetProperties(
+            isAppearanceLightStatusBars = lightSystemBars,
+            isAppearanceLightNavigationBars = lightSystemBars,
+        ),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),

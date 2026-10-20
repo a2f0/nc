@@ -1,11 +1,6 @@
 import type { Translation } from "./strings";
 
 export default {
-  appearance: "Erscheinungsbild",
-  appearance_system: "System",
-  appearance_light: "Hell",
-  appearance_dark: "Dunkel",
-  appearance_storage_failed: "Dieser Browser konnte dein Erscheinungsbild nicht speichern. Es wird zurückgesetzt, wenn du diese Seite schließt.",
   history: "Hörverlauf",
   history_all_time: "Gesamter Zeitraum",
   history_calendar: "Kalender",
@@ -46,6 +41,11 @@ export default {
   volume: "Lautstärke",
   more: "Mehr",
   settings: "Einstellungen",
+  appearance: "Erscheinungsbild",
+  appearance_system: "System",
+  appearance_light: "Hell",
+  appearance_dark: "Dunkel",
+  appearance_storage_failed: "Dieser Browser konnte dein Erscheinungsbild nicht speichern. Es wird zurückgesetzt, wenn du diese Seite schließt.",
   rate_app: "App bewerten",
   about: "Info",
   about_version: "Version {version} ({build})",

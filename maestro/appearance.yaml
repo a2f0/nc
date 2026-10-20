@@ -4,39 +4,56 @@ appId: net.a2f0.nc
 - launchApp:
     clearState: true
     stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
 - tapOn: "More"
 - tapOn: "Settings"
 - assertVisible: "Appearance"
-- assertVisible:
-    id: "appearance-system"
-    selected: true
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: system
 - tapOn:
     id: "appearance-dark"
-- assertVisible:
-    id: "appearance-dark"
-    selected: true
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: dark
 - launchApp:
     stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
 - tapOn: "More"
 - tapOn: "Settings"
-- assertVisible:
-    id: "appearance-dark"
-    selected: true
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: dark
 - tapOn:
     id: "appearance-light"
 - launchApp:
     stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
 - tapOn: "More"
 - tapOn: "Settings"
-- assertVisible:
-    id: "appearance-light"
-    selected: true
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: light
 - tapOn:
     id: "appearance-system"
 - launchApp:
     stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
 - tapOn: "More"
 - tapOn: "Settings"
-- assertVisible:
-    id: "appearance-system"
-    selected: true
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: system

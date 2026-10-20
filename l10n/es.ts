@@ -2,11 +2,6 @@ import type { Translation } from "./strings";
 
 // Neutral Spanish, for Spain and Latin America alike.
 export default {
-  appearance: "Apariencia",
-  appearance_system: "Sistema",
-  appearance_light: "Claro",
-  appearance_dark: "Oscuro",
-  appearance_storage_failed: "Este navegador no pudo guardar la apariencia. Se restablecerá cuando cierres esta página.",
   history: "Historial de escucha",
   history_all_time: "Todo el tiempo",
   history_calendar: "Calendario",
@@ -47,6 +42,11 @@ export default {
   volume: "Volumen",
   more: "Más",
   settings: "Ajustes",
+  appearance: "Apariencia",
+  appearance_system: "Sistema",
+  appearance_light: "Claro",
+  appearance_dark: "Oscuro",
+  appearance_storage_failed: "Este navegador no pudo guardar la apariencia. Se restablecerá cuando cierres esta página.",
   rate_app: "Valorar la app",
   about: "Acerca de",
   about_version: "Versión {version} ({build})",

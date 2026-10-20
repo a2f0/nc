@@ -30,6 +30,8 @@ take effect immediately and stay saved across app restarts and device reboots, u
 preferences or browser local storage. The web app applies the saved choice before rendering
 and keeps open tabs in sync. Clearing app/site data removes the preference; blocked browser
 storage shows a warning and keeps the choice only for the current page.
+The system-controlled mobile launch screen can briefly use the system appearance before
+the app's saved appearance takes over.
 
 ## Listening history
 
