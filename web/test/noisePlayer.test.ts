@@ -155,11 +155,10 @@ async function loaded(): Promise<{ player: NoisePlayer; context: FakeAudioContex
 }
 
 describe("NoisePlayer", () => {
-  test("uses short audio callbacks when feeding the live media stream", async () => {
-    const { context } = await loaded();
+  test("uses short audio callbacks when feeding the live media stream", () => {
+    new NoisePlayer(memoryHistory()).play("white");
     // A playback-sized producer buffer can underrun the live stream consumer.
-    // Browser loopback checks cover the resulting gaps; keep the hint explicit here.
-    expect(context.options.latencyHint).toBe("interactive");
+    expect(FakeAudioContext.instances[0]!.options.latencyHint).toBe("interactive");
   });
 
   test("sends commands in order once the worklet loads", async () => {
