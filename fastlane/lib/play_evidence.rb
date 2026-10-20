@@ -44,7 +44,7 @@ module PlayEvidence
     raise 'AAB receipt does not match' unless receipt['schema_version'] == 1 && receipt['sha256'] == Digest::SHA256.file(artifact).hexdigest
     raise 'AAB source is not clean' unless source['dirty'] == false && source['commit'].to_s.match?(/\A[0-9a-f]{40}\z/)
     # Web-only releases do not require rebuilding the Android artifact.
-    %w[android assets/brand].each do |path|
+    %w[android assets/brand agent-tool.json .mise.toml scripts/ensureGradleWrapper.sh].each do |path|
       recorded = Readiness.command('git', '-C', root, 'rev-parse', "#{source['commit']}:#{path}").strip
       current = Readiness.command('git', '-C', root, 'rev-parse', "HEAD:#{path}").strip
       raise "AAB predates changes to #{path}" unless recorded == current

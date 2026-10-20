@@ -7,6 +7,47 @@ require 'tmpdir'
 require 'fake_fastlane'
 require File.join(ARGV[0], 'fastlane/lib/play_evidence')
 result = {}
+# Keep the real downloader and substitute only the HTTP transport.
+http_start = Net::HTTP.method(:start)
+response = Struct.new(:code, :parts) do
+  def read_body
+    parts.each { |part| yield part }
+  end
+end.new('200', %w[ab cd])
+transport = Object.new
+transport.define_singleton_method(:request) { |_request, &block| block.call(response) }
+connections = []
+Net::HTTP.define_singleton_method(:start) do |host, port, **options, &block|
+  connections << [host, port, options]
+  block.call(transport)
+end
+begin
+  result[:download] = PlayEvidence.fetch(PlayEvidence::URL, 4)
+  invalid_urls = ['http://nc.a2f0.net/video', 'https://example.test/video', 'https://nc.a2f0.net:8443/video']
+  result[:origin_rejected] = invalid_urls.map do |url|
+    begin
+      PlayEvidence.fetch(url, 4)
+      false
+    rescue RuntimeError
+      true
+    end
+  end
+  result[:origin_connections] = connections.length
+  begin
+    PlayEvidence.fetch(PlayEvidence::URL, 3)
+  rescue RuntimeError => error
+    result[:oversized_rejected] = error.message.include?('size limit')
+  end
+  response.code = '302'
+  begin
+    PlayEvidence.fetch(PlayEvidence::URL, 4)
+  rescue RuntimeError => error
+    result[:redirect_rejected] = error.message == 'Evidence HTTP 302'
+  end
+  result[:tls] = connections.first
+ensure
+  Net::HTTP.define_singleton_method(:start, http_start)
+end
 Dir.mktmpdir do |dir|
   artifact = File.join(dir, 'candidate.aab')
   video = File.join(dir, 'android-media-playback.mp4')
@@ -21,6 +62,21 @@ Dir.mktmpdir do |dir|
     'video_sha256' => sha, 'video_key' => "android-media-playback/#{sha}.mp4",
     'video_bytes' => File.size(video), 'audio' => true, 'duration_seconds' => 30,
     'verified_steps' => %w[user_start background_media_playback notification_stop] }
+  invalid_fields = {
+    'permission' => 'FOREGROUND_SERVICE_LOCATION', 'verified_steps' => ['user_start'],
+    'duration_seconds' => 0, 'version_code' => '0', 'video_key' => '../private',
+    'video_bytes' => 26 * 1024 * 1024, 'audio' => false, 'schema_version' => 2,
+    'application_id' => 'other.app', 'video_sha256' => 'bad', 'source_commit' => 'bad',
+    'capture_commit' => 'bad', 'version_name' => '', 'recorded_at' => 'not a date'
+  }
+  result[:invalid_fields] = invalid_fields.to_h do |field, value|
+    begin
+      PlayEvidence.validate(data.merge(field => value))
+      [field, false]
+    rescue PlayEvidence::InvalidEvidence
+      [field, true]
+    end
+  end
   File.write(path, JSON.generate(data))
   Readiness.define_singleton_method(:source) { |_| { 'commit' => 'a' * 40, 'dirty' => false } }
   report = -> { Readiness::Report.new('android', artifact, dir) }
@@ -89,7 +145,7 @@ Dir.mktmpdir do |dir|
 
   # A real temporary Git history exercises the Android-tree freshness gate.
   repo = File.join(dir, 'repo')
-  FileUtils.mkdir_p([File.join(repo, 'android'), File.join(repo, 'assets/brand'), File.join(repo, 'web')])
+  FileUtils.mkdir_p(%w[android assets/brand web scripts].map { |p| File.join(repo, p) })
   Readiness.command('git', 'init', '--quiet', repo)
   git = ->(*args) { Readiness.command('git', '-C', repo, *args) }
   commit = lambda do
@@ -98,13 +154,28 @@ Dir.mktmpdir do |dir|
              '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture')
     git.call('rev-parse', 'HEAD').strip
   end
-  %w[android/app assets/brand/icon.svg web/app].each { |p| File.write(File.join(repo, p), 'initial') }
+  %w[android/app assets/brand/icon.svg web/app agent-tool.json .mise.toml scripts/ensureGradleWrapper.sh].each do |p|
+    File.write(File.join(repo, p), 'initial')
+  end
   source = { 'commit' => commit.call, 'dirty' => false }
   Readiness.record_build(artifact, source)
   result[:source_matches] = PlayEvidence.artifact_source(artifact, repo) == source
   File.write(File.join(repo, 'web/app'), 'web-only change')
   commit.call
   result[:web_source_matches] = PlayEvidence.artifact_source(artifact, repo) == source
+  result[:build_input_rejected] = %w[agent-tool.json .mise.toml scripts/ensureGradleWrapper.sh].map do |p|
+    File.write(File.join(repo, p), 'changed build input')
+    commit.call
+    rejected = false
+    begin
+      PlayEvidence.artifact_source(artifact, repo)
+    rescue RuntimeError => error
+      rejected = error.message.include?(p)
+    end
+    File.write(File.join(repo, p), 'initial')
+    commit.call
+    rejected
+  end
   File.write(File.join(repo, 'android/app'), 'new android behavior')
   commit.call
   begin
@@ -127,6 +198,18 @@ const result = JSON.parse(child.stdout.toString());
 type Check = { id: string; status: string };
 const status = (run: string, id: string) => result[run].find((c: Check) => c.id === `evidence.android_video${id}`)?.status;
 
+test("downloads only app-origin HTTPS evidence, with bounded bytes and no redirects", () => {
+  expect(result.download).toBe("abcd");
+  expect(result.origin_rejected).toEqual([true, true, true]);
+  expect(result.origin_connections).toBe(1);
+  expect(result.oversized_rejected).toBe(true);
+  expect(result.redirect_rejected).toBe(true);
+  expect(result.tls).toEqual(["nc.a2f0.net", 443, { use_ssl: true, open_timeout: 10, read_timeout: 30 }]);
+});
+test("rejects invalid identity, capture, object key and media fields", () => {
+  expect(Object.keys(result.invalid_fields)).toHaveLength(14);
+  expect(Object.values(result.invalid_fields).every(value => value === true)).toBe(true);
+});
 test("evidence readiness verifies bytes and rejects a different candidate", () => {
   expect(status("offline", "")).toBe("unverified");
   expect(status("good", "_hash")).toBe("verified");
@@ -149,6 +232,7 @@ test("capture accepts web-only commits but rejects changed Android code or a mis
   expect(result.web_source_matches).toBe(true);
   expect(result.android_change_rejected).toBe(true);
   expect(result.receipt_mismatch_rejected).toBe(true);
+  expect(result.build_input_rejected).toEqual([true, true, true]);
 });
 test("online readiness fetches the immutable video referenced by the manifest", () => {
   expect(status("online", "_candidate")).toBe("verified");

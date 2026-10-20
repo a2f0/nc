@@ -78,7 +78,7 @@ capture_source = Readiness.source(ROOT)
 raise 'A clean checkout is required to record evidence' if capture_source['dirty']
 source = PlayEvidence.artifact_source(artifact, ROOT)
 raise "Missing bundletool: #{bundletool}" unless File.file?(bundletool)
-%w[adb emulator avdmanager maestro scrcpy ffmpeg ffprobe java].each { |name| run('which', name) }
+%w[adb emulator avdmanager maestro scrcpy ffmpeg ffprobe java unzip].each { |name| run('which', name) }
 raise "#{SERIAL} is already in use; no device was changed" if run('adb', 'devices').lines.any? { |line| line.start_with?(SERIAL + "\t") }
 run('adb', 'devices').lines.grep(/^emulator-\d+\s+device/).each do |line|
   name = run('adb', '-s', line.split.first, 'emu', 'avd', 'name').lines.first.to_s.strip
@@ -96,13 +96,14 @@ xml = run(*tool, 'dump', 'manifest', "--bundle=#{artifact}", '--module=base')
 manifest = REXML::Document.new(xml).root
 raise 'Wrong app or debuggable artifact' unless manifest.attributes['package'] == APP &&
                                                 manifest.elements['application'].attributes['android:debuggable'] != 'true'
+# A failed retry must not leave a previous recording looking like its result.
+FileUtils.rm_f([File.join(OUT, 'manifest.json'), File.join(OUT, 'android-media-playback.mp4')])
 apks = File.join(OUT, 'candidate.apks')
 run(*tool, 'build-apks', "--bundle=#{artifact}", "--output=#{apks}", '--mode=universal', '--overwrite',
     "--ks=#{File.join(Dir.home, '.android/debug.keystore')}", '--ks-key-alias=androiddebugkey',
     '--ks-pass=pass:android', '--key-pass=pass:android', timeout: 180)
-require 'zip'
 apk = File.join(OUT, 'candidate.apk')
-Zip::File.open(apks) { |zip| File.binwrite(apk, zip.read('universal.apk')) }
+File.binwrite(apk, run('unzip', '-p', apks, 'universal.apk'))
 
 emulator_pid = recorder = nil
 begin

@@ -28,17 +28,17 @@ export const STRINGS = {
   },
   review_start: {
     text: "Tap Play White Noise in the app.",
-    comment: "First step shown in the English Android review recording.",
+    comment: "First step shown in the English Android review recording. Keep “Play White Noise” in English, quoted; optionally add its translation in parentheses.",
     platforms: ["web"],
   },
   review_background: {
     text: "Return to the home screen and open notifications. White Noise continues playing, with media controls visible.",
-    comment: "Second step shown in the background-playback review recording.",
+    comment: "Second step shown in the English background-playback review recording. White Noise is the sound playing; the recording's media title remains in English.",
     platforms: ["web"],
   },
   review_stop: {
     text: "Tap Pause in the notification. The audio stops; returning to the app shows playback is stopped.",
-    comment: "Final step shown in the background-playback review recording.",
+    comment: "Final step shown in the English background-playback review recording. Keep “Pause” in English, quoted; optionally add its translation in parentheses.",
     platforms: ["web"],
   },
   review_capture: {

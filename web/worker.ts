@@ -23,8 +23,8 @@ interface Manifest {
 }
 const BASE = "/review/android-media-playback";
 const KEY = /^android-media-playback\/[a-f0-9]{64}\.mp4$/;
-const escape = (value: string) => value.replace(/[&<>"']/g, c =>
-  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const ENTITIES: Readonly<Record<string, string>> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const escape = (value: string) => value.replace(/[&<>"']/g, c => ENTITIES[c] ?? c);
 const headers = {
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
@@ -61,6 +61,8 @@ function language(request: Request): Locale {
 function page(data: Manifest, locale: Locale): string {
   const text = (key: WebKey) => escape(localeText(locale, key));
   const url = `/review/${data.video_key}`;
+  const date = new Intl.DateTimeFormat(locale.tag, { dateStyle: "medium", timeStyle: "long", timeZone: "UTC" })
+    .format(new Date(data.recorded_at));
   return `<!doctype html><html lang="${escape(locale.tag)}"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${text("review_title")} · ${text("app_name")}</title>
@@ -78,7 +80,7 @@ a{color:inherit;text-underline-offset:.2em}a:focus-visible,video:focus-visible{o
 <ol id="steps"><li>${text("review_start")}</li><li>${text("review_background")}</li><li>${text("review_stop")}</li></ol>
 <p>${text("review_capture")}</p>
 <p>${text("review_build")}: ${escape(data.version_name)} (${escape(String(data.version_code))})<br>
-${text("review_recorded")}: <time datetime="${escape(data.recorded_at)}">${escape(data.recorded_at)}</time></p>
+${text("review_recorded")}: <time datetime="${escape(data.recorded_at)}">${escape(date)}</time></p>
 <p><a href="${url}" download="android-media-playback.mp4">${text("review_download")}</a>
  · <a href="${BASE}.json">${text("review_details")}</a></p></main></html>`;
 }

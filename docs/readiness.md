@@ -107,8 +107,9 @@ Use the immutable MP4 link when a submission must stay pinned to one candidate.
 
 Use a clean committed checkout, the existing release AAB and its `.build.json` receipt.
 Build/upload with the usual Android lane first if the candidate changed. Recording does
-not rebuild or upload the AAB. It accepts an older clean build only when its Android and
-brand asset trees still match this checkout, allowing subsequent web-only releases.
+not rebuild or upload the AAB. It accepts an older clean build only when its Android
+code, brand assets, image-generation configuration, toolchain pins and Gradle bootstrap
+script still match this checkout, allowing subsequent web-only releases.
 
 Install `scrcpy` and `ffmpeg` (`brew install scrcpy ffmpeg` on macOS), Maestro, the Android
 SDK emulator/platform/command-line tools and a JDK. Install the
@@ -155,8 +156,10 @@ Keep old immutable objects while their links are in store submissions.
 Android readiness downloads the public manifest and its immutable video, verifies bytes
 against the video SHA-256 and checks the AAB SHA-256 against the inspected candidate.
 A new AAB without a matching recording fails `evidence.android_video_candidate`.
-Corrupt bytes or invalid manifests fail integrity validation; missing/unreachable evidence
-is unverified, never a pass. `store:false` skips this network
+Downloaded corrupt bytes or invalid manifest fields fail integrity validation.
+Missing/unreachable evidence is unverified, never a pass. The Worker refuses to serve an
+invalid current manifest, so that case appears as unavailable public evidence until repaired.
+`store:false` skips this network
 read too; `evidence:/absolute/path/manifest.json` checks local evidence in either mode.
 Local evidence does not prove the public link is accessible. Existing build-provenance
 checks still require auditing from the artifact's own clean source commit.
