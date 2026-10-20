@@ -28,10 +28,12 @@ struct NoiseWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "NoiseWidget", provider: NoiseTimelineProvider()) { entry in
             NoiseWidgetView(entry: entry)
+                .environment(\.locale, LanguageSettings.locale)
+                .environment(\.layoutDirection, LanguageSettings.layoutDirection)
                 .containerBackground(.background, for: .widget)
         }
-        .configurationDisplayName(Text(.appName))
-        .description(Text(.widgetDescription))
+        .configurationDisplayName(Text(verbatim: LanguageSettings.string(.appName)))
+        .description(Text(verbatim: LanguageSettings.string(.widgetDescription)))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -48,7 +50,7 @@ struct NoiseWidgetView: View {
         let rows = stride(from: 0, to: types.count, by: columns).map { Array(types[$0..<min($0 + columns, types.count)]) }
 
         VStack(alignment: .leading, spacing: 8) {
-            Text(.appName)
+            Text(verbatim: LanguageSettings.string(.appName))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Gray.secondaryLabel)
                 .lineLimit(1)
@@ -86,7 +88,7 @@ private struct NoiseToggleButton: View {
         HStack(spacing: 4) {
             Image(systemName: isPlaying ? "stop.fill" : "play.fill")
                 .imageScale(.small)
-            Text(type.shortTitle)
+            Text(verbatim: LanguageSettings.string(type.shortTitle))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }

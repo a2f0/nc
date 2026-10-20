@@ -722,6 +722,54 @@
         }
       }
     },
+    "language" : {
+      "comment" : "Label for the saved app language picker in Settings.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprache"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Idioma"
+          }
+        }
+      }
+    },
+    "language_device" : {
+      "comment" : "Language picker option: follow device/browser preferences, with English fallback for unsupported languages.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gerätesprache"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device language"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Idioma del dispositivo"
+          }
+        }
+      }
+    },
     "more" : {
       "comment" : "Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About.",
       "extractionState" : "manual",

@@ -41,6 +41,10 @@
     <string name="stop_noise">Stop %1$s</string>
     <!-- Button in the playback notification that stops the noise. -->
     <string name="stop">Stop</string>
+    <!-- Label for the saved app language picker in Settings. -->
+    <string name="language">Language</string>
+    <!-- Language picker option: follow device/browser preferences, with English fallback for unsupported languages. -->
+    <string name="language_device">Device language</string>
     <!-- Label for the volume sliders: read by screen readers, and shown above the slider in Settings. -->
     <string name="volume">Volume</string>
     <!-- Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About. -->

@@ -1,6 +1,6 @@
 {
   "name": "nc",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "private": true,
   "license": "UNLICENSED",
   "packageManager": "bun@1.4.3",
@@ -10,6 +10,7 @@
     "agents:check": "agent-tool skills check",
     "agents:sync": "agent-tool skills install --apply",
     "l10n": "bun l10n/build.ts",
+    "l10n:report": "bun l10n/report.ts",
     "l10n:check": "tsc -p l10n && bun l10n/build.ts --check",
     "test": "bun test fastlane web l10n",
     "web:build": "bun web/build.ts",

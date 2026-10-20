@@ -5,8 +5,6 @@ import android.content.SharedPreferences
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.glance.appwidget.updateAll
-import net.a2f0.nc.NoiseType
-import net.a2f0.nc.widget.NoiseWidget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,6 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import net.a2f0.nc.LanguagePreferences
+import net.a2f0.nc.NoiseType
+import net.a2f0.nc.widget.NoiseWidget
 
 /** App-wide entry point for controlling playback and observing what's playing. */
 object NoisePlayer {
@@ -86,7 +87,13 @@ object NoisePlayer {
         }
         if (_nowPlaying.value == type) return
         _nowPlaying.value = type
+        refreshWidgets(context)
+    }
+
+    /** App scope survives activity recreation while changing language. */
+    fun refreshWidgets(context: Context) {
         val appContext = context.applicationContext
+        LanguagePreferences.refresh(appContext)
         scope.launch { NoiseWidget().updateAll(appContext) }
     }
 }

@@ -42,8 +42,8 @@
 }
 .appearance-options input:checked { border-color: var(--primary); }
 .appearance-options input:checked::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--primary); }
-#appearance-storage-failed { color: var(--secondary); font-size: 14px; }
-#appearance-storage-failed:empty { display: none; }
+#appearance-storage-failed, #language-storage-failed { color: var(--secondary); font-size: 14px; }
+#appearance-storage-failed:empty, #language-storage-failed:empty { display: none; }
 
 * {
   box-sizing: border-box;

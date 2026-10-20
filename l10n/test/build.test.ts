@@ -30,6 +30,11 @@ const catalog: Catalog = {
 };
 
 describe("validate", () => {
+  test("the source language and device preference ID cannot be repurposed", () => {
+    expect(validate({ strings: {}, locales: [{ ...EN, tag: "fr" }] })).toContain("The first locale must be en, the source language.");
+    expect(validate({ strings: {}, locales: [EN, { ...DE, tag: "device", translation: {} }] }))
+      .toContain('Locale "device" is reserved for the device-language preference.');
+  });
   test("the apps' strings and translations are valid", () => {
     expect(validate({ strings: STRINGS, locales: LOCALES })).toEqual([]);
     expect(validate(catalog)).toEqual([]);
@@ -114,9 +119,11 @@ describe("rendering", () => {
   test("each platform gets its own strings, and translations leave out names", () => {
     const files = render(catalog);
     expect([...files.keys()].sort()).toEqual([
+      "android/app/src/main/java/net/a2f0/nc/Language.kt",
       "android/app/src/main/res/resources.properties",
       "android/app/src/main/res/values-de/strings.xml",
       "android/app/src/main/res/values/strings.xml",
+      "ios/Shared/AppLanguage.swift",
       "ios/Shared/Localizable.xcstrings",
     ]);
 

@@ -20,6 +20,8 @@
     <string name="play_noise">Reproducir %1$s</string>
     <string name="stop_noise">Detener %1$s</string>
     <string name="stop">Detener</string>
+    <string name="language">Idioma</string>
+    <string name="language_device">Idioma del dispositivo</string>
     <string name="volume">Volumen</string>
     <string name="more">Más</string>
     <string name="history">Historial de escucha</string>

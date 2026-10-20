@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.graphics.drawable.Icon
@@ -22,14 +23,15 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
-import net.a2f0.nc.history.ListeningHistory
+import kotlinx.coroutines.launch
+import net.a2f0.nc.LanguagePreferences
 import net.a2f0.nc.MainActivity
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
 import net.a2f0.nc.audio.NoiseEngine
 import net.a2f0.nc.audio.PlaybackEngine
+import net.a2f0.nc.history.ListeningHistory
 
 /**
  * Foreground media service that keeps noise playing while the app is in the background.
@@ -64,6 +66,10 @@ open class PlaybackService : Service() {
     internal open fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: () -> Unit): PlaybackEngine =
         NoiseEngine(onStarted = onStarted, onFailed = onFailed)
 
+    private val languageListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == LanguagePreferences.KEY) refreshLanguage()
+    }
+
     override fun onCreate() {
         super.onCreate()
         val history = ListeningHistory.get(this)
@@ -89,11 +95,17 @@ open class PlaybackService : Service() {
             })
         }
         createNotificationChannel()
+        LanguagePreferences.preferences(this).registerOnSharedPreferenceChangeListener(languageListener)
     }
 
     // Changing the language doesn't restart the service, so relabel what it shows.
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
+        refreshLanguage()
+        NoisePlayer.refreshWidgets(this)
+    }
+
+    private fun refreshLanguage() {
         createNotificationChannel()
         nowPlaying?.let { type ->
             showNotification(type)
@@ -119,6 +131,7 @@ open class PlaybackService : Service() {
     }
 
     override fun onDestroy() {
+        LanguagePreferences.preferences(this).unregisterOnSharedPreferenceChangeListener(languageListener)
         scope.cancel()
         engine.stop()
         ListeningHistory.get(this).transition(null)
@@ -199,23 +212,27 @@ open class PlaybackService : Service() {
         )
     }
 
-    private fun metadata(type: NoiseType): MediaMetadata = MediaMetadata.Builder()
-        .putString(MediaMetadata.METADATA_KEY_TITLE, getString(type.title))
-        .putString(MediaMetadata.METADATA_KEY_ARTIST, getString(R.string.app_name))
-        .build()
+    private fun metadata(type: NoiseType): MediaMetadata {
+        val context = LanguagePreferences.localized(this)
+        return MediaMetadata.Builder()
+            .putString(MediaMetadata.METADATA_KEY_TITLE, context.getString(type.title))
+            .putString(MediaMetadata.METADATA_KEY_ARTIST, context.getString(R.string.app_name))
+            .build()
+    }
 
     /** Creates the playback channel, or renames it for the current language. */
     private fun createNotificationChannel() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,
-                getString(R.string.notification_channel_name),
+                LanguagePreferences.localized(this).getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW,
             ),
         )
     }
 
     private fun buildNotification(type: NoiseType): Notification {
+        val context = LanguagePreferences.localized(this)
         val openApp = PendingIntent.getActivity(
             this,
             0,
@@ -224,14 +241,14 @@ open class PlaybackService : Service() {
         )
         val stopAction = Notification.Action.Builder(
             Icon.createWithResource(this, R.drawable.ic_stop),
-            getString(R.string.stop),
+            context.getString(R.string.stop),
             PendingIntent.getService(this, 0, stopIntent(this), PendingIntent.FLAG_IMMUTABLE),
         ).build()
 
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(getString(type.title))
-            .setContentText(getString(R.string.app_name))
+            .setContentTitle(context.getString(type.title))
+            .setContentText(context.getString(R.string.app_name))
             .setContentIntent(openApp)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_TRANSPORT)

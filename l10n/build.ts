@@ -6,6 +6,7 @@
 import { mkdir, readdir, rm, rmdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { LOCALES } from "./locales";
+import { languageFiles } from "./languages";
 import { PLACEHOLDER, type Platform, type SourceString, STRINGS } from "./strings";
 
 const REPO_ROOT = join(import.meta.dir, "..");
@@ -21,6 +22,8 @@ export interface Catalog {
 
 interface CatalogLocale {
   readonly tag: string;
+  readonly nativeName?: string;
+  readonly direction?: "ltr" | "rtl";
   readonly appStore: readonly string[];
   readonly play: readonly string[];
   readonly translation?: Readonly<Record<string, string>>;
@@ -32,10 +35,15 @@ interface CatalogLocale {
 export function validate({ strings, locales }: Catalog): string[] {
   const errors: string[] = [];
   const [source, ...translations] = locales;
+  if (source.tag !== "en") errors.push("The first locale must be en, the source language.");
 
   const tags = new Set<string>();
   const storeCodes = new Set<string>();
-  for (const { tag, appStore, play } of locales) {
+  for (const { tag, appStore, play, nativeName } of locales) {
+    if (tag === "device") errors.push('Locale "device" is reserved for the device-language preference.');
+    if (nativeName !== undefined && (nativeName.trim() === "" || /[\u0000-\u001f]/.test(nativeName))) {
+      errors.push(`Locale "${tag}" needs a nonempty, single-line native name.`);
+    }
     if (!isSimpleTag(tag)) errors.push(`Locale "${tag}" isn't a canonical BCP 47 language, script, and region, such as "de", "pt-BR", or "zh-Hans".`);
     if (tags.has(tag)) errors.push(`Locale "${tag}" is listed twice.`);
     tags.add(tag);
@@ -180,7 +188,7 @@ async function textFiles(dir: string): Promise<string[]> {
 
 /** Every generated file's contents, by its path from the repository root. */
 export function render(catalog: Catalog): Map<string, string> {
-  const files = new Map<string, string>();
+  const files = languageFiles(catalog);
   for (const locale of catalog.locales) {
     files.set(androidStringsPath(catalog, locale), androidStrings(catalog, locale));
   }
@@ -242,7 +250,7 @@ function androidResourcesProperties({ locales }: Catalog): string {
 
 /**
  * A String Catalog of manually defined strings, for which Xcode generates symbols
- * (STRING_CATALOG_GENERATE_SYMBOLS): `Text(.volume)`, `.playNoise(title)`. Names have
+ * (STRING_CATALOG_GENERATE_SYMBOLS): `localizedText(.volume)`, `.playNoise(title)`. Names have
  * their English in every language, since iOS shows the key, not English, for a string
  * that the user's language is missing.
  */
