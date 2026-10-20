@@ -1,0 +1,9 @@
+appId: net.a2f0.nc
+---
+- tapOn: "Pause"
+# Android may remove the media card entirely when the service stops.
+- assertNotVisible: "Pause"
+- pressKey: Back
+- launchApp:
+    stopApp: false
+- assertVisible: "Play White Noise"

@@ -8,6 +8,7 @@ require_relative 'lib/secrets'
 require_relative 'lib/store_listing'
 require_relative 'lib/readiness_artifacts'
 require_relative 'lib/readiness_stores'
+require_relative 'lib/play_evidence'
 
 REPO_ROOT = File.expand_path('..', __dir__)
 APP_NAME = 'Noise Connoisseur'
@@ -322,6 +323,28 @@ def next_google_play_version_code
 end
 
 platform :android do
+  desc 'Record user-started background playback and notification stop from the release AAB'
+  lane :foreground_service_video do |options|
+    artifact = File.expand_path(options.fetch(:artifact, ANDROID_RELEASE_AAB), REPO_ROOT)
+    tool = options[:bundletool] || ENV['BUNDLETOOL_JAR']
+    UI.user_error!('Pass bundletool:/absolute/path/bundletool.jar or set BUNDLETOOL_JAR') unless tool
+    sh('ruby', File.join(REPO_ROOT, 'scripts/recordAndroidForegroundVideo.rb'), artifact, File.expand_path(tool, REPO_ROOT))
+  end
+
+  desc 'Publish a reviewed foreground-service video to R2; update the stable pointer last'
+  lane :publish_foreground_service_video do |options|
+    UI.user_error!('Watch the recording with sound, then pass reviewed:true to publish it') unless options[:reviewed].to_s == 'true'
+    path = File.expand_path(options.fetch(:manifest, '.store-evidence/android-media-playback/manifest.json'), REPO_ROOT)
+    data, video = PlayEvidence.inspect_local(path)
+    artifact = File.expand_path(options.fetch(:artifact, ANDROID_RELEASE_AAB), REPO_ROOT)
+    UI.user_error!('Recording does not match the candidate AAB') unless File.file?(artifact) && Digest::SHA256.file(artifact).hexdigest == data['aab_sha256']
+    sh('bunx', '--no-install', 'wrangler', 'r2', 'object', 'put', "#{PlayEvidence::BUCKET}/#{data['video_key']}",
+       '--file', video, '--content-type', 'video/mp4', '--remote')
+    sh('bunx', '--no-install', 'wrangler', 'r2', 'object', 'put', "#{PlayEvidence::BUCKET}/#{PlayEvidence::POINTER}",
+       '--file', path, '--content-type', 'application/json', '--remote')
+    UI.success('Published: https://nc.a2f0.net/review/android-media-playback')
+  end
+
   desc 'Build the release App Bundle, signed with the upload key'
   lane :build_release do |options|
     source = release_source
@@ -372,6 +395,8 @@ platform :android do
       locales = Dir.children(ANDROID_METADATA_DIR).select { |entry| File.file?(File.join(ANDROID_METADATA_DIR, entry, 'title.txt')) }.sort
       Readiness.android_store(report, key_path: GOOGLE_PLAY_JSON_KEY_PATH, locales: locales, track: track)
     end
+    evidence_path = options[:evidence] && File.expand_path(options[:evidence], REPO_ROOT)
+    PlayEvidence.check(report, artifact, manifest_path: evidence_path, online: options[:store].to_s != 'false')
     finish_readiness(report, output, options)
   end
 

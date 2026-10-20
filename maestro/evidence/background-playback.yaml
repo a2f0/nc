@@ -1,0 +1,6 @@
+appId: net.a2f0.nc
+---
+# The recorder opens the shade with Android's statusbar command.
+- assertVisible: "White Noise"
+- assertVisible: "Noise Connoisseur"
+- assertVisible: "Pause"

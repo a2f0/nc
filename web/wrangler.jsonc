@@ -1,6 +1,7 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "nc",
+  "main": "worker.ts",
   "compatibility_date": "2026-10-05",
   "workers_dev": false,
   "preview_urls": false,
@@ -8,6 +9,11 @@
   "upload_source_maps": false,
   // Terraform in a2f0/a2f0.net owns the custom domain (nc.a2f0.net).
   "assets": {
-    "directory": "./dist"
-  }
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/review/*"]
+  },
+  "r2_buckets": [
+    { "binding": "PLAY_EVIDENCE", "bucket_name": "nc-store-evidence" }
+  ]
 }
