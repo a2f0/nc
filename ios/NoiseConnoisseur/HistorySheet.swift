@@ -31,14 +31,14 @@ struct HistorySheet: View {
                 (type.rawValue, days.reduce(0) { $0 + ($1.minutes[type.rawValue] ?? 0) })
             })
             let bars = showAllTime ? NoiseType.allCases.map { type in
-                Bar(id: type.rawValue, label: String(localized: type.shortTitle),
-                    accessibilityLabel: String(localized: .historyValue(String(localized: type.title), formatted(totals[type.rawValue] ?? 0))),
+                Bar(id: type.rawValue, label: LanguageSettings.string(type.shortTitle),
+                    accessibilityLabel: LanguageSettings.string(.historyValue(LanguageSettings.string(type.title), formatted(totals[type.rawValue] ?? 0))),
                     description: "",
                     minutes: [type.rawValue: totals[type.rawValue] ?? 0])
             } : days.map { day in
                 Bar(id: String(day.start.timeIntervalSince1970),
-                    label: day.start.formatted(.dateTime.month(.twoDigits).day(.twoDigits)),
-                    accessibilityLabel: day.start.formatted(date: .complete, time: .omitted),
+                    label: day.start.formatted(.dateTime.month(.twoDigits).day(.twoDigits).locale(LanguageSettings.locale)),
+                    accessibilityLabel: day.start.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(LanguageSettings.locale)),
                     description: dayDescription(day),
                     minutes: day.minutes)
             }
@@ -46,7 +46,7 @@ struct HistorySheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         HStack {
-                            Text(.history).font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                            localizedText(.history).font(.title2.bold()).accessibilityAddTraits(.isHeader)
                             Spacer()
                             Button { dismiss() } label: {
                                 Image(systemName: "xmark")
@@ -56,7 +56,7 @@ struct HistorySheet: View {
                                     .background(Gray.secondaryFill, in: .circle)
                                     .frame(minWidth: 44, minHeight: 44)
                                     .contentShape(.rect)
-                            }.buttonStyle(.plain).accessibilityLabel(Text(.close))
+                            }.buttonStyle(.plain).accessibilityLabel(localizedText(.close))
                         }.id("history-top")
                         if let selectedSound {
                             Button {
@@ -64,10 +64,10 @@ struct HistorySheet: View {
                                 self.selectedSound = nil
                                 focusedSound = sound
                             } label: {
-                                Label { Text(.historyBack) } icon: { Image(systemName: "chevron.left") }
+                                Label { localizedText(.historyBack) } icon: { Image(systemName: "chevron.left") }
                                     .frame(minHeight: 44)
                             }.buttonStyle(.plain)
-                            Text(.historyDaily(String(localized: selectedSound.title)))
+                            localizedText(.historyDaily(LanguageSettings.string(selectedSound.title)))
                                 .font(.headline).accessibilityAddTraits(.isHeader)
                                 .accessibilityFocused($detailFocused)
                         } else {
@@ -80,20 +80,20 @@ struct HistorySheet: View {
                             HStack {
                                 Button { move(-7) } label: {
                                     Image(systemName: "chevron.left").frame(minWidth: 44, minHeight: 44)
-                                }.accessibilityLabel(Text(.historyPrevious))
+                                }.accessibilityLabel(localizedText(.historyPrevious))
                                 Spacer()
-                                Button { move(nil) } label: { Text(.historyToday) }
+                                Button { move(nil) } label: { localizedText(.historyToday) }
                                 Spacer()
                                 Button { move(7) } label: {
                                     Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44)
-                                }.disabled(activeOffset == 0).opacity(activeOffset == 0 ? 0.4 : 1).accessibilityLabel(Text(.historyNext))
+                                }.disabled(activeOffset == 0).opacity(activeOffset == 0 ? 0.4 : 1).accessibilityLabel(localizedText(.historyNext))
                             }
-                            Text("\(days[0].start.formatted(date: .abbreviated, time: .omitted)) – \(days[6].start.formatted(date: .abbreviated, time: .omitted))")
+                            Text("\(days[0].start.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(LanguageSettings.locale))) – \(days[6].start.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(LanguageSettings.locale)))")
                                 .font(.subheadline).frame(maxWidth: .infinity)
                         }
                         chart(bars)
                         if NoiseType.allCases.allSatisfy({ (totals[$0.rawValue] ?? 0) == 0 }) {
-                            Text(showAllTime ? .historyAllTimeEmpty : .historyEmpty).foregroundStyle(Gray.secondaryLabel)
+                            localizedText(showAllTime ? .historyAllTimeEmpty : .historyEmpty).foregroundStyle(Gray.secondaryLabel)
                         }
                         if selectedSound == nil {
                             ForEach(Array(NoiseType.allCases.enumerated()), id: \.element) { index, type in
@@ -105,7 +105,7 @@ struct HistorySheet: View {
                                     HStack {
                                         Rectangle().fill(Gray.historyShades[index]).frame(width: 12, height: 12)
                                             .overlay(Rectangle().stroke(Gray.secondaryLabel, lineWidth: 0.5)).accessibilityHidden(true)
-                                        Text(.historyValue(String(localized: type.title), formatted(totals[type.rawValue] ?? 0)))
+                                        localizedText(.historyValue(LanguageSettings.string(type.title), formatted(totals[type.rawValue] ?? 0)))
                                             .font(.subheadline)
                                         Spacer()
                                         Image(systemName: "chevron.right").accessibilityHidden(true)
@@ -113,13 +113,13 @@ struct HistorySheet: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("history-sound-\(type.rawValue)")
-                                .accessibilityHint(Text(.historyDaily(String(localized: type.title))))
+                                .accessibilityHint(localizedText(.historyDaily(LanguageSettings.string(type.title))))
                                 .accessibilityFocused($focusedSound, equals: type)
                             }
                         }
-                        Text(.historyLocal).font(.footnote).foregroundStyle(Gray.secondaryLabel)
+                        localizedText(.historyLocal).font(.footnote).foregroundStyle(Gray.secondaryLabel)
                         if history.storageFailed {
-                            Text(.historyStorageFailed).font(.footnote).foregroundStyle(Gray.secondaryLabel)
+                            localizedText(.historyStorageFailed).font(.footnote).foregroundStyle(Gray.secondaryLabel)
                         }
                     }
                     .padding(24)
@@ -142,7 +142,7 @@ struct HistorySheet: View {
 
     private func viewButton(_ title: LocalizedStringResource, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title).font(.subheadline.weight(.semibold))
+            localizedText(title).font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .foregroundStyle(selected ? Gray.background : Gray.label)
                 .background(selected ? Gray.label : Gray.secondaryFill, in: .rect(cornerRadius: 8))
@@ -154,7 +154,7 @@ struct HistorySheet: View {
     private func chart(_ bars: [Bar]) -> some View {
         let maximum = max(1, ceil(bars.map { bar in NoiseType.allCases.reduce(0) { $0 + (bar.minutes[$1.rawValue] ?? 0) } }.max() ?? 0))
         return VStack(alignment: .leading, spacing: 8) {
-            Text(.historyMinutes).font(.caption)
+            localizedText(.historyMinutes).font(.caption)
             HStack(alignment: .top, spacing: 6) {
                 VStack(alignment: .trailing, spacing: 0) {
                     ForEach((0...4).reversed(), id: \.self) { tick in
@@ -199,17 +199,17 @@ struct HistorySheet: View {
                                 .frame(maxWidth: .infinity).accessibilityHidden(true)
                         }
                     }
-                    Text(showAllTime ? .historySound : .historyDate).font(.caption)
+                    localizedText(showAllTime ? .historySound : .historyDate).font(.caption)
                 }
             }
         }
     }
 
-    private func formatted(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0...1))) }
+    private func formatted(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0...1)).locale(LanguageSettings.locale)) }
 
     private func dayDescription(_ day: HistoryDay) -> String {
         sounds.map { type in
-            String(localized: .historyValue(String(localized: type.title), formatted(day.minutes[type.rawValue] ?? 0)))
+            LanguageSettings.string(.historyValue(LanguageSettings.string(type.title), formatted(day.minutes[type.rawValue] ?? 0)))
         }.joined(separator: "; ")
     }
 }

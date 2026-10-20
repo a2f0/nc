@@ -50,6 +50,8 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
+import net.a2f0.nc.Language
+import net.a2f0.nc.LocalLanguageControl
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -320,6 +322,28 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
 /** Local playback and appearance preferences. */
 @Composable
 private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
+    val languages = LocalLanguageControl.current
+    var languageMenu by remember { mutableStateOf(false) }
+    Column {
+        Text(stringResource(R.string.language), style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() })
+        Box {
+            TextButton(onClick = { languageMenu = true }, modifier = Modifier.testTag("language-picker")) {
+                Text(if (languages.selected == Language.DEVICE) stringResource(R.string.language_device) else languages.selected.nativeName)
+            }
+            DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false },
+                modifier = Modifier.heightIn(max = 320.dp)) {
+                Language.entries.forEach { language ->
+                    DropdownMenuItem(
+                        text = { Text(if (language == Language.DEVICE) stringResource(R.string.language_device) else language.nativeName) },
+                        leadingIcon = { RadioButton(selected = language == languages.selected, onClick = null) },
+                        modifier = Modifier.testTag("language-${language.tag}"),
+                        onClick = { languageMenu = false; languages.select(language) },
+                    )
+                }
+            }
+        }
+    }
     val preferences = LocalAppearancePreferences.current
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.appearance), style = MaterialTheme.typography.titleMedium,

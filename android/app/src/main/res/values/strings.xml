@@ -41,6 +41,16 @@
     <string name="stop_noise">Stop %1$s</string>
     <!-- Button in the playback notification that stops the noise. -->
     <string name="stop">Stop</string>
+    <!-- Label for the saved app language picker in Settings. -->
+    <string name="language">Language</string>
+    <!-- English's own name in the language picker. Always keep the endonym so users can recognize it in any UI language. -->
+    <string name="language_name_en" translatable="false">English</string>
+    <!-- German's own name in the language picker. Never translate this endonym. -->
+    <string name="language_name_de" translatable="false">Deutsch</string>
+    <!-- Spanish's own name in the language picker. Never translate this endonym. -->
+    <string name="language_name_es" translatable="false">Español</string>
+    <!-- Language picker option: follow device/browser preferences, with English fallback for unsupported languages. -->
+    <string name="language_device">Device language</string>
     <!-- Label for the volume sliders: read by screen readers, and shown above the slider in Settings. -->
     <string name="volume">Volume</string>
     <!-- Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About. -->

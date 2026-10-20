@@ -37,6 +37,7 @@ import androidx.glance.material3.ColorProviders
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import net.a2f0.nc.LanguagePreferences
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
 import net.a2f0.nc.playback.NoisePlayer
@@ -56,7 +57,7 @@ class NoiseWidget : GlanceAppWidget() {
 
     @Composable
     private fun Content(nowPlaying: NoiseType?) {
-        val context = LocalContext.current
+        val context = LanguagePreferences.localized(LocalContext.current)
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -86,7 +87,7 @@ class NoiseWidget : GlanceAppWidget() {
 
     @Composable
     private fun NoiseButton(type: NoiseType, isPlaying: Boolean) {
-        val context = LocalContext.current
+        val context = LanguagePreferences.localized(LocalContext.current)
         // Filled while playing, like the app's play/stop buttons.
         FilledButton(
             text = context.getString(type.shortTitle),

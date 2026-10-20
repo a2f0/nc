@@ -19,7 +19,7 @@ struct ContentView: View {
                         .clipShape(.rect(cornerRadius: logoSize * 224 / 1024, style: .continuous))
                         .accessibilityHidden(true)
                     // One line, shrinking to fit narrow screens and large text sizes.
-                    Text(.appName)
+                    localizedText(.appName)
                         .font(.largeTitle.bold())
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
@@ -78,16 +78,16 @@ private struct MoreMenu: View {
     var body: some View {
         Menu {
             Button { sheet = .history } label: {
-                Label { Text(.history) } icon: { Image(systemName: "chart.bar") }
+                Label { localizedText(.history) } icon: { Image(systemName: "chart.bar") }
             }
             Button { sheet = .settings } label: {
-                Label { Text(.settings) } icon: { Image(systemName: "gearshape") }
+                Label { localizedText(.settings) } icon: { Image(systemName: "gearshape") }
             }
             Button { openURL(Self.reviewURL) } label: {
-                Label { Text(.rateApp) } icon: { Image(systemName: "star") }
+                Label { localizedText(.rateApp) } icon: { Image(systemName: "star") }
             }
             Button { sheet = .about } label: {
-                Label { Text(.about) } icon: { Image(systemName: "info.circle") }
+                Label { localizedText(.about) } icon: { Image(systemName: "info.circle") }
             }
         } label: {
             Image(systemName: "ellipsis.circle")
@@ -98,7 +98,7 @@ private struct MoreMenu: View {
         }
         // The symbol lines up with the cards' trailing edge; its tap target reaches past it.
         .padding(.trailing, -9)
-        .accessibilityLabel(Text(.more))
+        .accessibilityLabel(localizedText(.more))
     }
 }
 
@@ -106,16 +106,33 @@ private struct MoreMenu: View {
 private struct SettingsSheet: View {
     let player: NoisePlayer
     @AppStorage("appearance") private var appearance = Appearance.system.rawValue
+    @AppStorage(LanguageSettings.key, store: LanguageSettings.defaults) private var language = AppLanguage.device.rawValue
 
     var body: some View {
         SheetContent(title: .settings) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(.appearance).font(.headline).accessibilityAddTraits(.isHeader)
+                localizedText(.language).font(.headline).accessibilityAddTraits(.isHeader)
+                Picker(selection: $language) {
+                    ForEach(AppLanguage.allCases) { option in
+                        Group {
+                            if option == .device { localizedText(.languageDevice) }
+                            else { Text(verbatim: option.nativeName) }
+                        }.tag(option.rawValue)
+                    }
+                } label: { localizedText(.language) }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .tint(Gray.label)
+                .accessibilityLabel(localizedText(.language))
+                .accessibilityIdentifier("language-picker")
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                localizedText(.appearance).font(.headline).accessibilityAddTraits(.isHeader)
                 ForEach(Appearance.allCases) { option in
                     let selected = (Appearance(rawValue: appearance) ?? .system) == option
                     Button { appearance = option.rawValue } label: {
                         HStack {
-                            Text(option.title)
+                            localizedText(option.title)
                             Spacer()
                             Image(systemName: "checkmark").opacity(selected ? 1 : 0)
                                 .accessibilityHidden(true)
@@ -130,7 +147,7 @@ private struct SettingsSheet: View {
             }
             VStack(alignment: .leading, spacing: 8) {
                 // The slider reads its own label.
-                Text(.volume)
+                localizedText(.volume)
                     .font(.headline)
                     .accessibilityHidden(true)
                 VolumeSlider(volume: Binding(get: { player.volume }, set: { player.setVolume($0) }))
@@ -166,9 +183,9 @@ private struct AboutSheet: View {
                         .clipShape(.rect(cornerRadius: logoSize * 224 / 1024, style: .continuous))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(.appName)
+                        localizedText(.appName)
                             .font(.title3.weight(.semibold))
-                        Text(.aboutVersion(Self.version, Self.build))
+                        localizedText(.aboutVersion(Self.version, Self.build))
                             .font(.subheadline)
                             .foregroundStyle(Gray.secondaryLabel)
                     }
@@ -179,10 +196,10 @@ private struct AboutSheet: View {
                     // Links take the tint, which would otherwise be the blue accent color.
                     .tint(Gray.secondaryLabel)
                 Link(destination: Self.webURL.appending(path: "privacy")) {
-                    Text(.privacyPolicy).underline().frame(minHeight: 44, alignment: .leading)
+                    localizedText(.privacyPolicy).underline().frame(minHeight: 44, alignment: .leading)
                 }.tint(Gray.label)
                 Link(destination: Self.webURL.appending(path: "support")) {
-                    Text(.support).underline().frame(minHeight: 44, alignment: .leading)
+                    localizedText(.support).underline().frame(minHeight: 44, alignment: .leading)
                 }.tint(Gray.label)
             }
         }
@@ -190,9 +207,9 @@ private struct AboutSheet: View {
 
     /// "Also available on Android and the web.", with each of those linked.
     private static var alsoOn: AttributedString {
-        let android = String(localized: .platformAndroid)
-        let web = String(localized: .platformWeb)
-        var text = AttributedString(String(localized: .aboutAlsoAndroidWeb(android, web)))
+        let android = LanguageSettings.string(.platformAndroid)
+        let web = LanguageSettings.string(.platformWeb)
+        var text = AttributedString(LanguageSettings.string(.aboutAlsoAndroidWeb(android, web)))
         for (label, url) in [(android, playURL), (web, webURL)] {
             guard let range = text.range(of: label) else { continue }
             text[range].link = url
@@ -213,7 +230,7 @@ private struct SheetContent<Content: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Text(title)
+                    localizedText(title)
                         .font(.title2.bold())
                         .accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 16)
@@ -229,7 +246,7 @@ private struct SheetContent<Content: View>: View {
                     .buttonStyle(.plain)
                     // Lines up with the contents' trailing edge, as in the title.
                     .padding(.trailing, -6)
-                    .accessibilityLabel(Text(.close))
+                    .accessibilityLabel(localizedText(.close))
                 }
                 content
             }
@@ -260,9 +277,9 @@ private struct NoiseCard: View {
         Button(action: action) {
             layout {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(type.title)
+                    localizedText(type.title)
                         .font(.title3.weight(.semibold))
-                    Text(type.blurb)
+                    localizedText(type.blurb)
                         .font(.subheadline)
                         .foregroundStyle(Gray.secondaryLabel)
                         .multilineTextAlignment(.leading)
@@ -279,7 +296,7 @@ private struct NoiseCard: View {
             .contentShape(.rect(cornerRadius: 20))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(type.buttonLabel(isPlaying: isPlaying)))
+        .accessibilityLabel(localizedText(type.buttonLabel(isPlaying: isPlaying)))
     }
 }
 
@@ -329,7 +346,7 @@ private struct PlaybackSymbol: View {
 private extension NoiseType {
     /// A screen reader label for a button that stops this noise while it plays, or plays it.
     func buttonLabel(isPlaying: Bool) -> LocalizedStringResource {
-        let title = String(localized: title)
+        let title = LanguageSettings.string(title)
         return isPlaying ? .stopNoise(title) : .playNoise(title)
     }
 }
@@ -339,7 +356,7 @@ private struct VolumeSlider: View {
 
     var body: some View {
         Slider(value: $volume, in: 0...1) {
-            Text(.volume)
+            localizedText(.volume)
         } minimumValueLabel: {
             Image(systemName: "speaker.fill")
                 .foregroundStyle(Gray.secondaryLabel)

@@ -1,0 +1,59 @@
+# Run on a dedicated device with English as its device language.
+appId: net.a2f0.nc
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Play White Noise"
+    timeout: 30000
+- tapOn: "Play White Noise"
+- tapOn: "More"
+- tapOn: "Settings"
+- tapOn:
+    id: "language-picker"
+- tapOn: "Deutsch"
+- runFlow:
+    when:
+      visible: "Schließen"
+    commands:
+      - tapOn: "Schließen"
+- extendedWaitUntil:
+    visible: "Weißes Rauschen stoppen"
+    timeout: 10000
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Weißes Rauschen abspielen"
+    timeout: 30000
+- tapOn: "Mehr"
+- tapOn: "Einstellungen"
+- tapOn:
+    id: "language-picker"
+- tapOn: "Español"
+- runFlow:
+    when:
+      visible: "Cerrar"
+    commands:
+      - tapOn: "Cerrar"
+- extendedWaitUntil:
+    visible: "Reproducir Ruido blanco"
+    timeout: 10000
+- tapOn: "Más"
+- tapOn: "Ajustes"
+- tapOn:
+    id: "language-picker"
+- tapOn: "Idioma del dispositivo"
+- runFlow:
+    when:
+      visible: "Close"
+    commands:
+      - tapOn: "Close"
+- extendedWaitUntil:
+    visible: "Play White Noise"
+    timeout: 10000
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Play White Noise"
+    timeout: 30000

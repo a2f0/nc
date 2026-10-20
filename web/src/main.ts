@@ -1,7 +1,8 @@
 import { setUpHistory } from "./historyView";
 import { setUpAppearance } from "./appearanceView";
+import { setUpLanguage } from "./languageView";
 import { bindVolume, setUpMenu } from "./controls";
-import { currentLocale, setPreferredLanguages, t, tParts } from "./l10n";
+import { currentLocale, t, tParts } from "./l10n";
 import { NoisePlayer } from "./noisePlayer";
 import { NOISE_INFO, NOISE_TYPES, type NoiseType } from "./noiseType";
 
@@ -13,8 +14,6 @@ const GOOGLE_PLAY_URL = "https://play.google.com/store/apps/details?id=net.a2f0.
 
 /** The site's version, from the root package.json, set by build.ts. */
 declare const APP_VERSION: string;
-
-setPreferredLanguages(navigator.languages);
 
 const player = new NoisePlayer();
 const status = element("status");
@@ -35,6 +34,10 @@ setUpMenu(document, more, element("menu"), [
 
 const renderHistory = setUpHistory(player.history);
 const renderAppearance = setUpAppearance();
+const renderLanguage = setUpLanguage(() => {
+  localize();
+  player.updateMediaSession();
+});
 setInterval(() => player.history.checkpoint(), 15_000);
 addEventListener("pagehide", () => player.stop());
 document.addEventListener("visibilitychange", () => {
@@ -46,13 +49,6 @@ const cards = new Map<NoiseType, HTMLButtonElement>(NOISE_TYPES.map((type) => [t
 sounds.append(...cards.values());
 player.subscribe(render);
 localize();
-
-// Follows the browser's language setting when it changes.
-addEventListener("languagechange", () => {
-  setPreferredLanguages(navigator.languages);
-  localize();
-  player.updateMediaSession();
-});
 
 function card(type: NoiseType): HTMLButtonElement {
   const button = document.createElement("button");
@@ -74,6 +70,7 @@ function localize(): void {
   element("history-title").textContent = t("history");
   renderHistory();
   renderAppearance();
+  renderLanguage();
   element("open-settings").textContent = t("settings");
   element("open-about").textContent = t("about");
   element("settings-title").textContent = t("settings");

@@ -106,6 +106,34 @@ export const STRINGS = {
     comment: "Button in the playback notification that stops the noise.",
     platforms: ["android"],
   },
+  language: {
+    text: "Language",
+    comment: "Label for the saved app language picker in Settings.",
+  },
+  language_name_en: {
+    text: "English",
+    comment: "English's own name in the language picker. Always keep the endonym so users can recognize it in any UI language.",
+    translatable: false,
+  },
+  language_name_de: {
+    text: "Deutsch",
+    comment: "German's own name in the language picker. Never translate this endonym.",
+    translatable: false,
+  },
+  language_name_es: {
+    text: "Español",
+    comment: "Spanish's own name in the language picker. Never translate this endonym.",
+    translatable: false,
+  },
+  language_device: {
+    text: "Device language",
+    comment: "Language picker option: follow device/browser preferences, with English fallback for unsupported languages.",
+  },
+  language_storage_failed: {
+    text: "This browser could not save your language. It will reset when you close this page.",
+    comment: "Warning when browser storage prevents saving the selected language.",
+    platforms: ["web"],
+  },
   volume: {
     text: "Volume",
     comment: "Label for the volume sliders: read by screen readers, and shown above the slider in Settings.",

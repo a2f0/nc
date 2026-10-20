@@ -4,7 +4,7 @@ import type { Translation } from "../../l10n/strings";
 import { bestLocale, currentLocale, setPreferredLanguages, t, tParts } from "../src/l10n";
 
 // Only the tags matter for matching.
-const locale = (tag: string): Locale => ({ tag, appStore: [tag], play: [tag] });
+const locale = (tag: string): Locale => ({ tag, nativeName: tag, direction: "ltr", appStore: [tag], play: [tag] });
 const EN = locale("en");
 const DE = locale("de");
 const PT_BR = locale("pt-BR");

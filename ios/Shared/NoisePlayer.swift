@@ -215,6 +215,8 @@ final class NoisePlayer {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    func refreshLanguage() { updateNowPlayingInfo() }
+
     private func updateNowPlayingInfo() {
         let center = MPNowPlayingInfoCenter.default()
         guard isConfigured else {
@@ -222,8 +224,8 @@ final class NoisePlayer {
             return
         }
         center.nowPlayingInfo = [
-            MPMediaItemPropertyTitle: String(localized: (nowPlaying ?? lastPlayed).title),
-            MPMediaItemPropertyArtist: String(localized: .appName),
+            MPMediaItemPropertyTitle: LanguageSettings.string((nowPlaying ?? lastPlayed).title),
+            MPMediaItemPropertyArtist: LanguageSettings.string(.appName),
             MPNowPlayingInfoPropertyIsLiveStream: true,
             MPNowPlayingInfoPropertyPlaybackRate: nowPlaying == nil ? 0.0 : 1.0,
         ]

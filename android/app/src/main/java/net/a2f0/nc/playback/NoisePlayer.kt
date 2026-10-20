@@ -86,6 +86,11 @@ object NoisePlayer {
         }
         if (_nowPlaying.value == type) return
         _nowPlaying.value = type
+        refreshWidgets(context)
+    }
+
+    /** App scope survives activity recreation while changing language. */
+    fun refreshWidgets(context: Context) {
         val appContext = context.applicationContext
         scope.launch { NoiseWidget().updateAll(appContext) }
     }
