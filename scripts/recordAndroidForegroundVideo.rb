@@ -140,6 +140,9 @@ begin
   wait_until(10, 'media-playback foreground service') { service.match?(/isForeground=true.*types=0x0*2\b/) }
   File.write(File.join(OUT, 'playing-service.txt'), service, perm: 0o600)
   sleep 3
+  adb('shell', 'input', 'keyevent', 'KEYCODE_HOME')
+  sleep 2
+  adb('shell', 'cmd', 'statusbar', 'expand-notifications')
   flow('background-playback')
   raise 'Service stopped in background' unless service.match?(/isForeground=true.*types=0x0*2\b/)
   background_at = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
