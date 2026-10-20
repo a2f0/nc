@@ -1,7 +1,9 @@
 package net.a2f0.nc.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,9 +36,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,22 +49,22 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import net.a2f0.nc.NoiseType
-import net.a2f0.nc.R
-import net.a2f0.nc.history.ListeningHistory
-import net.a2f0.nc.history.historyDays
-import net.a2f0.nc.history.historyTotals
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.ceil
+import net.a2f0.nc.NoiseType
+import net.a2f0.nc.R
+import net.a2f0.nc.history.ListeningHistory
+import net.a2f0.nc.history.historyDays
+import net.a2f0.nc.history.historyTotals
 
 private data class HistoryBar(val label: String, val description: String, val minutes: Map<String, Double>)
 
 @Composable
-fun HistoryContent() {
+fun HistoryContent(onNavigate: () -> Unit) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val locale = LocalConfiguration.current.locales[0]
@@ -69,17 +74,31 @@ fun HistoryContent() {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val updates = remember(history, lifecycle) { historyUpdates(history, lifecycle) }
     val update by updates.collectAsState(initial = remember(history) { HistoryUpdate(history.snapshot(), System.currentTimeMillis()) })
-    val sessions = update.sessions
     val failed by history.storageFailed.collectAsStateWithLifecycle(minActiveState = Lifecycle.State.RESUMED)
     var allTime by rememberSaveable { mutableStateOf(false) }
     var offset by rememberSaveable { mutableIntStateOf(0) }
-    val zone = ZoneId.systemDefault()
-    val endDay = Instant.ofEpochMilli(update.refreshedAt).atZone(zone).toLocalDate().plusDays(offset.toLong())
-    val days = remember(sessions, endDay, zone, allTime) {
-        if (allTime) emptyList() else historyDays(sessions, endDay, zone)
+    var selectedSoundId by rememberSaveable { mutableStateOf<String?>(null) }
+    var detailOffset by rememberSaveable { mutableIntStateOf(0) }
+    val selectedSound = NoiseType.fromId(selectedSoundId)
+    val showAllTime = allTime && selectedSound == null
+    val activeOffset = if (selectedSound == null) offset else detailOffset
+    val sounds = selectedSound?.let { listOf(it) } ?: NoiseType.entries
+    val sessions = remember(update.sessions, selectedSound) {
+        update.sessions.filter { selectedSound == null || it.soundId == selectedSound.id }
     }
-    val soundTotals = remember(sessions, days, allTime) {
-        if (allTime) historyTotals(sessions) else NoiseType.entries.associate { type ->
+    fun move(days: Int?) {
+        if (selectedSound == null) offset = days?.let { minOf(0, offset + it) } ?: 0
+        else detailOffset = days?.let { minOf(0, detailOffset + it) } ?: 0
+    }
+    fun back() { selectedSoundId = null; onNavigate() }
+    BackHandler(enabled = selectedSound != null) { back() }
+    val zone = ZoneId.systemDefault()
+    val endDay = Instant.ofEpochMilli(update.refreshedAt).atZone(zone).toLocalDate().plusDays(activeOffset.toLong())
+    val days = remember(sessions, endDay, zone, showAllTime) {
+        if (showAllTime) emptyList() else historyDays(sessions, endDay, zone)
+    }
+    val soundTotals = remember(sessions, days, showAllTime) {
+        if (showAllTime) historyTotals(sessions) else NoiseType.entries.associate { type ->
             type.id to days.sumOf { it.minutes[type.id] ?: 0.0 }
         }
     }
@@ -88,19 +107,23 @@ fun HistoryContent() {
     val shortDate = DateTimeFormatter.ofPattern(android.text.format.DateFormat.getBestDateTimePattern(locale, "Md"), locale)
     val labels = NoiseType.entries.map { stringResource(it.title) }
 
-    val bars = if (allTime) NoiseType.entries.mapIndexed { index, type ->
+    val bars = if (showAllTime) NoiseType.entries.mapIndexed { index, type ->
         HistoryBar(stringResource(type.shortTitle),
             resources.getString(R.string.history_value, labels[index], number.format(soundTotals[type.id] ?: 0.0)),
             mapOf(type.id to (soundTotals[type.id] ?: 0.0)))
     } else days.map { day ->
-        HistoryBar(shortDate.format(day.date), date.format(day.date) + ". " + NoiseType.entries.mapIndexed { index, type ->
-            resources.getString(R.string.history_value, labels[index], number.format(day.minutes[type.id] ?: 0.0))
+        HistoryBar(shortDate.format(day.date), date.format(day.date) + ". " + sounds.map { type ->
+            resources.getString(R.string.history_value, resources.getString(type.title), number.format(day.minutes[type.id] ?: 0.0))
         }.joinToString("; "), day.minutes)
     }
     val totals = bars.map { bar -> NoiseType.entries.sumOf { bar.minutes[it.id] ?: 0.0 } }
     val maximum = maxOf(1.0, ceil(totals.max()))
 
-    Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (selectedSound != null) {
+        TextButton(onClick = { back() }) { Text(stringResource(R.string.history_back)) }
+        Text(stringResource(R.string.history_daily, stringResource(selectedSound.title)),
+            style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
+    } else Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(true, false).forEach { value ->
             val selected = allTime == value
             Text(
@@ -115,11 +138,11 @@ fun HistoryContent() {
             )
         }
     }
-    if (!allTime) {
+    if (!showAllTime) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TextButton(onClick = { offset -= 7 }) { Text("‹", modifier = Modifier.semantics { contentDescription = previousLabel }) }
-            TextButton(onClick = { offset = 0 }) { Text(stringResource(R.string.history_today)) }
-            TextButton(onClick = { offset = minOf(0, offset + 7) }, enabled = offset < 0) {
+            TextButton(onClick = { move(-7) }) { Text("‹", modifier = Modifier.semantics { contentDescription = previousLabel }) }
+            TextButton(onClick = { move(null) }) { Text(stringResource(R.string.history_today)) }
+            TextButton(onClick = { move(7) }, enabled = activeOffset < 0) {
                 Text("›", modifier = Modifier.semantics { contentDescription = nextLabel })
             }
         }
@@ -163,15 +186,24 @@ fun HistoryContent() {
                     )
                 }
             }
-            Text(stringResource(if (allTime) R.string.history_sound else R.string.history_date), style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Text(stringResource(if (showAllTime) R.string.history_sound else R.string.history_date), style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
     }
-    if (totals.all { it == 0.0 }) Text(stringResource(if (allTime) R.string.history_all_time_empty else R.string.history_empty))
-    NoiseType.entries.forEachIndexed { index, type ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    if (totals.all { it == 0.0 }) Text(stringResource(if (showAllTime) R.string.history_all_time_empty else R.string.history_empty))
+    if (selectedSound == null) NoiseType.entries.forEachIndexed { index, type ->
+        val actionLabel = stringResource(R.string.history_daily, labels[index])
+        Row(Modifier.fillMaxWidth().testTag("history-sound-${type.id}").clip(RoundedCornerShape(8.dp))
+            .clickable(role = Role.Button, onClickLabel = actionLabel) {
+                selectedSoundId = type.id
+                detailOffset = if (allTime) 0 else offset
+                onNavigate()
+            }.heightIn(min = 48.dp).padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(12.dp).background(HistoryShades[index]).border(0.5.dp, MaterialTheme.colorScheme.outline))
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.history_value, labels[index], number.format(soundTotals[type.id] ?: 0.0)), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.history_value, labels[index], number.format(soundTotals[type.id] ?: 0.0)),
+                style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            Text("›", modifier = Modifier.clearAndSetSemantics {})
         }
     }
     Text(stringResource(R.string.history_local), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

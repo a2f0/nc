@@ -24,6 +24,8 @@
     <string name="more">Más</string>
     <string name="history">Historial de escucha</string>
     <string name="history_all_time">Todo el tiempo</string>
+    <string name="history_daily">Historial de escucha diario de %1$s</string>
+    <string name="history_back">Volver a todos los sonidos</string>
     <string name="history_calendar">Calendario</string>
     <string name="history_sound">Sonido</string>
     <string name="history_all_time_empty">Aún no hay escuchas registradas.</string>

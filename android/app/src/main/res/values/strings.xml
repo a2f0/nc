@@ -49,6 +49,10 @@
     <string name="history">Listening history</string>
     <!-- History view selector: total minutes per sound across all saved listening sessions. -->
     <string name="history_all_time">All time</string>
+    <!-- Heading for the daily bar chart of a single sound. {noise} is the localized sound name. -->
+    <string name="history_daily">%1$s daily listening history</string>
+    <!-- Button returning from a sound's daily history to the previous listening history overview. -->
+    <string name="history_back">Back to all sounds</string>
     <!-- History view selector: daily listening totals with weekly date navigation. -->
     <string name="history_calendar">Calendar</string>
     <!-- Horizontal axis of the all-time listening chart; each bar is one sound. -->

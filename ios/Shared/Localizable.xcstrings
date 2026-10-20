@@ -194,6 +194,30 @@
         }
       }
     },
+    "history_back" : {
+      "comment" : "Button returning from a sound's daily history to the previous listening history overview.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zurück zu allen Klängen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back to all sounds"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a todos los sonidos"
+          }
+        }
+      }
+    },
     "history_calendar" : {
       "comment" : "History view selector: daily listening totals with weekly date navigation.",
       "extractionState" : "manual",
@@ -214,6 +238,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Calendario"
+          }
+        }
+      }
+    },
+    "history_daily" : {
+      "comment" : "Heading for the daily bar chart of a single sound. {noise} is the localized sound name.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Täglicher Hörverlauf für %1$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ daily listening history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de escucha diario de %1$@"
           }
         }
       }

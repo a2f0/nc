@@ -26,7 +26,9 @@ about 50 ms so dragging doesn't crackle.
 
 Open **More → Listening history** and choose **All time** for a bar per sound showing its
 total minutes across all saved sessions, or **Calendar** for daily stacked bars and weekly
-navigation. Both charts use grayscale and minutes played on the Y axis. Calendar uses dates
+navigation. Select a sound in either chart's key to open its daily history, with weekly
+navigation. **Back to all sounds** restores the overview's view and week. Both charts use
+grayscale and minutes played on the Y axis. Calendar uses dates
 in the device's current time zone on the X axis and splits overnight sessions at local
 midnight. Switching views preserves the selected week.
 
