@@ -28,7 +28,11 @@ def run(*args, timeout: 120, input: nil)
       pid = Process.spawn(*args, in: stdin.path, out: out.path, err: [LOG, 'a'], pgroup: true, chdir: ROOT)
       begin
         _, status = Timeout.timeout(timeout) { Process.wait2(pid) }
-        raise "#{args.first} failed; see #{LOG}" unless status.success?
+        unless status.success?
+          out.rewind
+          File.open(LOG, 'a') { |log| log.write(out.read) }
+          raise "#{args.first} failed; see #{LOG}"
+        end
       rescue Timeout::Error
         Process.kill('KILL', -pid) rescue nil
         Process.wait(pid) rescue nil
