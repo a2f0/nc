@@ -39,6 +39,7 @@ module PlayEvidence
   end
 
   def self.artifact_source(artifact, root)
+    raise 'Missing AAB receipt; run android build_release first' unless File.file?("#{artifact}.build.json")
     receipt = JSON.parse(File.read("#{artifact}.build.json"))
     source = receipt.fetch('source')
     raise 'AAB receipt does not match' unless receipt['schema_version'] == 1 && receipt['sha256'] == Digest::SHA256.file(artifact).hexdigest

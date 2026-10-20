@@ -126,7 +126,7 @@ bundle exec fastlane android readiness bundletool:/absolute/path/bundletool-all.
 ```
 
 The recorder creates/uses only the dedicated `NoiseConnoisseur_Evidence` AVD on port 5586,
-refuses an occupied port or already-running AVD, resets the app on that emulator and
+refuses an occupied adb serial or already-running AVD, resets the app on that emulator and
 stops its emulator afterward. It generates an APK from the release AAB with bundletool,
 using the public local debug key for installation. Release code/resources and minification
 are retained; the APK's signing identity is intentionally different and recorded in the manifest.
@@ -157,8 +157,8 @@ Android readiness downloads the public manifest and its immutable video, verifie
 against the video SHA-256 and checks the AAB SHA-256 against the inspected candidate.
 A new AAB without a matching recording fails `evidence.android_video_candidate`.
 Downloaded corrupt bytes or invalid manifest fields fail integrity validation.
-Missing/unreachable evidence is unverified, never a pass. The Worker refuses to serve an
-invalid current manifest, so that case appears as unavailable public evidence until repaired.
+Missing/unreachable evidence is unverified, never a pass. If the Worker cannot serve the
+manifest, readiness reports unavailable evidence rather than diagnosing its contents.
 `store:false` skips this network
 read too; `evidence:/absolute/path/manifest.json` checks local evidence in either mode.
 Local evidence does not prove the public link is accessible. Existing build-provenance

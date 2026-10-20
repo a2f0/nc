@@ -1,16 +1,6 @@
 import type { Translation } from "./strings";
 
 export default {
-  review_title: "Android-Hintergrundwiedergabe",
-  review_intro: "Diese Aufnahme zeigt, wie vom Nutzer gestartetes Audio weiterläuft, während Noise Connoisseur im Hintergrund ist. Schalten Sie den Ton ein, um die Wiedergabe zu hören.",
-  review_start: "In der App auf „Play White Noise“ (Weißes Rauschen abspielen) tippen.",
-  review_background: "Zum Startbildschirm zurückkehren und die Benachrichtigungen öffnen. Weißes Rauschen läuft weiter; die Mediensteuerung ist sichtbar.",
-  review_stop: "In der Benachrichtigung auf „Pause“ tippen. Der Ton stoppt; nach der Rückkehr zur App ist die Wiedergabe angehalten.",
-  review_capture: "Aufgenommen auf einem Android-Emulator mit einer APK, die aus dem Release-App-Bundle erstellt und für lokale Tests signiert wurde. Die Aufnahme enthält den Geräteton.",
-  review_build: "Version (Build)",
-  review_recorded: "Aufgenommen",
-  review_download: "Video herunterladen",
-  review_details: "Aufnahmedetails",
   history: "Hörverlauf",
   history_all_time: "Gesamter Zeitraum",
   history_calendar: "Kalender",
@@ -66,4 +56,14 @@ export default {
   intent_stop_description: "Stoppt die Wiedergabe.",
   support: "Support",
   privacy_policy: "Datenschutzerklärung",
+  review_title: "Android-Hintergrundwiedergabe",
+  review_intro: "Diese Aufnahme zeigt, wie vom Nutzer gestartetes Audio weiterläuft, während Noise Connoisseur im Hintergrund ist. Schalten Sie den Ton ein, um die Wiedergabe zu hören.",
+  review_start: "In der App auf „Play White Noise“ (Weißes Rauschen abspielen) tippen.",
+  review_background: "Zum Startbildschirm zurückkehren und die Benachrichtigungen öffnen. Weißes Rauschen läuft weiter; die Mediensteuerung ist sichtbar.",
+  review_stop: "In der Benachrichtigung auf „Pause“ tippen. Der Ton stoppt; nach der Rückkehr zur App ist die Wiedergabe angehalten.",
+  review_capture: "Aufgenommen auf einem Android-Emulator mit einer APK, die aus dem Release-App-Bundle erstellt und für lokale Tests signiert wurde. Die Aufnahme enthält den Geräteton.",
+  review_build: "Version (Build)",
+  review_recorded: "Aufgenommen",
+  review_download: "Video herunterladen",
+  review_details: "Aufnahmedetails",
 } satisfies Translation;

@@ -6,6 +6,9 @@ const script = String.raw`
 require 'tmpdir'
 require 'fake_fastlane'
 require File.join(ARGV[0], 'fastlane/lib/play_evidence')
+# Hooks export repository-local variables; -C alone does not isolate a temp repo.
+# This changes only this test subprocess's environment.
+Readiness.command('git', 'rev-parse', '--local-env-vars').lines.each { |name| ENV.delete(name.strip) }
 result = {}
 # Keep the real downloader and substitute only the HTTP transport.
 http_start = Net::HTTP.method(:start)
@@ -66,7 +69,7 @@ Dir.mktmpdir do |dir|
     'permission' => 'FOREGROUND_SERVICE_LOCATION', 'verified_steps' => ['user_start'],
     'duration_seconds' => 0, 'version_code' => '0', 'video_key' => '../private',
     'video_bytes' => 26 * 1024 * 1024, 'audio' => false, 'schema_version' => 2,
-    'application_id' => 'other.app', 'video_sha256' => 'bad', 'source_commit' => 'bad',
+    'application_id' => 'other.app', 'video_sha256' => 'bad', 'aab_sha256' => 'bad', 'apk_sha256' => 'bad', 'source_commit' => 'bad',
     'capture_commit' => 'bad', 'version_name' => '', 'recorded_at' => 'not a date'
   }
   result[:invalid_fields] = invalid_fields.to_h do |field, value|
@@ -189,10 +192,21 @@ Dir.mktmpdir do |dir|
   rescue RuntimeError => error
     result[:receipt_mismatch_rejected] = error.message.include?('receipt')
   end
+  File.delete("#{artifact}.build.json")
+  begin
+    PlayEvidence.artifact_source(artifact, repo)
+  rescue RuntimeError => error
+    result[:missing_receipt_rejected] = error.message.include?('android build_release')
+  end
 end
 puts JSON.generate(result)
 `;
-const child = Bun.spawnSync(["ruby", "-I", resolve(import.meta.dir, "support"), "-e", script, root], { stdout: "pipe", stderr: "pipe" });
+// Reproduce hook pollution without pointing at any writable real repository.
+const child = Bun.spawnSync(["ruby", "-I", resolve(import.meta.dir, "support"), "-e", script, root], {
+  stdout: "pipe", stderr: "pipe",
+  env: { ...process.env, GIT_DIR: "/nonexistent/nc-fixture.git", GIT_WORK_TREE: "/nonexistent/nc-fixture",
+    GIT_INDEX_FILE: "/nonexistent/nc-fixture.index", GIT_COMMON_DIR: "/nonexistent/nc-common.git" },
+});
 if (child.exitCode !== 0) throw new Error(child.stderr.toString());
 const result = JSON.parse(child.stdout.toString());
 type Check = { id: string; status: string };
@@ -207,7 +221,7 @@ test("downloads only app-origin HTTPS evidence, with bounded bytes and no redire
   expect(result.tls).toEqual(["nc.a2f0.net", 443, { use_ssl: true, open_timeout: 10, read_timeout: 30 }]);
 });
 test("rejects invalid identity, capture, object key and media fields", () => {
-  expect(Object.keys(result.invalid_fields)).toHaveLength(14);
+  expect(Object.keys(result.invalid_fields)).toHaveLength(16);
   expect(Object.values(result.invalid_fields).every(value => value === true)).toBe(true);
 });
 test("evidence readiness verifies bytes and rejects a different candidate", () => {
@@ -232,6 +246,7 @@ test("capture accepts web-only commits but rejects changed Android code or a mis
   expect(result.web_source_matches).toBe(true);
   expect(result.android_change_rejected).toBe(true);
   expect(result.receipt_mismatch_rejected).toBe(true);
+  expect(result.missing_receipt_rejected).toBe(true);
   expect(result.build_input_rejected).toEqual([true, true, true]);
 });
 test("online readiness fetches the immutable video referenced by the manifest", () => {

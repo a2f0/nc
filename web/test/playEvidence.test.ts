@@ -6,13 +6,13 @@ const key = `android-media-playback/${hash}.mp4`;
 const data = { schema_version: 1, application_id: "net.a2f0.nc", video_key: key, video_sha256: hash,
   version_name: "1.0", version_code: "16", recorded_at: "2026-10-20T15:00:00Z" };
 const bytes = "0123456789";
-function fixture(value: unknown = data) {
+function fixture(value: unknown = data, rawManifest?: string) {
   const reads: string[] = [];
   const bucket: EvidenceBucket = {
     async head(k) { reads.push(k); return k === key ? { size: bytes.length, httpEtag: '"video"' } : null; },
     async get(k, options) {
       reads.push(k);
-      const full = k === key ? bytes : k === "android-media-playback/current.json" && value !== null ? JSON.stringify(value) : null;
+      const full = k === key ? bytes : k === "android-media-playback/current.json" && value !== null ? rawManifest ?? JSON.stringify(value) : null;
       if (full === null) return null;
       const range = options?.range;
       const part = range ? full.slice(range.offset, range.offset + range.length) : full;
@@ -53,8 +53,19 @@ describe("public Play review evidence", () => {
     expect(html).toContain("&lt;img");
     expect(html).not.toContain("<img");
     for (const value of [null, { ...data, video_key: "../private" }, { ...data, video_sha256: "b".repeat(64) },
-      { ...data, version_name: "" }, { ...data, version_code: 16 }]) {
+      { ...data, version_name: "" }, { ...data, version_code: 16 }, { ...data, video_sha256: [hash] }]) {
       expect((await fixture(value).fetch("/review/android-media-playback")).status).toBe(404);
+    }
+  });
+  test("malformed JSON is unavailable and is not cached", async () => {
+    const response = await fixture(data, "{invalid").fetch("/review/android-media-playback.json");
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+  });
+  test("unsupported languages and invalid quality values fall back to English", async () => {
+    for (const language of ["zz-ZZ", "de;q=invalid,es;q=0", "de;q=2"]) {
+      const response = await fixture().fetch("/review/android-media-playback", { headers: { "Accept-Language": language } });
+      expect(await response.text()).toContain('lang="en"');
     }
   });
   test("localizes the page while quoting controls from the English recording", async () => {

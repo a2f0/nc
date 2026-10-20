@@ -2,16 +2,6 @@ import type { Translation } from "./strings";
 
 // Neutral Spanish, for Spain and Latin America alike.
 export default {
-  review_title: "Reproducción en segundo plano en Android",
-  review_intro: "Esta grabación muestra cómo el audio iniciado por el usuario continúa mientras Noise Connoisseur está en segundo plano. Active el sonido para escuchar la reproducción.",
-  review_start: "Toque «Play White Noise» (Reproducir ruido blanco) en la app.",
-  review_background: "Vuelva a la pantalla de inicio y abra las notificaciones. El ruido blanco sigue sonando y los controles multimedia están visibles.",
-  review_stop: "Toque «Pause» (Pausa) en la notificación. El audio se detiene; al volver a la app se muestra que la reproducción está detenida.",
-  review_capture: "Grabado en un emulador de Android con un APK generado a partir del App Bundle de lanzamiento y firmado para pruebas locales. La grabación incluye el audio del dispositivo.",
-  review_build: "Versión (compilación)",
-  review_recorded: "Grabado",
-  review_download: "Descargar vídeo",
-  review_details: "Detalles de la grabación",
   history: "Historial de escucha",
   history_all_time: "Todo el tiempo",
   history_calendar: "Calendario",
@@ -67,4 +57,14 @@ export default {
   intent_stop_description: "Detiene la reproducción.",
   support: "Soporte",
   privacy_policy: "Política de privacidad",
+  review_title: "Reproducción en segundo plano en Android",
+  review_intro: "Esta grabación muestra cómo el audio iniciado por el usuario continúa mientras Noise Connoisseur está en segundo plano. Active el sonido para escuchar la reproducción.",
+  review_start: "Toque «Play White Noise» (Reproducir ruido blanco) en la app.",
+  review_background: "Vuelva a la pantalla de inicio y abra las notificaciones. El ruido blanco sigue sonando y los controles multimedia están visibles.",
+  review_stop: "Toque «Pause» (Pausa) en la notificación. El audio se detiene; al volver a la app se muestra que la reproducción está detenida.",
+  review_capture: "Grabado en un emulador de Android con un APK generado a partir del App Bundle de lanzamiento y firmado para pruebas locales. La grabación incluye el audio del dispositivo.",
+  review_build: "Versión (compilación)",
+  review_recorded: "Grabado",
+  review_download: "Descargar video",
+  review_details: "Detalles de la grabación",
 } satisfies Translation;

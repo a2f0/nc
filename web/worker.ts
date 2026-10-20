@@ -35,6 +35,7 @@ function isManifest(value: unknown): value is Manifest {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return v.schema_version === 1 && v.application_id === "net.a2f0.nc" &&
+    typeof v.video_sha256 === "string" &&
     typeof v.video_key === "string" && KEY.test(v.video_key) &&
     v.video_key === `android-media-playback/${v.video_sha256}.mp4` &&
     typeof v.version_name === "string" && v.version_name.length > 0 && v.version_name.length <= 100 &&
@@ -66,12 +67,12 @@ function page(data: Manifest, locale: Locale): string {
   return `<!doctype html><html lang="${escape(locale.tag)}"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${text("review_title")} · ${text("app_name")}</title>
+<link rel="stylesheet" href="/styles.css">
 <style>
-:root{color-scheme:light dark;font-family:system-ui,sans-serif;color:#222;background:#fafafa;accent-color:#555}
-body{max-width:48rem;margin:auto;padding:2rem 1rem;line-height:1.6}
-a{color:inherit;text-underline-offset:.2em}a:focus-visible,video:focus-visible{outline:3px solid #777;outline-offset:4px}
-::selection{background:#555;color:#fff}video{display:block;max-width:100%;height:min(65vh,40rem);margin:1.5rem auto;background:#111;filter:grayscale(1)}
-@media(prefers-color-scheme:dark){:root{color:#eee;background:#171717}}
+body{display:block;line-height:1.6}main{max-width:48rem;padding:2rem 1rem}h1{margin-top:1.25rem;font-size:2rem}
+a{color:inherit;text-underline-offset:.2em}a:focus-visible,video:focus-visible{outline:3px solid var(--secondary);outline-offset:4px}
+::selection{background:var(--primary);color:var(--background)}
+video{display:block;max-width:100%;height:min(65vh,40rem);margin:1.5rem auto;background:var(--surface);filter:grayscale(1)}
 </style>
 <main><a href="/">${text("app_name")}</a><h1>${text("review_title")}</h1>
 <p>${text("review_intro")}</p>
@@ -133,7 +134,7 @@ export default {
       const json = path.endsWith(".json");
       return new Response(request.method === "HEAD" ? null : json ? JSON.stringify(data) : page(data, language(request)), {
         headers: { ...headers, Vary: "Accept-Language", "Content-Type": json ? "application/json" : "text/html; charset=utf-8",
-          "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; media-src 'self'; base-uri 'none'; frame-ancestors 'none'" },
+          "Content-Security-Policy": "default-src 'none'; style-src 'self' 'unsafe-inline'; media-src 'self'; base-uri 'none'; frame-ancestors 'none'" },
       });
     } catch {
       return new Response(null, { status: 503, headers });
