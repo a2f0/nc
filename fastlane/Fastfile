@@ -337,7 +337,7 @@ platform :android do
     path = File.expand_path(options.fetch(:manifest, '.store-evidence/android-media-playback/manifest.json'), REPO_ROOT)
     data, video = PlayEvidence.inspect_local(path)
     artifact = File.expand_path(options.fetch(:artifact, ANDROID_RELEASE_AAB), REPO_ROOT)
-    UI.user_error!('Recording does not match the candidate AAB') unless Digest::SHA256.file(artifact).hexdigest == data['aab_sha256']
+    UI.user_error!('Recording does not match the candidate AAB') unless File.file?(artifact) && Digest::SHA256.file(artifact).hexdigest == data['aab_sha256']
     sh('bunx', '--no-install', 'wrangler', 'r2', 'object', 'put', "#{PlayEvidence::BUCKET}/#{data['video_key']}",
        '--file', video, '--content-type', 'video/mp4', '--remote')
     sh('bunx', '--no-install', 'wrangler', 'r2', 'object', 'put', "#{PlayEvidence::BUCKET}/#{PlayEvidence::POINTER}",

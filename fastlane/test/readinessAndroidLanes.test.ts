@@ -9,6 +9,12 @@ require 'fake_fastlane'
 require File.join(ARGV[0], 'fastlane/lib/readiness')
 require File.join(ARGV[0], 'fastlane/lib/play_evidence')
 def PlayEvidence.fetch(*) = raise('Unexpected network request in fixture')
+evidence_calls = []
+original_check = PlayEvidence.method(:check)
+PlayEvidence.define_singleton_method(:check) do |report, artifact, **options|
+  evidence_calls << options
+  original_check.call(report, artifact, **options)
+end
 def Readiness.source(_root) = { 'commit' => 'a' * 40, 'dirty' => false }
 results = {}
 Dir.mktmpdir do |dir|
@@ -60,6 +66,8 @@ Dir.mktmpdir do |dir|
     results[:strict_report] = JSON.parse(File.read(output))
   end
   lanes.run_lane(:android, :readiness, artifact: artifact, output: output, track: 'beta')
+  lanes.run_lane(:android, :readiness, artifact: artifact, output: output, store: false, evidence: 'local/manifest.json')
+  results[:evidence_calls] = evidence_calls
   results[:store_calls] = store_calls
   results[:tool_paths] = paths
   begin
@@ -100,11 +108,16 @@ describe("Android release and readiness lanes", () => {
     expect(status(result.offline, "store.android")).toBe("unverified");
     expect(result.offline_store_calls).toEqual([]);
     expect(result.strict_report.result).toBe("incomplete");
-    expect(result.tool_paths).toEqual([resolve(root, "tools/explicit.jar"), resolve(root, "tools/from-env.jar"), resolve(root, "tools/from-env.jar")]);
+    expect(result.tool_paths).toEqual([resolve(root, "tools/explicit.jar"), ...Array(3).fill(resolve(root, "tools/from-env.jar"))]);
+    expect(status(result.offline, "evidence.android_video")).toBe("unverified");
+    expect(result.evidence_calls).toEqual([
+      { online: false, manifest_path: null }, { online: false, manifest_path: null },
+      { online: true, manifest_path: null }, { online: false, manifest_path: resolve(root, "local/manifest.json") },
+    ]);
   });
   test("forwards the requested track and rejects unsupported tracks before inspecting", () => {
     expect(result.store_calls).toEqual(["beta"]);
     expect(result.track_error).toBe("Unsupported Play track");
-    expect(result.inspection_count).toBe(3);
+    expect(result.inspection_count).toBe(4);
   });
 });

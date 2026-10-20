@@ -52,9 +52,18 @@ describe("public Play review evidence", () => {
     const html = await (await f.fetch("/review/android-media-playback")).text();
     expect(html).toContain("&lt;img");
     expect(html).not.toContain("<img");
-    for (const value of [null, { ...data, video_key: "../private" }, { ...data, video_sha256: "b".repeat(64) }]) {
+    for (const value of [null, { ...data, video_key: "../private" }, { ...data, video_sha256: "b".repeat(64) },
+      { ...data, version_name: "" }, { ...data, version_code: 16 }]) {
       expect((await fixture(value).fetch("/review/android-media-playback")).status).toBe(404);
     }
+  });
+  test("localizes the page while quoting controls from the English recording", async () => {
+    const response = await fixture().fetch("/review/android-media-playback", { headers: { "Accept-Language": "en;q=0.5,es;q=0.8,de" } });
+    const html = await response.text();
+    expect(html).toContain('lang="de"');
+    expect(html).toContain("Android-Hintergrundwiedergabe");
+    expect(html).toContain("Play White Noise");
+    expect(response.headers.get("Vary")).toBe("Accept-Language");
   });
   test("streams bytes with seeking, suffix ranges, cache validation and HEAD", async () => {
     const f = fixture();

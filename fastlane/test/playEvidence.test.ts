@@ -68,6 +68,56 @@ Dir.mktmpdir do |dir|
   PlayEvidence.check(online, artifact)
   result[:online] = online.data[:checks]
   result[:requests] = requests
+  PlayEvidence.define_singleton_method(:fetch) { |*| '{invalid' }
+  invalid = report.call
+  PlayEvidence.check(invalid, artifact)
+  result[:invalid] = invalid.data[:checks]
+  PlayEvidence.define_singleton_method(:fetch) { |*| raise 'HTTP 404' }
+  unavailable = report.call
+  PlayEvidence.check(unavailable, artifact)
+  result[:unavailable] = unavailable.data[:checks]
+
+  ENV.delete('BUNDLETOOL_JAR')
+  capture = FakeFastfile.new(File.join(ARGV[0], 'fastlane/Fastfile'), sh: ->(*) {})
+  begin
+    capture.run_lane(:android, :foreground_service_video, artifact: artifact)
+  rescue UserError
+    result[:tool_required] = capture.calls_to(:sh).empty?
+  end
+  capture.run_lane(:android, :foreground_service_video, artifact: artifact, bundletool: 'tools/bundletool.jar')
+  result[:capture_args] = capture.calls_to(:sh)
+
+  # A real temporary Git history exercises the Android-tree freshness gate.
+  repo = File.join(dir, 'repo')
+  FileUtils.mkdir_p([File.join(repo, 'android'), File.join(repo, 'assets/brand'), File.join(repo, 'web')])
+  Readiness.command('git', 'init', '--quiet', repo)
+  git = ->(*args) { Readiness.command('git', '-C', repo, *args) }
+  commit = lambda do
+    git.call('add', '.')
+    git.call('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test',
+             '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture')
+    git.call('rev-parse', 'HEAD').strip
+  end
+  %w[android/app assets/brand/icon.svg web/app].each { |p| File.write(File.join(repo, p), 'initial') }
+  source = { 'commit' => commit.call, 'dirty' => false }
+  Readiness.record_build(artifact, source)
+  result[:source_matches] = PlayEvidence.artifact_source(artifact, repo) == source
+  File.write(File.join(repo, 'web/app'), 'web-only change')
+  commit.call
+  result[:web_source_matches] = PlayEvidence.artifact_source(artifact, repo) == source
+  File.write(File.join(repo, 'android/app'), 'new android behavior')
+  commit.call
+  begin
+    PlayEvidence.artifact_source(artifact, repo)
+  rescue RuntimeError
+    result[:android_change_rejected] = true
+  end
+  File.write(artifact, 'tampered')
+  begin
+    PlayEvidence.artifact_source(artifact, repo)
+  rescue RuntimeError => error
+    result[:receipt_mismatch_rejected] = error.message.include?('receipt')
+  end
 end
 puts JSON.generate(result)
 `;
@@ -82,9 +132,23 @@ test("evidence readiness verifies bytes and rejects a different candidate", () =
   expect(status("good", "_hash")).toBe("verified");
   expect(status("good", "_candidate")).toBe("verified");
   expect(status("stale", "_candidate")).toBe("failed");
-  expect(status("corrupt", "")).toBe("unverified");
+  expect(status("corrupt", "")).toBe("failed");
   expect(status("corrupt", "_hash")).toBeUndefined();
   expect(status("good", "_review")).toBe("unverified");
+  expect(status("good", "_public")).toBe("unverified");
+  expect(status("invalid", "")).toBe("failed");
+  expect(status("unavailable", "")).toBe("unverified");
+});
+test("capture requires bundletool and forwards resolved paths", () => {
+  expect(result.tool_required).toBe(true);
+  expect(result.capture_args).toEqual([["ruby", resolve(root, "scripts/recordAndroidForegroundVideo.rb"),
+    expect.stringContaining("candidate.aab"), resolve(root, "tools/bundletool.jar")]]);
+});
+test("capture accepts web-only commits but rejects changed Android code or a mismatched receipt", () => {
+  expect(result.source_matches).toBe(true);
+  expect(result.web_source_matches).toBe(true);
+  expect(result.android_change_rejected).toBe(true);
+  expect(result.receipt_mismatch_rejected).toBe(true);
 });
 test("online readiness fetches the immutable video referenced by the manifest", () => {
   expect(status("online", "_candidate")).toBe("verified");

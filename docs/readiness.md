@@ -155,7 +155,8 @@ Keep old immutable objects while their links are in store submissions.
 Android readiness downloads the public manifest and its immutable video, verifies bytes
 against the video SHA-256 and checks the AAB SHA-256 against the inspected candidate.
 A new AAB without a matching recording fails `evidence.android_video_candidate`.
-Missing/unreachable evidence is unverified, never a pass. `store:false` skips this network
+Corrupt bytes or invalid manifests fail integrity validation; missing/unreachable evidence
+is unverified, never a pass. `store:false` skips this network
 read too; `evidence:/absolute/path/manifest.json` checks local evidence in either mode.
 Local evidence does not prove the public link is accessible. Existing build-provenance
 checks still require auditing from the artifact's own clean source commit.
