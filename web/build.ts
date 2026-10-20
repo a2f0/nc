@@ -27,6 +27,12 @@ export async function build(outDir: string = DIST_DIR): Promise<void> {
     throw new AggregateError(result.logs, "Web build failed");
   }
 
+  const appearance = await Bun.build({
+    entrypoints: [join(WEB_DIR, "src/appearance-init.ts")],
+    outdir: outDir, naming: "[name].[ext]", target: "browser", format: "iife", minify: true,
+  });
+  if (!appearance.success) throw new AggregateError(appearance.logs, "Appearance bootstrap build failed");
+
   for (const file of ["index.html", "privacy.html", "support.html", "styles.css"]) {
     await cp(join(WEB_DIR, file), join(outDir, file));
   }

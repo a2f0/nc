@@ -1,0 +1,59 @@
+# Dedicated test devices only. Selection must survive process termination.
+appId: net.a2f0.nc
+---
+- launchApp:
+    clearState: true
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
+- tapOn: "More"
+- tapOn: "Settings"
+- assertVisible: "Appearance"
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: system
+- tapOn:
+    id: "appearance-dark"
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: dark
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
+- tapOn: "More"
+- tapOn: "Settings"
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: dark
+- tapOn:
+    id: "appearance-light"
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
+- tapOn: "More"
+- tapOn: "Settings"
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: light
+- tapOn:
+    id: "appearance-system"
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Noise Connoisseur"
+    timeout: 30000
+- tapOn: "More"
+- tapOn: "Settings"
+- runFlow:
+    file: helpers/assert-appearance.yaml
+    env:
+      APPEARANCE: system

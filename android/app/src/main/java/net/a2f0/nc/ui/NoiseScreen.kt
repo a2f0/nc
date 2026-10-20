@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.TextAutoSize
@@ -40,7 +43,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -63,6 +72,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -85,9 +95,9 @@ import net.a2f0.nc.R
 import net.a2f0.nc.playback.NoisePlayer
 
 @Composable
-fun NoiseConnoisseurTheme(content: @Composable () -> Unit) {
+fun NoiseConnoisseurTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     // Grays only (see Colors.kt), not Material's purples or the wallpaper's colors.
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors, content = content)
+    MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, content = content)
 }
 
 @Composable
@@ -262,11 +272,28 @@ private fun openStoreListing(context: Context) {
 private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composable (() -> Unit) -> Unit) {
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
+    val lightSystemBars = !LocalAppearancePreferences.current.appearance.isDark(isSystemInDarkTheme())
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
+        // The sheet owns a separate window, so its system bars need the same override.
+        properties = ModalBottomSheetProperties(
+            isAppearanceLightStatusBars = lightSystemBars,
+            isAppearanceLightNavigationBars = lightSystemBars,
+        ),
     ) {
+        // Material 3 1.4 applies the properties only when creating its window.
+        // Update that same window when appearance changes while the sheet is open.
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect {
+            window?.let {
+                WindowCompat.getInsetsController(it, it.decorView).apply {
+                    isAppearanceLightStatusBars = lightSystemBars
+                    isAppearanceLightNavigationBars = lightSystemBars
+                }
+            }
+        }
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
@@ -290,9 +317,28 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
     }
 }
 
-/** Settings: for now, the volume. */
+/** Local playback and appearance preferences. */
 @Composable
 private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
+    val preferences = LocalAppearancePreferences.current
+    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.appearance), style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() })
+        Appearance.entries.forEach { appearance ->
+            val selected = preferences.appearance == appearance
+            Row(
+                Modifier.fillMaxWidth().testTag("appearance-${appearance.id}")
+                    .selectable(selected = selected, role = Role.RadioButton, onClick = { preferences.select(appearance) })
+                    .heightIn(min = 48.dp)
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = selected, onClick = null)
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(appearance.title), style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // The slider reads its own label.
         Text(

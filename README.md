@@ -22,6 +22,17 @@ theirs with samples from the iOS one. Each app has its own volume slider on top 
 system volume: saved between launches, squared so halfway is about -12 dB, and ramped over
 about 50 ms so dragging doesn't crackle.
 
+## Appearance
+
+Open **More → Settings → Appearance** and choose **System**, **Light**, or **Dark**.
+System is the default and follows the device's appearance automatically. Explicit choices
+take effect immediately and stay saved across app restarts and device reboots, using native
+preferences or browser local storage. The web app applies the saved choice before rendering
+and keeps open tabs in sync. Clearing app/site data removes the preference; blocked browser
+storage shows a warning and keeps the choice only for the current page.
+The system-controlled mobile launch screen can briefly use the system appearance before
+the app's saved appearance takes over.
+
 ## Listening history
 
 Open **More → Listening history** and choose **All time** for a bar per sound showing its

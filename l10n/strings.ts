@@ -182,6 +182,27 @@ export const STRINGS = {
     text: "Settings",
     comment: "Item in the three-dot menu, and the title of the sheet it opens.",
   },
+  appearance: {
+    text: "Appearance",
+    comment: "Settings section for the app's saved light or dark appearance.",
+  },
+  appearance_system: {
+    text: "System",
+    comment: "Appearance option that follows the device's light or dark mode automatically.",
+  },
+  appearance_light: {
+    text: "Light",
+    comment: "Appearance option that always uses the light theme.",
+  },
+  appearance_dark: {
+    text: "Dark",
+    comment: "Appearance option that always uses the dark theme.",
+  },
+  appearance_storage_failed: {
+    text: "This browser couldn't save your appearance. It will reset when you close this page.",
+    comment: "Warning when browser storage is unavailable and the chosen theme cannot be saved.",
+    platforms: ["web"],
+  },
   rate_app: {
     text: "Rate App",
     comment: "Item in the three-dot menu that opens the app's page in the App Store or Google Play, to rate it.",
