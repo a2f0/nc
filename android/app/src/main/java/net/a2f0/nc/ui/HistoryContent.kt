@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -151,8 +152,16 @@ fun HistoryContent() {
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                bars.forEach { bar -> Text(bar.label, fontSize = 9.sp, modifier = Modifier.weight(1f), maxLines = 1) }
+            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                bars.forEach { bar ->
+                    Text(
+                        bar.label,
+                        autoSize = TextAutoSize.StepBased(minFontSize = 6.sp, maxFontSize = 9.sp),
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
             Text(stringResource(if (allTime) R.string.history_sound else R.string.history_date), style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
