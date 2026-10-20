@@ -4,6 +4,11 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.media.MediaMetadata
+import android.media.session.MediaSession
+import android.os.Looper
+import net.a2f0.nc.Language
+import net.a2f0.nc.LanguagePreferences
 import net.a2f0.nc.MainActivity
 import net.a2f0.nc.NoiseType
 import org.junit.After
@@ -19,6 +24,12 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ServiceController
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.shadow.api.Shadow
+import org.robolectric.shadows.ShadowMediaSession
+import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
 class PlaybackServiceTest {
@@ -99,5 +110,36 @@ class PlaybackServiceTest {
         assertEquals("Stopp", notification.actions.single().title)
         val channel = context.getSystemService(NotificationManager::class.java).getNotificationChannel("playback")
         assertEquals("Wiedergabe", channel.name)
+    }
+
+    @Test
+    @Config(sdk = [28], shadows = [RecordingMediaSession::class])
+    fun savedLanguageRelabelsActivePlaybackWithoutAConfigurationChange() {
+        shadowOf(context).grantPermissions("${context.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")
+        val service = playPinkNoise()
+
+        LanguagePreferences.select(context, Language.DE)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val notification = shadowOf(service).lastForegroundNotification
+        assertEquals("Rosa Rauschen", notification.extras.getString(Notification.EXTRA_TITLE))
+        assertEquals("Stopp", notification.actions.single().title)
+        // Robolectric doesn't connect controllers to sessions; capture the published metadata.
+        val session = ReflectionHelpers.getField<MediaSession>(service, "session")
+        val metadata = Shadow.extract<RecordingMediaSession>(session).publishedMetadata
+        assertEquals("Rosa Rauschen", metadata?.getString(MediaMetadata.METADATA_KEY_TITLE))
+        assertEquals(NoiseType.PINK, NoisePlayer.nowPlaying.value)
+        assertFalse(shadowOf(service).isForegroundStopped)
+    }
+
+    @Implements(MediaSession::class)
+    class RecordingMediaSession : ShadowMediaSession() {
+        var publishedMetadata: MediaMetadata? = null
+            private set
+
+        @Implementation
+        protected fun setMetadata(metadata: MediaMetadata?) {
+            publishedMetadata = metadata
+        }
     }
 }

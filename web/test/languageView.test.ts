@@ -7,19 +7,26 @@ class Element extends EventTarget {
   value = "";
   lang = "";
   dir = "";
+  checked = false;
+  children: Element[] = [];
+  append(...children: Element[]) { this.children.push(...children); }
 }
-class Select extends Element {
-  options: Element[] = [];
-  replaceChildren(...options: Element[]) { this.options = options; }
-  choose(value: string) { this.value = value; this.dispatchEvent(new Event("change")); }
+class Picker extends Element {
+  get selected() { return this.children.map(row => row.children[0]!).find(input => input.checked)?.value; }
+  get labels() { return this.children.map(row => row.children[1]!.textContent); }
+  choose(value: string) {
+    const input = this.children.map(row => row.children[0]!).find(input => input.value === value)!;
+    input.checked = true;
+    input.dispatchEvent(new Event("change"));
+  }
 }
 
 function withPage(run: (page: {
-  select: Select; warning: Element; root: { lang: string; dir: string };
+  select: Picker; warning: Element; root: { lang: string; dir: string };
   stored: Map<string, string>; browserLanguage: (language: string) => void;
   external: (language: string | null) => void; blockWrites: () => void;
 }) => void) {
-  const select = new Select(), warning = new Element();
+  const select = new Picker(), warning = new Element();
   const elements = new Map([["language", select], ["language-label", new Element()], ["language-storage-failed", warning]]);
   const root = { lang: "", dir: "" };
   const navigator = { languages: ["es-MX"] };
@@ -34,7 +41,7 @@ function withPage(run: (page: {
     },
   };
   const replacements = {
-    window, navigator, localStorage, HTMLSelectElement: Select,
+    window, navigator, localStorage,
     document: { documentElement: root, getElementById: (id: string) => elements.get(id),
       createElement: () => new Element() },
   };
@@ -64,9 +71,9 @@ function withPage(run: (page: {
 
 test("device default follows browser changes; explicit language persists and takes priority", () => {
   withPage(({ select, root, stored, browserLanguage }) => {
-    expect(select.value).toBe("device");
+    expect(select.selected).toBe("device");
     expect(root).toEqual({ lang: "es", dir: "ltr" });
-    expect(select.options.map(option => option.textContent)).toEqual(["Idioma del dispositivo", "English", "Deutsch", "Español"]);
+    expect(select.labels).toEqual(["Idioma del dispositivo", "English", "Deutsch", "Español"]);
     browserLanguage("de");
     expect(root.lang).toBe("de");
     select.choose("en");
@@ -89,12 +96,12 @@ test("blocked saving stays in memory; external changes and clearing storage repl
     expect(root.lang).toBe("de");
     external("es");
     expect(root.lang).toBe("es");
-    expect(select.value).toBe("es");
+    expect(select.selected).toBe("es");
     expect(warning.textContent).toBe("");
     external(null);
-    expect(select.value).toBe("device");
+    expect(select.selected).toBe("device");
     expect(root.lang).toBe("en");
     external("removed-language");
-    expect(select.value).toBe("device");
+    expect(select.selected).toBe("device");
   });
 });

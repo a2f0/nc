@@ -378,21 +378,6 @@ button.toggle {
   font-weight: 600;
 }
 
-#language {
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 12px;
-  font: inherit;
-  color: var(--primary);
-  background: var(--surface);
-  border: 1px solid currentColor;
-  border-radius: 8px;
-  accent-color: var(--primary);
-}
-
-#language option { color: var(--primary); background: var(--surface); }
-#language option:checked { background: var(--fill); }
-
 .about {
   display: flex;
   align-items: center;

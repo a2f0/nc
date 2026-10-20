@@ -26,3 +26,24 @@ xcrun swiftc -parse-as-library -o "$build_dir/history-tests" \
   "$REPO_ROOT/ios/Shared/ListeningHistory.swift" \
   "$REPO_ROOT/ios/HistoryTests/main.swift"
 "$build_dir/history-tests"
+
+# Use a real app bundle so the generated symbols resolve the compiled catalog.
+language_app="$build_dir/LanguageTests.app/Contents"
+mkdir -p "$language_app/MacOS" "$language_app/Resources"
+cat > "$language_app/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleIdentifier</key><string>net.a2f0.nc.language-tests</string>
+<key>CFBundleExecutable</key><string>language-tests</string>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
+</dict></plist>
+PLIST
+xcrun xcstringstool compile "$REPO_ROOT/ios/Shared/Localizable.xcstrings" \
+  --output-directory "$language_app/Resources"
+xcrun swiftc -o "$language_app/MacOS/language-tests" \
+  "$build_dir/GeneratedStringSymbols_Localizable.swift" \
+  "$REPO_ROOT/ios/Shared/AppLanguage.swift" \
+  "$REPO_ROOT/ios/Shared/LanguageSettings.swift" \
+  "$REPO_ROOT/ios/LanguageTests/main.swift"
+"$language_app/MacOS/language-tests"

@@ -3,18 +3,29 @@ import { currentLocale, setPreferredLanguages, t } from "./l10n";
 import { LANGUAGE_KEY, readLanguage, saveLanguage } from "./language";
 
 export function setUpLanguage(onChange: () => void): () => void {
-  const control = document.getElementById("language");
-  if (!(control instanceof HTMLSelectElement)) throw new Error("Missing language picker");
-  const select: HTMLSelectElement = control;
+  const control = element("language");
   const label = element("language-label");
   const warning = element("language-storage-failed");
   let choice = readLanguage();
   let failed = false;
-  select.replaceChildren(...["device", ...LOCALES.map(locale => locale.tag)].map(value => {
-    const option = document.createElement("option");
-    option.value = value;
-    return option;
-  }));
+  const options = ["device", ...LOCALES.map(locale => locale.tag)].map(value => {
+    const row = document.createElement("label");
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "language";
+    input.value = value;
+    const text = document.createElement("span");
+    row.append(input, text);
+    control.append(row);
+    input.addEventListener("change", () => {
+      if (!input.checked) return;
+      choice = languagePreference(input.value);
+      failed = !saveLanguage(choice);
+      apply();
+      onChange();
+    });
+    return { input, text };
+  });
   function apply() {
     setPreferredLanguages(choice === "device" ? navigator.languages : [choice]);
     document.documentElement.lang = currentLocale().tag;
@@ -22,21 +33,15 @@ export function setUpLanguage(onChange: () => void): () => void {
   }
   function render() {
     label.textContent = t("language");
-    for (const option of select.options) {
-      const locale = LOCALES.find(locale => locale.tag === option.value);
-      option.textContent = locale?.nativeName ?? t("language_device");
-      option.lang = locale?.tag ?? currentLocale().tag;
-      option.dir = locale?.direction ?? currentLocale().direction;
+    for (const { input, text } of options) {
+      const locale = LOCALES.find(locale => locale.tag === input.value);
+      text.textContent = locale?.nativeName ?? t("language_device");
+      text.lang = locale?.tag ?? currentLocale().tag;
+      text.dir = locale?.direction ?? currentLocale().direction;
+      input.checked = input.value === choice;
     }
-    select.value = choice;
     warning.textContent = failed ? t("language_storage_failed") : "";
   }
-  select.addEventListener("change", () => {
-    choice = languagePreference(select.value);
-    failed = !saveLanguage(choice);
-    apply();
-    onChange();
-  });
   window.addEventListener("languagechange", () => {
     if (choice !== "device") return;
     apply();

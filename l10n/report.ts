@@ -1,6 +1,6 @@
 import { LOCALES } from "./locales";
 import { STRINGS, type SourceString } from "./strings";
-import { render, validate, listingErrors, outOfDate } from "./build";
+import { render, validate, listingErrors, swiftKeyErrors, outOfDate } from "./build";
 import { join } from "node:path";
 
 /** Read-only rollout inventory. Structural completeness isn't human translation approval. */
@@ -10,7 +10,7 @@ export async function report(root = join(import.meta.dir, "..")) {
   const translatedKeys = Object.keys(source).filter(key => source[key]!.translatable !== false);
   const generated = render(catalog);
   const stale = await outOfDate(root, generated);
-  const errors = [...validate(catalog), ...await listingErrors(root, catalog)];
+  const errors = [...validate(catalog), ...await listingErrors(root, catalog), ...await swiftKeyErrors(root, catalog)];
   return {
     locales: LOCALES.map(locale => ({
       tag: locale.tag, name: locale.nativeName, direction: locale.direction,
