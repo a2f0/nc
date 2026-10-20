@@ -148,7 +148,7 @@ struct HistorySheet: View {
                             }
                         }
                     }
-                    HStack(spacing: 0) {
+                    HStack(spacing: 10) {
                         ForEach(bars) { bar in
                             Text(bar.label)
                                 .font(.system(size: 10)).lineLimit(1).minimumScaleFactor(0.6)
