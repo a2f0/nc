@@ -40,7 +40,7 @@ test.each(native)("waves keep native timing and a softer retreat at %i Hz", (rat
     finite &&= Number.isFinite(x) && Number.isFinite(generator.right);
     peak = Math.max(peak, Math.abs(x), Math.abs(generator.right));
     jump = Math.max(jump, Math.abs(x - previous));
-    // Fixed acoustic windows of the first seeded wave, independent of generator internals.
+    // Fixed windows for seeds 1/2 (first crest near 5.54 seconds); references also guard this schedule.
     const second = frame / rate;
     const window = second < 1 ? 0 : second >= 4.5 && second < 5.5 ? 1 : second >= 7 && second < 9 ? 2 : -1;
     if (window >= 0) {

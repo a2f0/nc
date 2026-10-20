@@ -3,7 +3,7 @@ import AVFoundation
 // Renders NoiseRenderer offline through AVAudioEngine and checks the output level: the fade,
 // the volume curve, and the volume ramp. scripts/checks/testIosAudio.sh compiles this with
 // the renderer's sources from ios/Shared for macOS and runs it. This folder isn't part of
-// the Xcode project.
+// the Xcode project. Also checks seeded generator parity and wave backwash acoustics.
 
 let sampleRate = 48_000.0
 let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 2)!
@@ -104,8 +104,37 @@ do {
     check(false, "rendering failed: \(error)")
 }
 
+// Shared seeded reference points also checked by Android and web.
+let waveReferences: [Int: [(frame: Int, left: Float, right: Float)]] = [
+    44100: [
+        (132300, -0.014508246444165707, 0.07368697971105576),
+        (264600, 0.029146987944841385, -0.22779574990272522),
+        (352800, -0.002184402896091342, -0.022706639021635056),
+        (441000, 0.009766509756445885, 0.011338476091623306),
+        (882000, 0.01830667071044445, 0.0022752180229872465),
+        (2646000, -0.031649909913539886, 0.026668190956115723),
+    ],
+    48000: [
+        (144000, 0.07315686345100403, -0.044697001576423645),
+        (288000, 0.3269042670726776, 0.15355661511421204),
+        (384000, 0.020765312016010284, -0.16250570118427277),
+        (480000, -0.02227717824280262, -0.020335981622338295),
+        (960000, 0.002440560841932893, -0.0038006503600627184),
+        (2880000, 0.02519976533949375, -0.014816612005233765),
+    ],
+    96000: [
+        (288000, 0.10157521814107895, -0.028749089688062668),
+        (576000, 0.1935761719942093, -0.15933851897716522),
+        (768000, 0.0014603183371946216, 0.010455489158630371),
+        (960000, 0.005584082566201687, -0.005136157851666212),
+        (1920000, -0.007353504188358784, 0.026007970795035362),
+        (5760000, -0.0043701473623514175, 0.016346722841262817),
+    ],
+]
+
 // Seeded acoustic regression: the backwash must remain audible while losing the
-// breaker's brightness. These fixed windows do not inspect generator state.
+// breaker's brightness. Windows assume seeds 1/2 (first crest near 5.54 seconds);
+// reference samples below also guard the seeded schedule.
 for rate in [44_100, 48_000, 96_000] {
     var generator = NoiseGenerator(sampleRate: Double(rate), leftSeed: 1, rightSeed: 2)
     var power = [Double](repeating: 0, count: 3)
@@ -115,8 +144,16 @@ for rate in [44_100, 48_000, 96_000] {
     var peak: Float = 0
     var jump: Float = 0
     var finite = true
-    for frame in 0..<(60 * rate) {
+    let references = waveReferences[rate]!
+    var nextReference = 0
+    var matchesReferences = true
+    for frame in 0...(60 * rate) {
         let (left, right) = generator.next(.waves)
+        if nextReference < references.count && frame == references[nextReference].frame {
+            let reference = references[nextReference]
+            matchesReferences = matchesReferences && abs(left - reference.left) < 0.0001 && abs(right - reference.right) < 0.0001
+            nextReference += 1
+        }
         finite = finite && left.isFinite && right.isFinite
         peak = max(peak, abs(left), abs(right))
         jump = max(jump, abs(left - previous))
@@ -131,6 +168,7 @@ for rate in [44_100, 48_000, 96_000] {
     }
     let rms = (0..<3).map { sqrt(power[$0] / Double(counts[$0])) }
     let brightness = (0..<3).map { differences[$0] / power[$0] * pow(Double(rate) / 48_000, 2) }
+    check(matchesReferences && nextReference == references.count, "waves match shared reference samples at \(rate) Hz")
     check(finite && peak < 0.9 && jump < 0.12, "waves stay finite, unclipped and without jumps at \(rate) Hz")
     check(rms[2] > 1.5 * rms[0] && rms[2] < 0.65 * rms[1], "waves retain an audible, quieter backwash at \(rate) Hz")
     check(brightness[2] < 0.6 * brightness[1] && brightness[2] < 0.003, "waves lose high-frequency hiss during backwash at \(rate) Hz")
