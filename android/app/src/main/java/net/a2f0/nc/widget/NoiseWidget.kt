@@ -5,13 +5,13 @@ import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.glance.ButtonDefaults
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.ImageProvider
-import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -48,16 +48,18 @@ import net.a2f0.nc.ui.LightColors
 /** Home screen widget with a start/stop button for each noise. */
 class NoiseWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val language = LanguagePreferences.locales(context)
         provideContent {
             val nowPlaying by NoisePlayer.nowPlaying.collectAsState()
+            val localeTags by language.collectAsState()
+            val localizedContext = remember(context, localeTags) { LanguagePreferences.localized(context, localeTags) }
             // The app's grays, not the wallpaper's dynamic colors.
-            GlanceTheme(colors = ColorProviders(light = LightColors, dark = DarkColors)) { Content(nowPlaying) }
+            GlanceTheme(colors = ColorProviders(light = LightColors, dark = DarkColors)) { Content(nowPlaying, localizedContext) }
         }
     }
 
     @Composable
-    private fun Content(nowPlaying: NoiseType?) {
-        val context = LanguagePreferences.localized(LocalContext.current)
+    private fun Content(nowPlaying: NoiseType?, context: Context) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -78,7 +80,7 @@ class NoiseWidget : GlanceAppWidget() {
             LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
                 items(NoiseType.entries, itemId = { it.ordinal.toLong() }) { type ->
                     Box(modifier = GlanceModifier.fillMaxWidth().padding(top = if (type.ordinal == 0) 0.dp else 8.dp)) {
-                        NoiseButton(type, isPlaying = type == nowPlaying)
+                        NoiseButton(type, isPlaying = type == nowPlaying, context = context)
                     }
                 }
             }
@@ -86,8 +88,7 @@ class NoiseWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun NoiseButton(type: NoiseType, isPlaying: Boolean) {
-        val context = LanguagePreferences.localized(LocalContext.current)
+    private fun NoiseButton(type: NoiseType, isPlaying: Boolean, context: Context) {
         // Filled while playing, like the app's play/stop buttons.
         FilledButton(
             text = context.getString(type.shortTitle),

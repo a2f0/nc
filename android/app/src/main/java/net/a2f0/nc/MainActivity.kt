@@ -1,9 +1,9 @@
 package net.a2f0.nc
 
-import android.os.Bundle
-import android.os.Build
 import android.content.Context
 import android.graphics.Color
+import android.os.Build
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        NoisePlayer.refreshWidgets(applicationContext)
         setContent {
             val preferences = remember {
                 AppearancePreferences(getSharedPreferences("appearance", MODE_PRIVATE))
@@ -39,10 +40,12 @@ class MainActivity : ComponentActivity() {
                     navigationBarStyle = SystemBarStyle.auto(Color.argb(0xe6, 0xff, 0xff, 0xff), 0x801b1b1b.toInt()) { dark },
                 )
             }
-            val languages = LanguageControl(LanguagePreferences.selected(this)) { language ->
-                LanguagePreferences.select(this, language)
-                NoisePlayer.refreshWidgets(applicationContext)
-                if (Build.VERSION.SDK_INT < 33) recreate()
+            val languages = remember {
+                LanguageControl(LanguagePreferences.selected(this)) { language ->
+                    LanguagePreferences.select(this, language)
+                    NoisePlayer.refreshWidgets(applicationContext)
+                    if (Build.VERSION.SDK_INT < 33) recreate()
+                }
             }
             CompositionLocalProvider(LocalAppearancePreferences provides preferences, LocalLanguageControl provides languages) {
                 NoiseConnoisseurTheme(darkTheme = dark) { NoiseScreen() }

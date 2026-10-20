@@ -114,16 +114,19 @@ export const STRINGS = {
     text: "English",
     comment: "English's own name in the language picker. Always keep the endonym so users can recognize it in any UI language.",
     translatable: false,
+    platforms: ["web"],
   },
   language_name_de: {
     text: "Deutsch",
     comment: "German's own name in the language picker. Never translate this endonym.",
     translatable: false,
+    platforms: ["web"],
   },
   language_name_es: {
     text: "Español",
     comment: "Spanish's own name in the language picker. Never translate this endonym.",
     translatable: false,
+    platforms: ["web"],
   },
   language_device: {
     text: "Device language",

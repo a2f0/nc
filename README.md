@@ -121,7 +121,8 @@ so a translation can put them anywhere. Each platform gets only its own strings;
 Each locale in `l10n/locales.ts` also names its App Store Connect and Google Play codes
 (Spanish has two in each store, for Spain and Latin America), and needs a store listing for
 each in `fastlane/metadata/ios/<code>/` and `fastlane/metadata/android/<code>/` with the same
-files as `en-US`, within the stores' length limits (the `listing` lanes upload every one). Screenshots are English for every language. `bun run l10n:check`, run by
+files as `en-US`, within the stores' length limits (the `listing` lanes upload every one).
+Screenshots are English for every language. `bun run l10n:check`, run by
 pre-push and CI, typechecks the translations and fails if a generated file is out of date or
 a listing is missing or too long.
 
@@ -129,7 +130,8 @@ To add a language:
 
 1. Write `l10n/<tag>.ts` (`export default { ... } satisfies Translation`), translating each
    string with the help of its comment.
-2. Add its native name as a nontranslatable `language_name_*` entry in `strings.ts`.
+2. Add its native name as a nontranslatable, web-only `language_name_*` entry in `strings.ts`
+   (native picker enums also use this source text, so separate native resources aren't needed).
    List it in `l10n/locales.ts` with its tag (`de`, `pt-BR`, `zh-Hans`), native name,
    reading direction, and store codes. This registry generates the Android and iOS picker
    enums; the web imports it directly. Do not maintain separate platform language lists.
@@ -148,6 +150,9 @@ change the system language in device Settings; on the web, change the browser's 
 settings. On Android 13+, `adb shell cmd locale set-app-locales net.a2f0.nc --locales <tag>`
 tests an explicit per-app choice, not the device default. The privacy policy and support
 pages are in English only.
+
+On iOS, an explicit in-app choice overrides the device and iOS Settings language for the
+app and widget. OS-owned App Intents and Shortcuts metadata still follows iOS's language.
 
 ## No binary files
 

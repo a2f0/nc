@@ -7,11 +7,26 @@ import android.os.Build
 import android.os.LocaleList
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.content.edit
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
 
 /** Android 13+ shares the system per-app setting. Older devices use a private preference. */
 object LanguagePreferences {
     const val KEY = "language"
+    private val effectiveLocales = MutableStateFlow("")
+
+    /** Existing Glance sessions collect this instead of waiting for another playback change. */
+    fun locales(context: Context): StateFlow<String> {
+        refresh(context)
+        return effectiveLocales.asStateFlow()
+    }
+
+    fun refresh(context: Context) {
+        effectiveLocales.value = resolvedLocales(context).toLanguageTags()
+    }
+
     fun preferences(context: Context) = context.getSharedPreferences(KEY, Context.MODE_PRIVATE)
 
     fun selected(context: Context): Language {
@@ -47,21 +62,24 @@ object LanguagePreferences {
         } else {
             preferences(context).edit { putString(KEY, language.tag) }
         }
+        refresh(context)
     }
 
-    /** Also used by notifications and widgets, whose contexts aren't the activity's. */
-    fun localized(context: Context): Context {
+    private fun resolvedLocales(context: Context): LocaleList {
         if (Build.VERSION.SDK_INT >= 33) {
             val manager = context.getSystemService(LocaleManager::class.java)
             val locales = manager.applicationLocales
-            val config = Configuration(context.resources.configuration)
-            config.setLocales(if (locales.isEmpty) manager.systemLocales else locales)
-            return context.createConfigurationContext(config)
+            return if (locales.isEmpty) manager.systemLocales else locales
         }
         val language = selected(context)
-        if (language == Language.DEVICE) return context
+        return if (language == Language.DEVICE) context.resources.configuration.locales
+            else LocaleList.forLanguageTags(language.tag)
+    }
+
+    /** Also used by notifications and widgets, whose contexts aren't the activity's. */
+    fun localized(context: Context, tags: String? = null): Context {
         val config = Configuration(context.resources.configuration)
-        config.setLocale(Locale.forLanguageTag(language.tag))
+        config.setLocales(if (tags == null) resolvedLocales(context) else LocaleList.forLanguageTags(tags))
         return context.createConfigurationContext(config)
     }
 }

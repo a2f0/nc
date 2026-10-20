@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-# Checks the iOS audio renderer's output: compiles ios/Shared's renderer with the offline
-# rendering checks in ios/AudioTests for macOS, and runs them. Requires Xcode.
+# Checks the iOS audio renderer, history model, and real localization catalog on macOS.
+# Compiles the shared sources with their focused test harnesses. Requires Xcode.
 
 REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd -P)"
 
