@@ -322,6 +322,20 @@ def next_google_play_version_code
   end
 end
 
+# Builds the release App Bundle and uploads it to a Play track, rolled out
+# unless options[:release_status] says otherwise. Listing text and images go up
+# separately, through the listing lane.
+def release_to_play_track(track, options)
+  aab = build_release(options)
+  upload_to_play_store(
+    package_name: APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH,
+    aab: aab, mapping: ANDROID_RELEASE_MAPPING,
+    track: track, release_status: options.fetch(:release_status, 'completed'),
+    skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
+    skip_upload_images: true, skip_upload_screenshots: true
+  )
+end
+
 platform :android do
   desc 'Record user-started background playback and notification stop from the release AAB'
   lane :foreground_service_video do |options|
@@ -370,14 +384,16 @@ platform :android do
   # out by hand; pass release_status:draft to upload one without rolling it out.
   desc 'Build, upload, and roll out the release App Bundle to Google Play internal testers'
   lane :internal do |options|
-    aab = build_release(options)
-    upload_to_play_store(
-      package_name: APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH,
-      aab: aab, mapping: ANDROID_RELEASE_MAPPING,
-      track: 'internal', release_status: options.fetch(:release_status, 'completed'),
-      skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
-      skip_upload_images: true, skip_upload_screenshots: true
-    )
+    release_to_play_track('internal', options)
+  end
+
+  # Open testing is Play's beta track. Google reviews each release before
+  # testers get it, and the track only takes releases once open testing is set
+  # up in Play Console: its countries, and for a personal account created since
+  # November 2023, production access.
+  desc 'Build, upload, and roll out the release App Bundle to Google Play open testing'
+  lane :beta do |options|
+    release_to_play_track('beta', options)
   end
 
   desc 'Inspect an existing AAB and Play state; write a redacted readiness report (no uploads or committed edits)'

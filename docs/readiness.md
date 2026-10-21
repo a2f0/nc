@@ -43,9 +43,9 @@ inspection needs macOS `codesign` and `security`. Android needs a JDK and Google
 `bundletool:/path/to/bundletool-all.jar` / `BUNDLETOOL_JAR`. No tools are downloaded by the lanes.
 
 `ios build_release` builds/signs an IPA without uploading; `ios beta` reuses it before
-TestFlight upload. `android build_release` builds/signs the AAB, and `android internal`
-reuses it. Both build lanes write `<artifact>.build.json` with the source commit, dirty flag,
-build time, and artifact hash. Keep that receipt beside the artifact when copying it.
+TestFlight upload. `android build_release` builds/signs the AAB, and `android internal` and
+`android beta` reuse it. Both build lanes write `<artifact>.build.json` with the source commit,
+dirty flag, build time, and artifact hash. Keep that receipt beside the artifact when copying it.
 
 A receipt with the wrong hash, a dirty source, or a source commit different from the audited
 checkout is a failed check. An older artifact without a receipt has unknown provenance;

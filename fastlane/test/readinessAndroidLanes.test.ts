@@ -20,7 +20,7 @@ results = {}
 Dir.mktmpdir do |dir|
   key = File.join(dir, 'fixture.keystore')
   File.write(key, 'not a real key')
-  %i[build_release internal].each do |lane|
+  %i[build_release internal beta].each do |lane|
     artifact = File.join(dir, "#{lane}.aab")
     events = []
     lanes = FakeFastfile.new(File.join(ARGV[0], 'fastlane/Fastfile'),
@@ -37,7 +37,8 @@ Dir.mktmpdir do |dir|
     end
     lanes.stub_method(:load_store_secrets) { |_| nil }
     lanes.stub_method(:required_env) { |_| 'fixture password' }
-    returned = lanes.run_lane(:android, lane, lane == :build_release ? { version_code: '42' } : { release_status: 'draft' })
+    options = { build_release: { version_code: '42' }, internal: { release_status: 'draft' }, beta: {} }.fetch(lane)
+    returned = lanes.run_lane(:android, lane, options)
     results[lane] = { events: events, gradle: lanes.calls_to(:gradle), uploads: lanes.calls_to(:upload_to_play_store),
       lookups: lanes.calls_to(:google_play_track_version_codes), returned_artifact: returned == artifact,
       receipt: JSON.parse(File.read("#{artifact}.build.json")), expected_hash: Digest::SHA256.file(artifact).hexdigest }
@@ -85,8 +86,8 @@ const result = JSON.parse(child.stdout.toString());
 const status = (report: { checks: { id: string; status: string }[] }, id: string) => report.checks.find((check) => check.id === id)?.status;
 
 describe("Android release and readiness lanes", () => {
-  test("builds with the requested version, records provenance, then uploads only from internal", () => {
-    for (const lane of ["build_release", "internal"]) {
+  test("builds with the requested version, records provenance, then uploads only from internal and beta", () => {
+    for (const lane of ["build_release", "internal", "beta"]) {
       const run = result[lane];
       expect(run.gradle).toHaveLength(1);
       expect(run.gradle[0].task).toBe("bundleRelease");
@@ -102,6 +103,9 @@ describe("Android release and readiness lanes", () => {
     expect(result.internal.lookups.map((call: { track: string }) => call.track)).toEqual(["production", "beta", "alpha", "internal"]);
     expect(result.internal.gradle[0].properties.ncVersionCode).toBe(14);
     expect(result.internal.uploads).toEqual([expect.objectContaining({ track: "internal", release_status: "draft", skip_upload_metadata: true, aab: expect.stringContaining("internal.aab") })]);
+    expect(result.beta.events).toEqual(["wrapper", "build", "upload"]);
+    expect(result.beta.gradle[0].properties.ncVersionCode).toBe(14);
+    expect(result.beta.uploads).toEqual([expect.objectContaining({ track: "beta", release_status: "completed", skip_upload_metadata: true, aab: expect.stringContaining("beta.aab") })]);
   });
   test("offline and strict modes inspect without store calls, resolving explicit and environment tool paths", () => {
     expect(status(result.offline, "fixture.inspected")).toBe("verified");
