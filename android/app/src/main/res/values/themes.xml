@@ -1,5 +1,14 @@
 <resources>
-    <style name="Theme.NoiseConnoisseur" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Light here, dark in values-night. -->
+    <style name="Base.Theme.NoiseConnoisseur" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Edge to edge before Android 15, which always draws it: transparent system bars, set here
+         rather than with Window's deprecated bar color setters, which Google Play flags. Keep these
+         in step with values-v30. -->
+    <style name="Theme.NoiseConnoisseur" parent="Base.Theme.NoiseConnoisseur">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
     <!-- Launch theme: the app icon on the background color from assets/brand/background.svg. -->
     <style name="Theme.NoiseConnoisseur.Starting" parent="Theme.SplashScreen">

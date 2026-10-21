@@ -1,0 +1,9 @@
+<resources>
+    <!-- values/themes.xml's theme, also drawing into display cutouts on every edge, as Android 15
+         does. "always" is new in Android 11; the deprecated "shortEdges" is what Play flags. -->
+    <style name="Theme.NoiseConnoisseur" parent="Base.Theme.NoiseConnoisseur">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+    </style>
+</resources>
