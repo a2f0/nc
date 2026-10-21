@@ -396,6 +396,22 @@ platform :android do
     release_to_play_track('beta', options)
   end
 
+  # Promotes the open testing release rather than building a new one, so
+  # production gets the App Bundle testers had. Google reviews it first, and
+  # Play rejects it until production has countries, which only Play Console
+  # sets. Pass version_code: when the track has more than one release, and
+  # rollout:0.1 to roll an update out to a share of users.
+  desc 'Promote the Google Play open testing release to production'
+  lane :production do |options|
+    upload_to_play_store(
+      package_name: APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH,
+      track: 'beta', track_promote_to: 'production', track_promote_release_status: 'completed',
+      **options.slice(:version_code, :rollout),
+      skip_upload_apk: true, skip_upload_aab: true, skip_upload_metadata: true,
+      skip_upload_changelogs: true, skip_upload_images: true, skip_upload_screenshots: true
+    )
+  end
+
   desc 'Inspect an existing AAB and Play state; write a redacted readiness report (no uploads or committed edits)'
   lane :readiness do |options|
     artifact, output = readiness_options(options, 'android', ANDROID_RELEASE_AAB)
