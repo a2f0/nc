@@ -44,6 +44,14 @@ Dir.mktmpdir do |dir|
       receipt: JSON.parse(File.read("#{artifact}.build.json")), expected_hash: Digest::SHA256.file(artifact).hexdigest }
   end
 
+  # production promotes the open testing release, so it builds nothing.
+  [{}, { version_code: '18', rollout: '0.1' }].each_with_index do |options, index|
+    lanes = FakeFastfile.new(File.join(ARGV[0], 'fastlane/Fastfile'),
+      gradle: ->(**) { raise 'production must not build' }, upload_to_play_store: ->(**) {})
+    lanes.run_lane(:android, :production, options)
+    results["production_#{index}"] = { uploads: lanes.calls_to(:upload_to_play_store), gradle: lanes.calls_to(:gradle) }
+  end
+
   paths, store_calls = [], []
   Readiness.define_singleton_method(:android_artifact) do |report, artifact, bundletool:|
     paths << bundletool
@@ -106,6 +114,18 @@ describe("Android release and readiness lanes", () => {
     expect(result.beta.events).toEqual(["wrapper", "build", "upload"]);
     expect(result.beta.gradle[0].properties.ncVersionCode).toBe(14);
     expect(result.beta.uploads).toEqual([expect.objectContaining({ track: "beta", release_status: "completed", skip_upload_metadata: true, aab: expect.stringContaining("beta.aab") })]);
+  });
+  test("production promotes the open testing release without building or uploading anything else", () => {
+    const promotion = {
+      package_name: "net.a2f0.nc", track: "beta", track_promote_to: "production", track_promote_release_status: "completed",
+      skip_upload_apk: true, skip_upload_aab: true, skip_upload_metadata: true,
+      skip_upload_changelogs: true, skip_upload_images: true, skip_upload_screenshots: true,
+    };
+    expect(result.production_0.gradle).toEqual([]);
+    expect(result.production_0.uploads).toEqual([expect.objectContaining(promotion)]);
+    expect(result.production_0.uploads[0]).not.toHaveProperty("version_code");
+    expect(result.production_0.uploads[0]).not.toHaveProperty("rollout");
+    expect(result.production_1.uploads).toEqual([expect.objectContaining({ ...promotion, version_code: "18", rollout: "0.1" })]);
   });
   test("offline and strict modes inspect without store calls, resolving explicit and environment tool paths", () => {
     expect(status(result.offline, "fixture.inspected")).toBe("verified");
