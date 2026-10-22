@@ -770,6 +770,246 @@
         }
       }
     },
+    "log_configuration_changed" : {
+      "comment" : "iOS engine configuration notification; details include whether the engine is running.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konfiguration der Audio-Engine geändert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio engine configuration changed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio de configuración del motor de audio"
+          }
+        }
+      }
+    },
+    "log_engine_failed" : {
+      "comment" : "Audio error; details include the system error code or exception.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio-Engine fehlgeschlagen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio engine failed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fallo del motor de audio"
+          }
+        }
+      }
+    },
+    "log_interruption" : {
+      "comment" : "iOS audio interruption; details identify began or ended and raw resume options.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unterbrechung der Audiositzung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio session interruption"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interrupción de la sesión de audio"
+          }
+        }
+      }
+    },
+    "log_play_requested" : {
+      "comment" : "Diagnostic event; details identify app, widget, notification, remote control, or system source.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabe angefordert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Play requested"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducción solicitada"
+          }
+        }
+      }
+    },
+    "log_route_changed" : {
+      "comment" : "iOS route notification; details include the system reason code.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audioausgabe geändert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio route changed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambio de ruta de audio"
+          }
+        }
+      }
+    },
+    "log_started" : {
+      "comment" : "Audio engine confirmed playback started.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabe gestartet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playback started"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducción iniciada"
+          }
+        }
+      }
+    },
+    "log_stop_requested" : {
+      "comment" : "Diagnostic event; details identify the source of the stop request.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopp angefordert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop requested"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detención solicitada"
+          }
+        }
+      }
+    },
+    "log_stopped" : {
+      "comment" : "Playback stopped; diagnostic details identify the reason.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabe gestoppt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playback stopped"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducción detenida"
+          }
+        }
+      }
+    },
+    "log_termination" : {
+      "comment" : "iOS delivered a termination notification; abrupt kills may not deliver one.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App wird beendet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App is terminating"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La app se está cerrando"
+          }
+        }
+      }
+    },
+    "log_unclean_exit" : {
+      "comment" : "Recovered an unfinished playback marker after an unexpected exit. Timestamp is detection time, not a claimed stop time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für die vorherige Wiedergabe wurde kein Stopp aufgezeichnet; die Ursache ist unbekannt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous playback has no recorded stop; the cause is unknown."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La reproducción anterior no tiene una detención registrada; se desconoce la causa."
+          }
+        }
+      }
+    },
     "more" : {
       "comment" : "Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About.",
       "extractionState" : "manual",
@@ -1223,6 +1463,126 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reproducir %1$@"
+          }
+        }
+      }
+    },
+    "playback_log" : {
+      "comment" : "Title and menu entry for local playback diagnostics.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergabeprotokoll"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playback log"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registro de reproducción"
+          }
+        }
+      }
+    },
+    "playback_log_empty" : {
+      "comment" : "Empty playback event log.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Wiedergabeereignisse aufgezeichnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No playback events recorded yet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no se han registrado eventos de reproducción."
+          }
+        }
+      }
+    },
+    "playback_log_local" : {
+      "comment" : "Explanation of the bounded local diagnostic log and user-initiated sharing.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die letzten 300 Ereignisse bleiben auf diesem Gerät. Es wird nichts gesendet, es sei denn, du teilst das Protokoll. Die Details enthalten Diagnosecodes des Systems."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The last 300 events stay on this device. Nothing is sent unless you share the log. Details include system diagnostic codes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los últimos 300 eventos se guardan en este dispositivo. No se envía nada a menos que compartas el registro. Los detalles incluyen códigos de diagnóstico del sistema."
+          }
+        }
+      }
+    },
+    "playback_log_share" : {
+      "comment" : "Opens the system share sheet for playback diagnostics.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protokoll teilen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share log"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compartir registro"
+          }
+        }
+      }
+    },
+    "playback_log_storage_failed" : {
+      "comment" : "Storage warning; playback continues if diagnostic persistence fails.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einige Wiedergabeereignisse konnten nicht geladen oder gespeichert werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some playback events could not be loaded or saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron cargar o guardar algunos eventos de reproducción."
           }
         }
       }

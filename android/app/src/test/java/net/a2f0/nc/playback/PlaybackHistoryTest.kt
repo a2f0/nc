@@ -40,10 +40,10 @@ class PlaybackHistoryTest {
 
     class TestService : PlaybackService() {
         lateinit var started: (NoiseType) -> Unit
-        lateinit var failed: () -> Unit
+        lateinit var failed: (String) -> Unit
         var stops = 0
         val plays = mutableListOf<NoiseType>()
-        internal override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: () -> Unit): PlaybackEngine {
+        internal override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine {
             started = onStarted
             failed = onFailed
             return object : PlaybackEngine {
@@ -85,7 +85,7 @@ class PlaybackHistoryTest {
 
     @Test fun failedStartCreatesNoSessionAndStopsTheService() {
         assertTrue(rows().isEmpty())
-        service.failed()
+        service.failed("test failure")
         main.idle()
         assertTrue(rows().isEmpty())
         assertNull(NoisePlayer.nowPlaying.value)
@@ -96,7 +96,7 @@ class PlaybackHistoryTest {
     @Test fun engineFailureClosesAnEstablishedSession() {
         started()
         assertNull(rows().single().endedAt)
-        service.failed()
+        service.failed("test failure")
         main.idle()
         assertNotNull(rows().single().endedAt)
         assertNull(NoisePlayer.nowPlaying.value)

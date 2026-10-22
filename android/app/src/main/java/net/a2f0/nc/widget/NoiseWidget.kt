@@ -105,7 +105,7 @@ class NoiseWidget : GlanceAppWidget() {
                 actionRunCallback<StopNoiseAction>()
             } else {
                 // Widget taps may start a foreground service directly, even from the background.
-                actionStartService(PlaybackService.playIntent(context, type), isForegroundService = true)
+                actionStartService(PlaybackService.playIntent(context, type, "widget"), isForegroundService = true)
             },
             modifier = GlanceModifier.fillMaxWidth(),
         )
@@ -118,7 +118,7 @@ private fun GlanceModifier.systemCornerRadius(): GlanceModifier =
 
 class StopNoiseAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        NoisePlayer.stop(context)
+        NoisePlayer.stop(context, "widget")
         // Covers a stale widget (e.g. the process died): re-render with the real state.
         NoiseWidget().update(context, glanceId)
     }

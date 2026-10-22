@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
         // the deprecated APIs Google Play flags. The theme makes the system bars transparent and
         // lets the app into display cutouts; Android 15 and later draw edge to edge anyway.
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        net.a2f0.nc.diagnostics.PlaybackLog.get(applicationContext)
         NoisePlayer.refreshWidgets(applicationContext)
         setContent {
             val preferences = remember {

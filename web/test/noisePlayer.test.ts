@@ -49,7 +49,7 @@ class FakeAudioContext extends EventTarget {
   }
 }
 
-class FakeWorkletNode {
+class FakeWorkletNode extends EventTarget {
   static instances: FakeWorkletNode[] = [];
   readonly posted: NoiseCommand[] = [];
   readonly port = {
@@ -58,6 +58,7 @@ class FakeWorkletNode {
   };
 
   constructor() {
+    super();
     FakeWorkletNode.instances.push(this);
   }
 
@@ -407,4 +408,30 @@ test("a delayed pause event cannot stop a newer play", async () => {
   audio.dispatchEvent(new Event("pause"));
   expect(player.nowPlaying).toBe("fan");
   expect(player.history.snapshot().at(-1)!.endedAt).toBeNull();
+});
+
+test("worklet processor errors stop playback and retain the failure reason", async () => {
+  const player = new NoisePlayer(memoryHistory());
+  player.play("pink");
+  FakeAudioContext.instances[0]!.moduleLoad.resolve();
+  await settle();
+  FakeWorkletNode.instances[0]!.dispatchEvent(new Event("processorerror"));
+  expect(player.nowPlaying).toBeNull();
+  expect(player.failed).toBe(true);
+  expect(player.playbackLog.entries.some((row) => row.event === "log_worklet_error" && row.soundId === "pink")).toBe(true);
+  expect(player.playbackLog.entries.at(-1)?.event).toBe("log_engine_failed");
+});
+
+test("context suspension and media commands retain distinct diagnostics", async () => {
+  const player = new NoisePlayer(memoryHistory());
+  player.play("brown");
+  const context = FakeAudioContext.instances[0]!;
+  context.moduleLoad.resolve();
+  await settle();
+  context.state = "suspended";
+  context.dispatchEvent(new Event("statechange"));
+  expect(player.playbackLog.entries.at(-1)?.detail).toBe("suspended");
+  mediaSession.handlers.get("pause")!();
+  expect(player.playbackLog.entries.at(-1)?.detail).toBe("media_pause");
+  expect(player.playbackLog.entries.at(-1)?.event).toBe("log_stopped");
 });

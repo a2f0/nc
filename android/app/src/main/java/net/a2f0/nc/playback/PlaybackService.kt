@@ -32,6 +32,8 @@ import net.a2f0.nc.R
 import net.a2f0.nc.audio.NoiseEngine
 import net.a2f0.nc.audio.PlaybackEngine
 import net.a2f0.nc.history.ListeningHistory
+import net.a2f0.nc.diagnostics.PlaybackLog
+import net.a2f0.nc.diagnostics.PlaybackEvent
 
 /**
  * Foreground media service that keeps noise playing while the app is in the background.
@@ -39,14 +41,21 @@ import net.a2f0.nc.history.ListeningHistory
  * and the playback notification.
  */
 open class PlaybackService : Service() {
+    private val log by lazy { PlaybackLog.get(this) }
     private val engine by lazy {
         createEngine(
             onStarted = { type ->
                 scope.launch {
-                    if (nowPlaying == type && !pausedForFocusLoss) ListeningHistory.get(this@PlaybackService).transition(type.id)
+                    if (nowPlaying == type && !pausedForFocusLoss) {
+                        ListeningHistory.get(this@PlaybackService).transition(type.id)
+                        log.record(PlaybackEvent.STARTED, type, activeSound = type.id, updateActive = true)
+                    }
                 }
             },
-            onFailed = { scope.launch { stop() } },
+            onFailed = { failure -> scope.launch {
+                log.record(PlaybackEvent.ENGINE_FAILED, nowPlaying, failure)
+                stop("engine_failed")
+            } },
         )
     }
     private val scope = MainScope()
@@ -58,12 +67,15 @@ open class PlaybackService : Service() {
 
     private val becomingNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) stop()
+            if (intent.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
+                log.record(PlaybackEvent.NOISY, nowPlaying)
+                stop("audio_becoming_noisy")
+            }
         }
     }
     private var noisyReceiverRegistered = false
 
-    internal open fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: () -> Unit): PlaybackEngine =
+    internal open fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine =
         NoiseEngine(onStarted = onStarted, onFailed = onFailed)
 
     private val languageListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -72,6 +84,7 @@ open class PlaybackService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        PlaybackLog.get(this)
         val history = ListeningHistory.get(this)
         scope.launch {
             while (true) {
@@ -89,9 +102,9 @@ open class PlaybackService : Service() {
             .build()
         session = MediaSession(this, "NoiseConnoisseur").apply {
             setCallback(object : MediaSession.Callback() {
-                override fun onPlay() = play(nowPlaying ?: NoisePlayer.lastPlayed(this@PlaybackService).value)
-                override fun onPause() = stop()
-                override fun onStop() = stop()
+                override fun onPlay() = play(nowPlaying ?: NoisePlayer.lastPlayed(this@PlaybackService).value, "media_play")
+                override fun onPause() = stop("media_pause", requested = true)
+                override fun onStop() = stop("media_stop", requested = true)
             })
         }
         createNotificationChannel()
@@ -115,8 +128,8 @@ open class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY -> play(NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed(this).value)
-            else -> stop()
+            ACTION_PLAY -> play(NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed(this).value, intent.getStringExtra(EXTRA_SOURCE) ?: "unknown")
+            else -> stop(intent?.getStringExtra(EXTRA_SOURCE) ?: "unknown", requested = true)
         }
         return START_NOT_STICKY
     }
@@ -126,11 +139,13 @@ open class PlaybackService : Service() {
     // Swiping the app away from Recents quits it, as on iOS. A foreground service
     // would otherwise outlive the task and keep playing.
     override fun onTaskRemoved(rootIntent: Intent?) {
-        stop()
+        log.record(PlaybackEvent.TASK_REMOVED, nowPlaying)
+        stop("task_removed")
         super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {
+        log.record(PlaybackEvent.SERVICE_DESTROYED, nowPlaying, updateActive = true)
         LanguagePreferences.preferences(this).unregisterOnSharedPreferenceChangeListener(languageListener)
         scope.cancel()
         engine.stop()
@@ -142,11 +157,13 @@ open class PlaybackService : Service() {
         super.onDestroy()
     }
 
-    private fun play(type: NoiseType) {
+    private fun play(type: NoiseType, source: String) {
+        log.record(PlaybackEvent.PLAY_REQUESTED, type, source)
         // Must be called promptly after startForegroundService(), even if we end up not playing.
         showNotification(type)
         if (audioManager.requestAudioFocus(focusRequest) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            stop()
+            log.record(PlaybackEvent.FOCUS_DENIED, type)
+            stop("focus_denied")
             return
         }
         pausedForFocusLoss = false
@@ -161,7 +178,9 @@ open class PlaybackService : Service() {
         NoisePlayer.update(this, type)
     }
 
-    private fun stop() {
+    private fun stop(reason: String, requested: Boolean = false) {
+        if (requested) log.record(PlaybackEvent.STOP_REQUESTED, nowPlaying, reason)
+        log.record(PlaybackEvent.STOPPED, nowPlaying, reason, updateActive = true)
         engine.stop()
         ListeningHistory.get(this).transition(null)
         audioManager.abandonAudioFocusRequest(focusRequest)
@@ -175,9 +194,18 @@ open class PlaybackService : Service() {
     }
 
     private fun onAudioFocusChange(change: Int) {
+        val reason = when (change) {
+            AudioManager.AUDIOFOCUS_LOSS -> "AUDIOFOCUS_LOSS"
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> "AUDIOFOCUS_LOSS_TRANSIENT"
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> "AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK"
+            AudioManager.AUDIOFOCUS_GAIN -> "AUDIOFOCUS_GAIN"
+            else -> "AUDIOFOCUS_$change"
+        }
+        log.record(PlaybackEvent.FOCUS_CHANGED, nowPlaying, reason)
         when (change) {
-            AudioManager.AUDIOFOCUS_LOSS -> stop()
+            AudioManager.AUDIOFOCUS_LOSS -> stop("audiofocus_loss")
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> if (nowPlaying != null) {
+                log.record(PlaybackEvent.STOPPED, nowPlaying, "audiofocus_loss_transient", updateActive = true)
                 pausedForFocusLoss = true
                 engine.stop()
                 ListeningHistory.get(this).transition(null)
@@ -242,7 +270,7 @@ open class PlaybackService : Service() {
         val stopAction = Notification.Action.Builder(
             Icon.createWithResource(this, R.drawable.ic_stop),
             context.getString(R.string.stop),
-            PendingIntent.getService(this, 0, stopIntent(this), PendingIntent.FLAG_IMMUTABLE),
+            PendingIntent.getService(this, 0, stopIntent(this, "notification"), PendingIntent.FLAG_IMMUTABLE),
         ).build()
 
         return Notification.Builder(this, CHANNEL_ID)
@@ -282,16 +310,18 @@ open class PlaybackService : Service() {
     companion object {
         private const val ACTION_PLAY = "net.a2f0.nc.action.PLAY"
         private const val ACTION_STOP = "net.a2f0.nc.action.STOP"
+        private const val EXTRA_SOURCE = "source"
         private const val EXTRA_NOISE = "noise"
         private const val CHANNEL_ID = "playback"
         private const val NOTIFICATION_ID = 1
 
-        fun playIntent(context: Context, type: NoiseType): Intent =
+        fun playIntent(context: Context, type: NoiseType, source: String = "ui"): Intent =
             Intent(context, PlaybackService::class.java)
                 .setAction(ACTION_PLAY)
                 .putExtra(EXTRA_NOISE, type.id)
+                .putExtra(EXTRA_SOURCE, source)
 
-        fun stopIntent(context: Context): Intent =
-            Intent(context, PlaybackService::class.java).setAction(ACTION_STOP)
+        fun stopIntent(context: Context, source: String = "ui"): Intent =
+            Intent(context, PlaybackService::class.java).setAction(ACTION_STOP).putExtra(EXTRA_SOURCE, source)
     }
 }

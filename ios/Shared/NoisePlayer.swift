@@ -13,6 +13,7 @@ import os
 final class NoisePlayer {
     static let shared = NoisePlayer()
     let history = ListeningHistory()
+    let playbackLog = PlaybackLog()
     @ObservationIgnored private var historyTimer: Timer?
 
     /// The noise currently playing, or nil when stopped.
@@ -52,16 +53,17 @@ final class NoisePlayer {
         UserDefaults.standard.set(volume, forKey: Self.volumeKey)
     }
 
-    func toggle(_ type: NoiseType) {
-        if nowPlaying == type { stop() } else { play(type) }
+    func toggle(_ type: NoiseType, source: String = "ui") {
+        if nowPlaying == type { stop(source: source) } else { play(type, source: source) }
     }
 
     /// Stops what's playing, or plays the last noise again.
-    func togglePlayback() {
-        toggle(nowPlaying ?? lastPlayed)
+    func togglePlayback(source: String = "ui") {
+        toggle(nowPlaying ?? lastPlayed, source: source)
     }
 
-    func play(_ type: NoiseType) {
+    func play(_ type: NoiseType, source: String = "ui") {
+        playbackLog.record(.playRequested, soundId: type.rawValue, detail: source)
         configureIfNeeded()
         fadeOutTask?.cancel()
         fadeOutTask = nil
@@ -72,9 +74,11 @@ final class NoisePlayer {
             if !engine.isRunning { try engine.start() }
         } catch {
             Self.log.error("Couldn't start playback: \(error)")
-            stop()
+            playbackLog.record(.engineFailed, soundId: type.rawValue, detail: String(describing: error))
+            stop(source: "engine_failed", requested: false)
             return
         }
+        playbackLog.record(.started, soundId: type.rawValue, updateActive: true, activeSound: type.rawValue)
         nowPlaying = type
         lastPlayed = type
         UserDefaults.standard.set(type.rawValue, forKey: Self.lastPlayedKey)
@@ -83,7 +87,9 @@ final class NoisePlayer {
     }
 
     /// Fades out, then stops the engine and releases the audio session.
-    func stop() {
+    func stop(source: String = "ui", requested: Bool = true) {
+        if requested { playbackLog.record(.stopRequested, soundId: nowPlaying?.rawValue, detail: source) }
+        playbackLog.record(.stopped, soundId: nowPlaying?.rawValue, detail: source, updateActive: true)
         interruptedNoise = nil
         if nowPlaying != nil {
             nowPlaying = nil
@@ -109,6 +115,7 @@ final class NoisePlayer {
             try session.setCategory(.playback, mode: .default)
         } catch {
             Self.log.error("Couldn't set audio session category: \(error)")
+            playbackLog.record(.engineFailed, detail: "setCategory: \(error)")
         }
 
         let hardwareRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
@@ -124,20 +131,29 @@ final class NoisePlayer {
                   let type = AVAudioSession.InterruptionType(rawValue: rawType) else { return }
             let rawOptions = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
             let shouldResume = AVAudioSession.InterruptionOptions(rawValue: rawOptions).contains(.shouldResume)
-            MainActor.assumeIsolated { self?.handleInterruption(type, shouldResume: shouldResume) }
+            MainActor.assumeIsolated { self?.handleInterruption(type, shouldResume: shouldResume, options: rawOptions) }
         })
         observers.append(center.addObserver(forName: AVAudioSession.routeChangeNotification, object: session, queue: .main) { [weak self] note in
             // Headphones unplugged or disconnected: stop rather than blast the speaker.
             let reason = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
-            guard reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue else { return }
-            MainActor.assumeIsolated { self?.stop() }
+            MainActor.assumeIsolated {
+                self?.playbackLog.record(.routeChanged, soundId: self?.nowPlaying?.rawValue,
+                                         detail: "reason=\(reason ?? 0)")
+                if reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue {
+                    self?.stop(source: "old_device_unavailable", requested: false)
+                }
+            }
         })
         observers.append(center.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.restartAfterConfigurationChange() }
         })
 
         observers.append(center.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.stop() }
+            MainActor.assumeIsolated {
+                self?.playbackLog.record(.termination, soundId: self?.nowPlaying?.rawValue)
+                self?.stop(source: "termination", requested: false)
+                self?.playbackLog.flushOnTermination()
+            }
         })
         observers.append(center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.history.checkpoint() }
@@ -150,35 +166,38 @@ final class NoisePlayer {
     private nonisolated static func registerRemoteCommands(for player: NoisePlayer) {
         let commands = MPRemoteCommandCenter.shared()
         commands.playCommand.addTarget { _ in
-            Task { @MainActor in player.play(player.lastPlayed) }
+            Task { @MainActor in player.play(player.lastPlayed, source: "media_play") }
             return .success
         }
         commands.pauseCommand.addTarget { _ in
-            Task { @MainActor in player.stop() }
+            Task { @MainActor in player.stop(source: "media_pause") }
             return .success
         }
         commands.stopCommand.addTarget { _ in
-            Task { @MainActor in player.stop() }
+            Task { @MainActor in player.stop(source: "media_stop") }
             return .success
         }
         commands.togglePlayPauseCommand.addTarget { _ in
-            Task { @MainActor in player.togglePlayback() }
+            Task { @MainActor in player.togglePlayback(source: "media_toggle") }
             return .success
         }
     }
 
     // MARK: - System events
 
-    private func handleInterruption(_ type: AVAudioSession.InterruptionType, shouldResume: Bool) {
+    private func handleInterruption(_ type: AVAudioSession.InterruptionType, shouldResume: Bool, options: UInt) {
+        playbackLog.record(.interruption, soundId: (nowPlaying ?? interruptedNoise)?.rawValue,
+                           detail: "type=\(type.rawValue) (\(type == .began ? "began" : "ended")); options=\(options); shouldResume=\(shouldResume)")
         switch type {
         case .began:
             // The system has already stopped the engine.
             guard let noise = nowPlaying else { return }
+            playbackLog.record(.stopped, soundId: noise.rawValue, detail: "interruption_began", updateActive: true)
             nowPlaying = nil
             interruptedNoise = noise
             publishState()
         case .ended:
-            if shouldResume, let noise = interruptedNoise { play(noise) }
+            if shouldResume, let noise = interruptedNoise { play(noise, source: "interruption_ended") }
             interruptedNoise = nil
         @unknown default:
             break
@@ -186,13 +205,15 @@ final class NoisePlayer {
     }
 
     private func restartAfterConfigurationChange() {
+        playbackLog.record(.configurationChanged, soundId: nowPlaying?.rawValue, detail: "isRunning=\(engine.isRunning)")
         guard nowPlaying != nil, !engine.isRunning else { return }
         do {
             try engine.start()
+            playbackLog.record(.started, soundId: nowPlaying?.rawValue, detail: "configuration_change", updateActive: true, activeSound: nowPlaying?.rawValue)
         } catch {
             Self.log.error("Couldn't restart after configuration change: \(error)")
-            nowPlaying = nil
-            publishState()
+            playbackLog.record(.engineFailed, soundId: nowPlaying?.rawValue, detail: String(describing: error))
+            stop(source: "configuration_restart_failed", requested: false)
         }
     }
 

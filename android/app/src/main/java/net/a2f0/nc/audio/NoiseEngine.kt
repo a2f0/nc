@@ -35,7 +35,7 @@ internal interface PlaybackEngine {
  */
 internal class NoiseEngine(
     private val onStarted: (NoiseType) -> Unit = {},
-    private val onFailed: () -> Unit = {},
+    private val onFailed: (String) -> Unit = {},
     private val openSink: () -> AudioSink = ::AudioTrackSink,
 ) : PlaybackEngine {
     private val lock = Any()
@@ -68,7 +68,7 @@ internal class NoiseEngine(
     private fun run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
         var sink: AudioSink? = null
-        var failed = false
+        var failure: String? = null
         var reportedVersion: Int? = null
 
         val mixer = NoiseMixer(
@@ -87,7 +87,7 @@ internal class NoiseEngine(
                 mixer.render(buffer, renderedType, fadingOut, targetVolumeGain)
                 val written = sink.write(buffer, buffer.size)
                 if (written < 0) {
-                    failed = true
+                    failure = "AudioTrack.write=$written"
                     break
                 }
                 if (written > 0 && !fadingOut && version != reportedVersion) {
@@ -113,14 +113,16 @@ internal class NoiseEngine(
                     }
                 }
             }
-        } catch (_: Exception) {
-            failed = true
+        } catch (error: Exception) {
+            failure = "${error.javaClass.simpleName}: ${error.message}"
         } finally {
             val current = synchronized(lock) {
                 (thread == Thread.currentThread()).also { if (it) thread = null }
             }
-            try { sink?.release() } finally {
-                if (failed && current) onFailed()
+            try { sink?.release() } catch (error: Exception) {
+                if (failure == null) failure = "release: ${error.javaClass.simpleName}: ${error.message}"
+            } finally {
+                if (current) failure?.let(onFailed)
             }
         }
     }
