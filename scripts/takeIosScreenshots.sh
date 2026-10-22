@@ -93,8 +93,10 @@ capture() {
   # SpringBoard applies status bar and appearance changes asynchronously.
   sleep 2
   screenshot="$OUTPUT_DIR/$1/$4"
-  # --mask=black flattens the rounded display corners and drops alpha.
-  xcrun simctl io "$udid" screenshot --type=png --mask=black "$screenshot" >/dev/null 2>&1
+  # Capture the full rectangle without black device corners. The unmasked capture
+  # still has an alpha channel, so remove it separately for the store.
+  xcrun simctl io "$udid" screenshot --type=png --mask=ignored "$screenshot" >/dev/null 2>&1
+  magick "$screenshot" -alpha off -type TrueColor "PNG24:$screenshot"
   validate_screenshot "$screenshot" "$(device_screenshot_size "$1")"
 }
 
