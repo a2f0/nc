@@ -93,3 +93,6 @@ sh scripts/checks/testIosAudio.sh
 
 echo ""
 echo "All checks passed."
+
+step "Testing iOS playback lifecycle"
+sh scripts/checks/testIosPlayback.sh

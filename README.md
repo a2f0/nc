@@ -217,7 +217,7 @@ refuses to run stale).
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
   ShellCheck; RuboCop; shared agent skills are current; localization is current; fastlane
   helper, web, and localization tests; web typecheck, build, and deploy dry run; Android
-  debug build, lint, and unit tests; iOS simulator build and audio rendering checks.
+  debug build, lint, and unit tests; iOS simulator build, audio rendering checks, and player lifecycle tests on an isolated simulator.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 

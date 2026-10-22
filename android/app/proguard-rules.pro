@@ -1,5 +1,3 @@
 # Playback diagnostics must remain visible in release logcat (NoisePlayback).
-# Do not declare Log.i side-effect-free.
--keep class android.util.Log {
-    public static int i(java.lang.String, java.lang.String);
-}
+# The default optimized rules retain Log.i; do not add an -assumenosideeffects
+# rule that strips it. The minified release UI check verifies the live stream.

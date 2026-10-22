@@ -29,6 +29,16 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
       shouldAutocreateTestPlan = "YES">
+      <Testables>
+         <TestableReference skipped = "NO">
+            <BuildableReference BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8227D21594D443B8CF67ABD3"
+               BuildableName = "PlaybackTests.xctest"
+               BlueprintName = "PlaybackTests"
+               ReferencedContainer = "container:NoiseConnoisseur.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

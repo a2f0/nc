@@ -27,9 +27,11 @@ fun PlaybackLogContent() {
     val log = remember { PlaybackLog.get(context) }
     val entries by log.entries.collectAsStateWithLifecycle()
     val failed by log.storageFailed.collectAsStateWithLifecycle()
-    val text = entries.asReversed().joinToString("\n\n") { row ->
-        val sound = NoiseType.fromId(row.soundId)?.let { resources.getString(it.title) }.orEmpty()
-        "${Instant.ofEpochMilli(row.timestamp)}  $sound\n${resources.getString(row.event.title)} [${row.event.name}]\n${row.detail}".trim()
+    val text = remember(entries, resources) {
+        entries.asReversed().joinToString("\n\n") { row ->
+            val sound = NoiseType.fromId(row.soundId)?.let { resources.getString(it.title) }.orEmpty()
+            "${Instant.ofEpochMilli(row.timestamp)}  $sound\n${resources.getString(row.event.title)} [${row.event.name}]\n${row.detail}".trim()
+        }
     }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(stringResource(R.string.playback_log_local))

@@ -41,7 +41,7 @@ import net.a2f0.nc.diagnostics.PlaybackEvent
  * and the playback notification.
  */
 open class PlaybackService : Service() {
-    private val log by lazy { PlaybackLog.get(this) }
+    private val log by lazy { createLog() }
     private val engine by lazy {
         createEngine(
             onStarted = { type ->
@@ -75,6 +75,8 @@ open class PlaybackService : Service() {
     }
     private var noisyReceiverRegistered = false
 
+    internal open fun createLog(): PlaybackLog = PlaybackLog.get(this)
+
     internal open fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine =
         NoiseEngine(onStarted = onStarted, onFailed = onFailed)
 
@@ -84,7 +86,6 @@ open class PlaybackService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        PlaybackLog.get(this)
         val history = ListeningHistory.get(this)
         scope.launch {
             while (true) {
@@ -180,7 +181,9 @@ open class PlaybackService : Service() {
 
     private fun stop(reason: String, requested: Boolean = false) {
         if (requested) log.record(PlaybackEvent.STOP_REQUESTED, nowPlaying, reason)
-        log.record(PlaybackEvent.STOPPED, nowPlaying, reason, updateActive = true)
+        if (nowPlaying != null && !pausedForFocusLoss) {
+            log.record(PlaybackEvent.STOPPED, nowPlaying, reason, updateActive = true)
+        }
         engine.stop()
         ListeningHistory.get(this).transition(null)
         audioManager.abandonAudioFocusRequest(focusRequest)

@@ -114,8 +114,8 @@ export class NoisePlayer {
     this.publish();
   }
 
-  stop(source = "ui"): void {
-    this.playbackLog.record("log_stop_requested", this.nowPlaying, source);
+  stop(source = "ui", requested = true): void {
+    if (requested) this.playbackLog.record("log_stop_requested", this.nowPlaying, source);
     if (this.nowPlaying === null) return;
     this.playbackLog.record("log_stopped", this.nowPlaying, source, false);
     this.activeSound = null;
@@ -147,7 +147,7 @@ export class NoisePlayer {
     const audio = new Audio();
     audio.srcObject = output.stream;
     audio.addEventListener("pause", () => {
-      if (engine === this.engine && audio.paused && this.nowPlaying !== null) this.stop("media_element_pause");
+      if (engine === this.engine && audio.paused && this.nowPlaying !== null) this.stop("media_element_pause", false);
     });
     audio.addEventListener("error", () => {
       if (engine !== this.engine) return;

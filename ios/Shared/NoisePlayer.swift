@@ -89,9 +89,9 @@ final class NoisePlayer {
     /// Fades out, then stops the engine and releases the audio session.
     func stop(source: String = "ui", requested: Bool = true) {
         if requested { playbackLog.record(.stopRequested, soundId: nowPlaying?.rawValue, detail: source) }
-        playbackLog.record(.stopped, soundId: nowPlaying?.rawValue, detail: source, updateActive: true)
         interruptedNoise = nil
         if nowPlaying != nil {
+            playbackLog.record(.stopped, soundId: nowPlaying?.rawValue, detail: source, updateActive: true)
             nowPlaying = nil
             renderer.setFadingOut(true)
             fadeOutTask = Task {

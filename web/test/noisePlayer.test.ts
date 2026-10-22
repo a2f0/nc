@@ -1,3 +1,4 @@
+import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { setPreferredLanguages } from "../src/l10n";
 import { ListeningHistory, type ListeningSession } from "../src/listeningHistory";
@@ -111,6 +112,7 @@ beforeEach(() => {
   mediaSession = new FakeMediaSession();
   storage = new Map();
   Object.assign(globalThis, {
+    indexedDB: new IDBFactory(),
     localStorage: {
       getItem: (key: string) => {
         if (storage === null) throw new DOMException("blocked", "SecurityError");
@@ -434,4 +436,16 @@ test("context suspension and media commands retain distinct diagnostics", async 
   mediaSession.handlers.get("pause")!();
   expect(player.playbackLog.entries.at(-1)?.detail).toBe("media_pause");
   expect(player.playbackLog.entries.at(-1)?.event).toBe("log_stopped");
+});
+
+
+test("diagnostic observer failures cannot prevent play or stop", async () => {
+  const player = new NoisePlayer(memoryHistory());
+  player.playbackLog.subscribe(() => { throw new Error("broken diagnostics view"); });
+  player.play("pink");
+  FakeAudioContext.instances[0]!.moduleLoad.resolve();
+  await settle();
+  expect(player.nowPlaying).toBe("pink");
+  player.stop();
+  expect(player.nowPlaying).toBeNull();
 });

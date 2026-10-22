@@ -42,12 +42,13 @@ const renderLanguage = setUpLanguage(() => {
   player.updateMediaSession();
 });
 setInterval(() => player.history.checkpoint(), 15_000);
-addEventListener("pagehide", (event) => {
-  player.playbackLog.record("log_page_hidden", player.nowPlaying, `persisted=${(event as PageTransitionEvent).persisted}`);
-  player.stop("pagehide");
+window.addEventListener("pagehide", (event) => {
+  if (player.nowPlaying === null) return;
+  player.playbackLog.record("log_page_hidden", player.nowPlaying, `persisted=${event.persisted}`);
+  player.stop("pagehide", false);
 });
 document.addEventListener("visibilitychange", () => {
-  player.playbackLog.record("log_visibility", player.nowPlaying, document.visibilityState);
+  if (player.nowPlaying !== null) player.playbackLog.record("log_visibility", player.nowPlaying, document.visibilityState);
   player.history.checkpoint();
   if (document.visibilityState === "visible") void player.history.refresh();
 });
