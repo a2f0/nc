@@ -1,4 +1,8 @@
 # frozen_string_literal: true
 
-app_identifier('net.a2f0.nc')
-package_name('net.a2f0.nc')
+# Fastlane evaluates the Appfile without a file path, from the Appfile's own
+# directory, so require_relative and __dir__ aren't available here.
+require File.expand_path('lib/native_release_target', Dir.pwd)
+
+app_identifier(NATIVE_APP_IDENTIFIER)
+package_name(NATIVE_APP_IDENTIFIER)

@@ -14,6 +14,7 @@ module Readiness
   def self.command(*args)
     out, _err, status = Open3.capture3({ 'LC_ALL' => 'C' }, *args)
     raise CommandError, "#{File.basename(args.first)} failed" unless status.success?
+
     out
   end
 
@@ -26,10 +27,14 @@ module Readiness
     source = source.merge('dirty' => true) if root && source != self.source(root)
     data = { 'schema_version' => 1, 'sha256' => Digest::SHA256.file(artifact).hexdigest,
              'source' => source, 'built_at' => Time.now.utc.iso8601 }
-    File.write("#{artifact}.build.json", JSON.pretty_generate(data) + "\n", perm: 0o600)
+    File.write("#{artifact}.build.json", "#{JSON.pretty_generate(data)}\n", perm: 0o600)
   end
 
+  # A platform's readiness checks for one artifact, written as a private JSON report.
   class Report
+    MISSING_RECEIPT = 'No build receipt. Rebuild with the release lane to identify the source commit.'
+    COMMIT = /\A[0-9a-f]{40}\z/
+
     attr_reader :data
 
     def initialize(platform, artifact, root)
@@ -56,22 +61,24 @@ module Readiness
     # Authentication/network/tool errors must leave a report, never a false pass.
     def attempt(id, verification: false)
       yield
-    rescue CommandError => error
-      add(id, verification ? 'failed' : 'unverified', "#{error.message}; rerun the named tool locally for diagnostics.")
-    rescue StandardError => error
-      add(id, 'unverified', "Could not complete check (#{error.class.name}); check credentials, tools, and connectivity locally.")
+    rescue CommandError => e
+      add(id, verification ? 'failed' : 'unverified', "#{e.message}; rerun the named tool locally for diagnostics.")
+    rescue StandardError => e
+      add(id, 'unverified',
+          "Could not complete check (#{e.class.name}); check credentials, tools, and connectivity locally.")
     end
 
     def result
       statuses = @data[:checks].map { |check| check[:status] }
       return 'not_ready' if statuses.include?('failed')
+
       statuses.include?('unverified') ? 'incomplete' : 'ready_within_tested_scope'
     end
 
     def write(path)
       @data[:result] = result
       FileUtils.mkdir_p(File.dirname(path), mode: 0o700)
-      File.write(path, JSON.pretty_generate(@data) + "\n", perm: 0o600)
+      File.write(path, "#{JSON.pretty_generate(@data)}\n", perm: 0o600)
       File.chmod(0o600, path)
     end
 
@@ -79,32 +86,53 @@ module Readiness
 
     def provenance(artifact)
       receipt = "#{artifact}.build.json"
-      unless File.file?(receipt)
-        add('artifact.provenance', 'unverified', 'No build receipt. Rebuild with the release lane to identify the source commit.')
-        return
-      end
+      return add('artifact.provenance', 'unverified', MISSING_RECEIPT) unless File.file?(receipt)
+
       attempt('artifact.provenance') do
         build = JSON.parse(File.read(receipt))
-        valid = build['schema_version'] == 1 && build['sha256'] == @data[:artifact][:sha256] &&
-                build.dig('source', 'commit').to_s.match?(/\A[0-9a-f]{40}\z/) &&
-                [true, false].include?(build.dig('source', 'dirty'))
+        valid = valid_receipt?(build)
         check('artifact.provenance', valid, 'Build receipt must match the artifact SHA-256 and identify its source.')
-        if valid
-          @data[:artifact][:build] = { 'source' => build['source'].slice('commit', 'dirty'), 'built_at' => build['built_at'] }
-          check('artifact.clean_source', !build['source']['dirty'], 'A release candidate must be built from a clean checkout.')
-          if @data[:checkout]
-            check('artifact.current_commit', build['source']['commit'] == @data[:checkout]['commit'] && !@data[:checkout]['dirty'], 'Artifact source must match the audited clean checkout.')
-          else
-            add('artifact.current_commit', 'unverified', 'Checkout source could not be read; install git and run from the repository checkout.')
-          end
-        end
+        build_source(build) if valid
+      end
+    end
+
+    def valid_receipt?(build)
+      build['schema_version'] == 1 && build['sha256'] == @data[:artifact][:sha256] &&
+        build.dig('source', 'commit').to_s.match?(COMMIT) && [true, false].include?(build.dig('source', 'dirty'))
+    end
+
+    def build_source(build)
+      source = build['source']
+      @data[:artifact][:build] = { 'source' => source.slice('commit', 'dirty'), 'built_at' => build['built_at'] }
+      check('artifact.clean_source', !source['dirty'], 'A release candidate must be built from a clean checkout.')
+      check_current_commit(source)
+    end
+
+    def check_current_commit(source)
+      checkout = @data[:checkout]
+      if checkout
+        check('artifact.current_commit', source['commit'] == checkout['commit'] && !checkout['dirty'],
+              'Artifact source must match the audited clean checkout.')
+      else
+        add('artifact.current_commit', 'unverified',
+            'Checkout source could not be read; install git and run from the repository checkout.')
       end
     end
   end
 
+  MANUAL_CHECKS = {
+    'manual.accessibility_devices' =>
+      'Run VoiceOver/TalkBack and physical-device audio, interruptions, routes, widgets, and upgrade tests ' \
+      'against this candidate.',
+    'console.declarations' =>
+      'Confirm privacy/Data safety, ratings, agreements, pricing, availability, export/trader declarations, ' \
+      'and Play production eligibility where applicable.',
+    'policy.current_requirements' =>
+      'Recheck current Apple SDK and Google target API requirements; artifact versions below are evidence, ' \
+      'not a permanently current policy verdict.'
+  }.freeze
+
   def self.manual_checks(report)
-    report.add('manual.accessibility_devices', 'unverified', 'Run VoiceOver/TalkBack and physical-device audio, interruptions, routes, widgets, and upgrade tests against this candidate.')
-    report.add('console.declarations', 'unverified', 'Confirm privacy/Data safety, ratings, agreements, pricing, availability, export/trader declarations, and Play production eligibility where applicable.')
-    report.add('policy.current_requirements', 'unverified', 'Recheck current Apple SDK and Google target API requirements; artifact versions below are evidence, not a permanently current policy verdict.')
+    MANUAL_CHECKS.each { |id, detail| report.add(id, 'unverified', detail) }
   end
 end

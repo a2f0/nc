@@ -14,7 +14,7 @@ require ARGV.fetch(0)
 
 LOGIN = "/keychains/login.keychain-db"
 
-def exercise(environment, lock_path:, fail: false, setup_fail: false, cleanup_fail: false)
+def exercise(environment, fail: false, setup_fail: false, cleanup_fail: false)
   events = []
   search_list = [LOGIN]
   search_during = nil
@@ -30,7 +30,6 @@ def exercise(environment, lock_path:, fail: false, setup_fail: false, cleanup_fa
   begin
     result = IosSigningKeychain.with_temporary(
       environment: environment,
-      lock_path: lock_path,
       setup: proc do |name, password|
         events << ["setup", name]
         setup_password = password
@@ -66,18 +65,18 @@ def exercise(environment, lock_path:, fail: false, setup_fail: false, cleanup_fa
   }
 end
 
-lock_path = ARGV.fetch(1)
+IosSigningKeychain.lock_path = ARGV.fetch(1)
 original_term_handler = proc {}
 prior_term_handler = Signal.trap("TERM", original_term_handler)
-cleanup_failure = exercise({}, lock_path: lock_path, cleanup_fail: true)
+cleanup_failure = exercise({}, cleanup_fail: true)
 restored_term_handler = Signal.trap("TERM", prior_term_handler)
 
 puts JSON.generate(
-  success: exercise({ "MATCH_KEYCHAIN_NAME" => "", "MATCH_KEYCHAIN_PASSWORD" => "login-secret", "MATCH_READONLY" => "false" }, lock_path: lock_path),
-  failure: exercise({}, lock_path: lock_path, fail: true),
-  setup_failure: exercise({ "MATCH_KEYCHAIN_NAME" => "", "MATCH_KEYCHAIN_PASSWORD" => "login-secret" }, lock_path: lock_path, setup_fail: true),
+  success: exercise({ "MATCH_KEYCHAIN_NAME" => "", "MATCH_KEYCHAIN_PASSWORD" => "login-secret", "MATCH_READONLY" => "false" }),
+  failure: exercise({}, fail: true),
+  setup_failure: exercise({ "MATCH_KEYCHAIN_NAME" => "", "MATCH_KEYCHAIN_PASSWORD" => "login-secret" }, setup_fail: true),
   cleanup_failure: cleanup_failure,
-  custom: exercise({ "MATCH_KEYCHAIN_NAME" => "caller-keychain", "MATCH_KEYCHAIN_PASSWORD" => "caller-secret" }, lock_path: lock_path),
+  custom: exercise({ "MATCH_KEYCHAIN_NAME" => "caller-keychain", "MATCH_KEYCHAIN_PASSWORD" => "caller-secret" }),
   signal_handler_restored: restored_term_handler.equal?(original_term_handler)
 )
 `;
@@ -86,7 +85,7 @@ const contentionScript = `
 require "json"
 require ARGV.fetch(0)
 
-lock_path = ARGV.fetch(1)
+IosSigningKeychain.lock_path = ARGV.fetch(1)
 event_path = ARGV.fetch(2)
 identifier = ARGV.fetch(3)
 record = proc do |event|
@@ -98,7 +97,6 @@ end
 
 IosSigningKeychain.with_temporary(
   environment: {},
-  lock_path: lock_path,
   setup: proc do |_name, _password|
     record.call("setup")
     sleep 0.15
@@ -117,13 +115,13 @@ require "json"
 require ARGV.fetch(0)
 
 event_path = ARGV.fetch(1)
+IosSigningKeychain.lock_path = ARGV.fetch(2)
 record = proc do |event|
   File.open(event_path, "a") { |file| file.puts(event) }
 end
 
 IosSigningKeychain.with_temporary(
   environment: {},
-  lock_path: ARGV.fetch(2),
   setup: proc { |_name, _password| record.call("setup") },
   cleanup: proc { |_name| record.call("cleanup") },
   security: ->(*_args) { "" },

@@ -2,4 +2,7 @@
 
 source 'https://rubygems.org'
 
+ruby file: '.ruby-version'
+
 gem 'fastlane', '~> 2.240'
+gem 'rubocop', '~> 1.90'

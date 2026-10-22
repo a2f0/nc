@@ -40,13 +40,12 @@ def fake_lanes(events, lock_path, extra_stubs = {})
   lanes.stub_method(:load_store_secrets) { |_names| nil }
   lanes.stub_method(:app_store_connect_api_key_options) { { key_id: "KEY123" } }
   # The release lock lives in ~/Library/Keychains, which CI's Linux lacks.
-  IosSigningKeychain.send(:remove_const, :DEFAULT_LOCK_PATH)
-  IosSigningKeychain.const_set(:DEFAULT_LOCK_PATH, lock_path)
+  IosSigningKeychain.lock_path = lock_path
   lanes
 end
 
 lock_path = File.join(work, "release.lock")
-results = {}
+results = { lanes: FakeFastfile.new(FASTFILE, {}).lane_names }
 
 events = []
 lanes = fake_lanes(events, lock_path)
@@ -70,9 +69,9 @@ lanes = fake_lanes(events, lock_path)
 lanes.run_lane(:ios, :create_app)
 results[:create_app] = { produce: lanes.calls_to(:produce), match: lanes.calls_to(:match), events: events }
 
-# Both paths must build once, with the same artifact receipt; only beta uploads.
+# Both paths must build once, with the same artifact receipt; only upload_release uploads.
 def Readiness.source(_root) = { 'commit' => 'a' * 40, 'dirty' => false }
-%i[build_release beta].each do |lane|
+%i[build_release upload_release].each do |lane|
   artifact = File.join(work, "#{lane}.ipa")
   events = []
   lanes = fake_lanes(events, lock_path,
@@ -168,8 +167,18 @@ describe("ios signing lanes", () => {
   });
 });
 
-test("release builds write receipts before beta uploads and preserve build options", () => {
-  for (const lane of ["build_release", "beta"]) {
+test("the Fastfile imports the standard lanes and nc's own", () => {
+  expect(results.lanes).toEqual({
+    ios: ["register_identifiers", "profiles", "create_app", "build_release", "upload_release", "readiness", "listing"],
+    android: [
+      "foreground_service_video", "publish_foreground_service_video", "build_release", "upload_release",
+      "promote_release", "readiness", "listing",
+    ],
+  });
+});
+
+test("release builds write receipts before upload_release uploads and preserve build options", () => {
+  for (const lane of ["build_release", "upload_release"]) {
     const result = results[lane];
     expect(result.builds).toHaveLength(1);
     expect(result.builds[0].xcargs).toContain("CURRENT_PROJECT_VERSION=42");
@@ -179,9 +188,9 @@ test("release builds write receipts before beta uploads and preserve build optio
   }
   expect(results.build_release.returned_artifact).toBe(true);
   expect(results.build_release.uploads).toEqual([]);
-  expect(results.beta.uploads).toEqual([
+  expect(results.upload_release.uploads).toEqual([
     expect.objectContaining({
-      ipa: expect.stringContaining("beta.ipa"), api_key: "api-key",
+      ipa: expect.stringContaining("upload_release.ipa"), app_identifier: "net.a2f0.nc", api_key: "api-key",
       skip_submission: true, skip_waiting_for_build_processing: true,
     }),
   ]);
