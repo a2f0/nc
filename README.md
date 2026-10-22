@@ -61,7 +61,7 @@ data removes the history; operating-system backups may include the native files.
 
 ```sh
 mise install                        # Java, Gradle, Ruby, Bun, ShellCheck, jq (see .mise.toml)
-bundle install                      # fastlane
+bundle install                      # fastlane, RuboCop
 bun install                         # agent-tool, TypeScript
 brew install imagemagick            # screenshots only
 curl -fsSL https://get.maestro.mobile.dev | bash   # screenshots only
@@ -170,7 +170,7 @@ destination, and `agent-tool images` renders them
 ([reference](https://github.com/a2f0/agent-tool/blob/main/docs/images.md)), with no image
 tools to install. Builds regenerate them when the sources change (an Xcode build phase and a
 Gradle task before `preBuild`), or run `sh scripts/buildImages.sh`; `web/build.ts` writes the
-favicon, and `fastlane android listing` the Play Store graphics. To look at those, run
+favicon, and the `android listing` lane the Play Store graphics. To look at those, run
 `sh scripts/buildImages.sh store --out .screenshots/android` (`--out` is relative to the
 repository root). Android 12+ splash screens only take a solid color, so Android uses the
 background's average color there. Android adaptive icons show the inner 72dp of a 108dp layer,
@@ -188,9 +188,9 @@ refuses to run stale).
 - **pre-commit:** branch name is `<type>/<name>` (or `main`); no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
-  ShellCheck; shared agent skills are current; localization is current; fastlane helper,
-  web, and localization tests; web typecheck, build, and deploy dry run; Android debug
-  build, lint, and unit tests; iOS simulator build and audio rendering checks.
+  ShellCheck; RuboCop; shared agent skills are current; localization is current; fastlane
+  helper, web, and localization tests; web typecheck, build, and deploy dry run; Android
+  debug build, lint, and unit tests; iOS simulator build and audio rendering checks.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 
@@ -230,32 +230,46 @@ it does for that zone's other hosts, so publish the Worker before applying it.
 **Stores:**
 
 IDs: `net.a2f0.nc` (app, both stores), `net.a2f0.nc.widget` (iOS widget), `group.net.a2f0.nc`
-(iOS App Group). Store credentials come from `.secrets/prod/`. `.secrets` is a gitignored
-symlink to `../matrix-secrets/nc` (`ln -s ../matrix-secrets/nc .secrets`), managed and backed
-up from [a2f0/matrix](https://github.com/a2f0/matrix) (`docs/secrets.md`). `prod/` holds the
-App Store Connect API key, Google Play service account, fastlane match settings (`shared.env`),
-and the Android upload key (`nc-upload.keystore`, password in `app.env`).
+(iOS App Group). nc has one release tier, `production`, declared in
+`fastlane/lib/native_release_target.rb`. Store credentials come from `.secrets/prod/`.
+`.secrets` is a gitignored symlink to `../matrix-secrets/nc`
+(`ln -s ../matrix-secrets/nc .secrets`), managed and backed up from
+[a2f0/matrix](https://github.com/a2f0/matrix) (`docs/secrets.md`). `prod/` holds the App
+Store Connect API key, Google Play service account, fastlane match settings (`shared.env`),
+and the Android upload key (`nc-upload.keystore`, with its `ANDROID_KEYSTORE_STORE_PASS` and
+`ANDROID_KEYSTORE_KEY_PASS` in `app.env`).
 
-| Lane | Does |
-|---|---|
-| `fastlane ios register_identifiers` | Registers the bundle IDs with App Groups (API key) |
-| `fastlane ios profiles` | Creates the match App Store profiles when missing or no longer valid (API key); `force:true` regenerates them, as after the bundle IDs' capabilities or the distribution certificate change |
-| `fastlane ios create_app` | One time, interactive (Apple ID + 2FA): App Store Connect app and App Group, then runs `profiles` |
-| `fastlane ios build_release` | Signed IPA with source/hash receipt, without uploading |
-| `fastlane ios beta` | Signed build to TestFlight |
-| `fastlane android build_release` | Signed release App Bundle with source/hash receipt |
-| `fastlane android internal` | Signed release App Bundle, rolled out to internal testers (`release_status:draft` uploads it without rolling it out) |
-| `fastlane android beta` | Signed release App Bundle, rolled out to open testing after Google's review (`release_status:draft` uploads it without rolling it out) |
-| `fastlane android production` | Promotes the open testing release, unchanged, to production after Google's review (`version_code:` picks one when the track has several; `rollout:0.1` rolls an update out to a share of users) |
-| `fastlane ios listing` | App Store listing for the version being prepared: text and categories from `fastlane/metadata/ios/`, screenshots from `.screenshots/ios/` |
-| `fastlane android listing` | Google Play listing: text from `fastlane/metadata/android/`, screenshots from `.screenshots/android/phone/`, and the Play Store graphics |
-| `fastlane android foreground_service_video` | Record the release AAB's user-started background playback and notification stop, including actual device audio |
-| `fastlane android publish_foreground_service_video reviewed:true` | Publish a reviewed recording to private R2 storage, served by the website at a stable review URL |
+Each routine lane has a package script that sets `NATIVE_RELEASE_TIER=production`, such as
+`bun run ios:build-release`; options follow the script name, as in
+`bun run ios:profiles force:true`. The other lanes run as
+`bundle exec fastlane <platform> <lane> [key:value ...]`.
 
-The `ios readiness` and `android readiness` lanes inspect artifacts and store state without
-submitting or publishing. See [readiness lanes](docs/readiness.md) for tools, options,
-report interpretation, and device regression checks.
-The [foreground-service video workflow](docs/readiness.md#android-foreground-service-video)
+| Lane | Script | Does | Options |
+|---|---|---|---|
+| `ios build_release` | `ios:build-release` | Signed App Store IPA with a source/hash receipt, without uploading | `build_number:` |
+| `ios upload_release` | `ios:upload-release` | `build_release`, then uploads to TestFlight | `build_number:` |
+| `ios profiles` | `ios:profiles` | Creates or renews the match App Store profiles (API key) | `force:true` regenerates them, as after the bundle IDs' capabilities or the distribution certificate change |
+| `ios register_identifiers` | | Registers the bundle IDs with App Groups (API key) | |
+| `ios create_app` | | One time, interactive: creates the App Store Connect app and App Group (Apple ID and 2FA), then runs `profiles` | |
+| `ios listing` | `ios:listing` | Uploads the store listing to the version being prepared: text and categories from `fastlane/metadata/ios/`, screenshots from `.screenshots/ios/` | |
+| `ios readiness` | `ios:readiness` | Inspects a candidate and its store state, read-only | See [readiness lanes](docs/readiness.md) |
+| `android build_release` | `android:build-release` | Signed release App Bundle with a source/hash receipt, without uploading | `build_number:` |
+| `android upload_release` | `android:upload-release` | `build_release`, then uploads to a Google Play track and rolls it out | `build_number:`, `track:` (`internal`), `release_status:` (`completed`) |
+| `android promote_release` | `android:promote-release` | Promotes the open testing release, unchanged, to production after Google's review | `version_code:` picks one when the track has several; `rollout:0.1` rolls an update out to a share of users |
+| `android listing` | `android:listing` | Uploads the store listing: text from `fastlane/metadata/android/`, screenshots from `.screenshots/android/phone/`, and the Play Store graphics | |
+| `android readiness` | `android:readiness` | Inspects a candidate and its store state, read-only | See [readiness lanes](docs/readiness.md) |
+| `android foreground_service_video` | | Records the release AAB's user-started background playback and notification stop, including actual device audio | `bundletool:` |
+| `android publish_foreground_service_video` | | Publishes a reviewed recording to private R2 storage, served by the website at a stable review URL | `reviewed:true` |
+
+`build_number:` is the iOS build number or the Android version code. Without it, iOS takes
+one past the latest TestFlight build, and Android one past the highest version code on any
+Play track. `track:beta` is open testing, which Google reviews before testers get each
+release; `release_status:draft` uploads a release without rolling it out.
+
+The readiness lanes inspect artifacts and store state without submitting or publishing.
+See [readiness lanes](docs/readiness.md) for tools, options, report interpretation, and
+device regression checks. The
+[foreground-service video workflow](docs/readiness.md#android-foreground-service-video)
 keeps binary recordings outside Git and checks that the public video matches the candidate AAB.
 
 The listing text is committed under `fastlane/metadata/` (one file per field, in deliver's and
@@ -265,13 +279,13 @@ contact details, which stay out of the repository: until they're added in App St
 uploads only the screenshots and fails. `android listing` attaches the listing to the newest
 internal release, as Google Play requires one.
 
-Run them with `bundle exec`. One-time store setup that has no API:
+One-time store setup that has no API:
 
 - **Google Play:** create the app in Play Console as **Paid** (a free app can never become
   paid), and upload the first App Bundle and roll it out to internal testing by hand. After
-  that, `fastlane android internal` uploads and rolls out each build. Before `fastlane
-  android beta`, set up open testing in Play Console (its countries and, for a personal account
-  created since November 2023, production access), and before `fastlane android production`,
+  that, `bun run android:upload-release` uploads and rolls out each build. Before
+  `track:beta`, set up open testing in Play Console (its countries and, for a personal account
+  created since November 2023, production access), and before `bun run android:promote-release`,
   production's countries.
 - **App Store:** after `create_app`, set the price ($0.99), App Review contact details, App
   Privacy, and age rating in App Store Connect. Selling paid apps requires an active Paid Apps

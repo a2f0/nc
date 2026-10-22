@@ -15,7 +15,7 @@ AVD = 'NoiseConnoisseur_Evidence'
 APP = 'net.a2f0.nc'
 SDK = ENV['ANDROID_HOME'] || ENV['ANDROID_SDK_ROOT'] || File.join(Dir.home, 'Library/Android/sdk')
 ENV['PATH'] = [File.join(SDK, 'platform-tools'), File.join(SDK, 'emulator'),
-               File.join(SDK, 'cmdline-tools/latest/bin'), ENV['PATH']].join(File::PATH_SEPARATOR)
+               File.join(SDK, 'cmdline-tools/latest/bin'), ENV.fetch('PATH', nil)].join(File::PATH_SEPARATOR)
 FileUtils.mkdir_p(OUT, mode: 0o700)
 LOG = File.join(OUT, 'capture.log')
 
@@ -26,32 +26,47 @@ def run(*args, timeout: 120, input: nil)
       stdin.write(input.to_s)
       stdin.rewind
       pid = Process.spawn(*args, in: stdin.path, out: out.path, err: [LOG, 'a'], pgroup: true, chdir: ROOT)
-      begin
-        _, status = Timeout.timeout(timeout) { Process.wait2(pid) }
-        unless status.success?
-          out.rewind
-          File.open(LOG, 'a') { |log| log.write(out.read) }
-          raise "#{args.first} failed; see #{LOG}"
-        end
-      rescue Timeout::Error
-        Process.kill('KILL', -pid) rescue nil
-        Process.wait(pid) rescue nil
-        raise "#{args.first} timed out; see #{LOG}"
-      end
-      out.rewind
-      out.read
+      wait_for_command(pid, args.first, out, timeout)
     end
+    File.read(out.path)
   end
 end
 
-def adb(*args)
-  run('adb', '-s', SERIAL, *args)
+# Waits for a command run started, logging its output if it fails or times out.
+def wait_for_command(pid, name, out, timeout)
+  _, status = Timeout.timeout(timeout) { Process.wait2(pid) }
+  return if status.success?
+
+  File.open(LOG, 'a') { |log| log.write(File.read(out.path)) }
+  raise "#{name} failed; see #{LOG}"
+rescue Timeout::Error
+  ignoring_errors { Process.kill('KILL', -pid) }
+  ignoring_errors { Process.wait(pid) }
+  raise "#{name} timed out; see #{LOG}"
+end
+
+# For cleanup that must not replace the error being reported.
+def ignoring_errors
+  yield
+rescue StandardError
+  nil
+end
+
+def wait_or_kill(pid)
+  Timeout.timeout(10) { Process.wait(pid) }
+rescue StandardError
+  ignoring_errors { Process.kill('KILL', pid) }
+end
+
+def adb(*)
+  run('adb', '-s', SERIAL, *)
 end
 
 def wait_until(seconds, description)
   deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + seconds
   until yield
     raise "Timed out waiting for #{description}" if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+
     sleep 1
   end
 end
@@ -69,6 +84,7 @@ def rms(path, start, duration)
   samples = run('ffmpeg', '-v', 'error', '-ss', start.to_s, '-t', duration.to_s, '-i', path,
                 '-vn', '-ac', '1', '-ar', '16000', '-f', 'f32le', '-').unpack('e*')
   raise 'Audio segment missing' if samples.length < 8000
+
   Math.sqrt(samples.sum { |value| value * value } / samples.length)
 end
 
@@ -76,26 +92,33 @@ artifact = File.expand_path(ARGV.fetch(0))
 bundletool = File.expand_path(ARGV.fetch(1))
 capture_source = Readiness.source(ROOT)
 raise 'A clean checkout is required to record evidence' if capture_source['dirty']
+
 source = PlayEvidence.artifact_source(artifact, ROOT)
 raise "Missing bundletool: #{bundletool}" unless File.file?(bundletool)
+
 %w[adb emulator avdmanager maestro scrcpy ffmpeg ffprobe java unzip].each { |name| run('which', name) }
-raise "#{SERIAL} is already in use; no device was changed" if run('adb', 'devices').lines.any? { |line| line.start_with?(SERIAL + "\t") }
+if run('adb', 'devices').lines.any? { |line| line.start_with?("#{SERIAL}\t") }
+  raise "#{SERIAL} is already in use; no device was changed"
+end
+
 run('adb', 'devices').lines.grep(/^emulator-\d+\s+device/).each do |line|
   name = run('adb', '-s', line.split.first, 'emu', 'avd', 'name').lines.first.to_s.strip
   raise "#{AVD} is already running; no device was changed" if name == AVD
 end
 
 unless run('emulator', '-list-avds').lines.map(&:strip).include?(AVD)
-  run('avdmanager', '--silent', 'create', 'avd', '--name', AVD,
-      '--package', ENV.fetch('ANDROID_EVIDENCE_SYSTEM_IMAGE', 'system-images;android-35;google_apis_playstore;arm64-v8a'),
-      '--device', 'pixel_2', input: "no\n")
+  image = ENV.fetch('ANDROID_EVIDENCE_SYSTEM_IMAGE', 'system-images;android-35;google_apis_playstore;arm64-v8a')
+  run('avdmanager', '--silent', 'create', 'avd', '--name', AVD, '--package', image, '--device', 'pixel_2',
+      input: "no\n")
 end
 
 tool = ['java', '-jar', bundletool]
 xml = run(*tool, 'dump', 'manifest', "--bundle=#{artifact}", '--module=base')
 manifest = REXML::Document.new(xml).root
-raise 'Wrong app or debuggable artifact' unless manifest.attributes['package'] == APP &&
-                                                manifest.elements['application'].attributes['android:debuggable'] != 'true'
+release = manifest.attributes['package'] == APP &&
+          manifest.elements['application'].attributes['android:debuggable'] != 'true'
+raise 'Wrong app or debuggable artifact' unless release
+
 # A failed retry must not leave a previous recording looking like its result.
 FileUtils.rm_f([File.join(OUT, 'manifest.json'), File.join(OUT, 'android-media-playback.mp4')])
 apks = File.join(OUT, 'candidate.apks')
@@ -108,15 +131,13 @@ File.binwrite(apk, run('unzip', '-p', apks, 'universal.apk'))
 emulator_pid = recorder = nil
 begin
   emulator_pid = Process.spawn('emulator', '-avd', AVD, '-port', '5586', '-no-window', '-no-audio',
-                              '-no-snapshot', '-no-boot-anim', out: [LOG, 'a'], err: [LOG, 'a'])
+                               '-no-snapshot', '-no-boot-anim', out: [LOG, 'a'], err: [LOG, 'a'])
   wait_until(120, 'emulator boot') do
-    begin
-      adb('shell', 'getprop', 'sys.boot_completed').strip == '1'
-    rescue StandardError
-      false
-    end
+    adb('shell', 'getprop', 'sys.boot_completed').strip == '1'
+  rescue StandardError
+    false
   end
-  adb('uninstall', APP) rescue nil # Only this script's dedicated emulator.
+  ignoring_errors { adb('uninstall', APP) } # Only this script's dedicated emulator.
   adb('install', apk)
   adb('shell', 'settings', 'put', 'system', 'font_scale', '1.0')
   adb('shell', 'settings', 'put', 'system', 'show_touches', '1')
@@ -146,6 +167,7 @@ begin
   adb('shell', 'cmd', 'statusbar', 'expand-notifications')
   flow('background-playback')
   raise 'Service stopped in background' unless service.match?(/isForeground=true.*types=0x0*2\b/)
+
   background_at = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
   File.write(File.join(OUT, 'background-service.txt'), service, perm: 0o600)
   sleep 6
@@ -165,18 +187,20 @@ begin
   info = JSON.parse(run('ffprobe', '-v', 'error', '-show_format', '-show_streams', '-of', 'json', video))
   duration = Float(info.fetch('format').fetch('duration'))
   raise 'Missing audio/video tracks' unless info['streams'].any? { |s| s['codec_name'] == 'aac' } &&
-                                             info['streams'].any? { |s| s['codec_name'] == 'h264' }
+                                            info['streams'].any? { |s| s['codec_name'] == 'h264' }
   raise 'Background playback is not audible in the recording' unless rms(video, background_at + 1, 3) > 0.001
   raise 'Audio continued after Stop' unless rms(video, duration - 1.5, 1) < 0.0001
   raise 'AAB changed during capture' unless PlayEvidence.artifact_source(artifact, ROOT) == source
   raise 'Checkout changed during capture' unless Readiness.source(ROOT) == capture_source
+
   sha = Digest::SHA256.file(video).hexdigest
   data = {
     'schema_version' => 1, 'application_id' => APP, 'permission' => 'FOREGROUND_SERVICE_MEDIA_PLAYBACK',
     'recorded_at' => Time.now.utc.iso8601, 'source_commit' => source['commit'],
     'capture_commit' => capture_source['commit'],
     'device' => "Android #{adb('shell', 'getprop', 'ro.build.version.release').strip} emulator (#{AVD})",
-    'version_name' => manifest.attributes['android:versionName'], 'version_code' => manifest.attributes['android:versionCode'],
+    'version_name' => manifest.attributes['android:versionName'],
+    'version_code' => manifest.attributes['android:versionCode'],
     'aab_sha256' => Digest::SHA256.file(artifact).hexdigest, 'apk_sha256' => Digest::SHA256.file(apk).hexdigest,
     'apk_signing' => 'local debug key; APK generated from the release AAB with bundletool',
     'video_key' => "android-media-playback/#{sha}.mp4", 'video_sha256' => sha,
@@ -184,16 +208,16 @@ begin
     'verified_steps' => %w[user_start background_media_playback notification_stop]
   }
   PlayEvidence.validate(data)
-  File.write(File.join(OUT, 'manifest.json'), JSON.pretty_generate(data) + "\n", perm: 0o600)
+  File.write(File.join(OUT, 'manifest.json'), "#{JSON.pretty_generate(data)}\n", perm: 0o600)
   puts "Recorded #{video} (#{duration.round(1)} seconds). Watch it with sound before publishing."
 ensure
   if recorder
-    Process.kill('INT', recorder) rescue nil
-    Timeout.timeout(10) { Process.wait(recorder) } rescue Process.kill('KILL', recorder) rescue nil
+    ignoring_errors { Process.kill('INT', recorder) }
+    wait_or_kill(recorder)
   end
   if emulator_pid
-    adb('shell', 'am', 'force-stop', APP) rescue nil
-    adb('emu', 'kill') rescue nil
-    Timeout.timeout(10) { Process.wait(emulator_pid) } rescue Process.kill('KILL', emulator_pid) rescue nil
+    ignoring_errors { adb('shell', 'am', 'force-stop', APP) }
+    ignoring_errors { adb('emu', 'kill') }
+    wait_or_kill(emulator_pid)
   end
 end

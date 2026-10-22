@@ -16,17 +16,24 @@ class IosSigningKeychain
   PRESERVED_ENVIRONMENT_KEYS = %w[MATCH_KEYCHAIN_PASSWORD MATCH_READONLY].freeze
   TERMINATION_SIGNALS = %w[HUP INT TERM].freeze
 
-  def self.with_temporary(environment:, setup:, cleanup:, security:, path:, lock_path: DEFAULT_LOCK_PATH, &)
-    new(environment, setup, cleanup, security, path, lock_path).run(&)
+  class << self
+    # The file that serializes release signing across processes; tests point it elsewhere.
+    attr_writer :lock_path
+
+    def lock_path = @lock_path || DEFAULT_LOCK_PATH
   end
 
-  def initialize(environment, setup, cleanup, security, path, lock_path)
+  def self.with_temporary(environment:, setup:, cleanup:, security:, path:, &)
+    new(environment, setup, cleanup, security, path).run(&)
+  end
+
+  def initialize(environment, setup, cleanup, security, path)
     @environment = environment
     @setup = setup
     @cleanup = cleanup
     @security = security
     @path = path
-    @lock_path = lock_path
+    @lock_path = self.class.lock_path
   end
 
   def run(&block)
@@ -75,15 +82,19 @@ class IosSigningKeychain
   def prepare
     @search_list = search_list
     capture_environment
-    @environment.delete('MATCH_KEYCHAIN_NAME')
     @keychain_name = "nc-fastlane-#{Process.pid}-#{SecureRandom.hex(6)}"
     @keychain_password = SecureRandom.hex(32)
-    @environment['MATCH_KEYCHAIN_NAME'] = @keychain_name
-    @environment['MATCH_KEYCHAIN_PASSWORD'] = @keychain_password
-    @environment['MATCH_READONLY'] = 'true'
+    point_environment_at_keychain
     @ready = true
     @setup.call(@keychain_name, @keychain_password)
     self.search_list = [@path.call(@keychain_name), *@search_list]
+  end
+
+  def point_environment_at_keychain
+    @environment.delete('MATCH_KEYCHAIN_NAME')
+    @environment['MATCH_KEYCHAIN_NAME'] = @keychain_name
+    @environment['MATCH_KEYCHAIN_PASSWORD'] = @keychain_password
+    @environment['MATCH_READONLY'] = 'true'
   end
 
   def search_list
