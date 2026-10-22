@@ -243,7 +243,8 @@ Drives the app with the Maestro flows in `maestro/screenshots/` on dedicated sim
 a headless emulator, with a fixed 9:41 status bar, in light and dark appearance. Android
 runs the minified release build, signed with the debug key. Writes store-sized PNGs (no
 alpha) to the gitignored `.screenshots/`: iPhone 6.9" (1320x2868), iPad 13" (2064x2752),
-and Android phone (1080x1920, within Google Play's 2:1 limit). The `listing` lanes upload them
+and Android phone (1080x1920, within Google Play's 2:1 limit). iOS captures use the full
+rectangle without black device corners. The `listing` lanes upload them
 (see "Releasing").
 
 ## Releasing
