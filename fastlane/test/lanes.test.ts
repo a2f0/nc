@@ -45,7 +45,8 @@ def fake_lanes(events, lock_path, extra_stubs = {})
 end
 
 lock_path = File.join(work, "release.lock")
-results = { lanes: FakeFastfile.new(FASTFILE, {}).lane_names }
+fastfile = FakeFastfile.new(FASTFILE, {})
+results = { lanes: fastfile.lane_names, descriptions: fastfile.lane_descriptions }
 
 events = []
 lanes = fake_lanes(events, lock_path)
@@ -175,6 +176,26 @@ test("the Fastfile imports the standard lanes and nc's own", () => {
       "promote_release", "readiness", "listing",
     ],
   });
+});
+
+// docs/fastlane.md in a2f0/matrix gives every repository's standard lanes these descriptions.
+test("the standard lanes have the standard descriptions, and every lane has one", () => {
+  expect(results.descriptions.ios).toMatchObject({
+    build_release: "Build a signed App Store IPA without uploading it (build_number:)",
+    upload_release: "Run build_release, then upload to TestFlight (build_number:)",
+    profiles: "Create or renew the match App Store profiles (force:true regenerates them)",
+  });
+  expect(results.descriptions.android).toMatchObject({
+    build_release: "Build a signed release App Bundle without uploading it (build_number:)",
+    upload_release:
+      "Run build_release, then upload to a Google Play track (build_number:, track:internal, release_status:completed)",
+  });
+  for (const platform of ["ios", "android"]) {
+    expect(Object.keys(results.descriptions[platform])).toEqual(results.lanes[platform]);
+    for (const description of Object.values(results.descriptions[platform])) {
+      expect(description).toEqual(expect.stringMatching(/^[A-Z]\S* .+[^.]$/));
+    }
+  }
 });
 
 test("release builds write receipts before upload_release uploads and preserve build options", () => {

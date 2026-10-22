@@ -41,7 +41,7 @@ def bundletool_path(options)
 end
 
 platform :android do
-  desc 'Record user-started background playback and notification stop from the release AAB'
+  desc 'Record user-started background playback and notification stop from the release AAB (artifact:, bundletool:)'
   lane :foreground_service_video do |options|
     artifact = File.expand_path(options.fetch(:artifact, ANDROID_RELEASE_AAB), REPO_ROOT)
     tool = bundletool_path(options)
@@ -49,7 +49,8 @@ platform :android do
     sh('ruby', File.join(REPO_ROOT, 'scripts/recordAndroidForegroundVideo.rb'), artifact, tool)
   end
 
-  desc 'Publish a reviewed foreground-service video to R2; update the stable pointer last'
+  desc 'Publish a reviewed foreground-service video to R2, updating the stable pointer last ' \
+       '(reviewed:true, manifest:, artifact:)'
   lane :publish_foreground_service_video do |options|
     unless options[:reviewed].to_s == 'true'
       UI.user_error!('Watch the recording with sound, then pass reviewed:true to publish it')
@@ -67,9 +68,11 @@ platform :android do
     UI.success('Published: https://nc.a2f0.net/review/android-media-playback')
   end
 
+  # Signs the bundle with the upload key and writes a source/hash receipt
+  # (<aab>.build.json) beside it, which the readiness lane checks.
   # build_number: is the version code; it defaults to one past the highest on
   # any Google Play track.
-  desc 'Build the release App Bundle, signed with the upload key, with a source/hash receipt, without uploading'
+  desc 'Build a signed release App Bundle without uploading it (build_number:)'
   lane :build_release do |options|
     UI.user_error!('version_code: is now build_number:') if options.key?(:version_code)
     source = release_source
@@ -99,7 +102,8 @@ platform :android do
   # testing is set up in Play Console (its countries, and for a personal account
   # created since November 2023, production access). Listing text and images go
   # up separately, through the listing lane.
-  desc 'Build the release App Bundle (build_release), then upload it to a Google Play track (track:, default internal)'
+  desc 'Run build_release, then upload to a Google Play track ' \
+       '(build_number:, track:internal, release_status:completed)'
   lane :upload_release do |options|
     track = google_play_track(options)
     aab = build_release(options)
@@ -117,7 +121,7 @@ platform :android do
   # Play rejects it until production has countries, which only Play Console
   # sets. Pass version_code: when the track has more than one release, and
   # rollout:0.1 to roll an update out to a share of users.
-  desc 'Promote the Google Play open testing release to production'
+  desc 'Promote the Google Play open testing release to production (version_code:, rollout:)'
   lane :promote_release do |options|
     upload_to_play_store(
       package_name: NATIVE_APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH,
@@ -128,7 +132,9 @@ platform :android do
     )
   end
 
-  desc 'Inspect an existing AAB and Play state; write a redacted readiness report (no uploads or committed edits)'
+  # docs/readiness.md describes the options.
+  desc 'Inspect an existing AAB and its Play state and write a redacted readiness report, without uploading or ' \
+       'committing edits (artifact:, output:, track:internal, bundletool:, evidence:, store:false, strict:true)'
   lane :readiness do |options|
     artifact, output = readiness_options(options, 'android', ANDROID_RELEASE_AAB)
     track = google_play_track(options)
