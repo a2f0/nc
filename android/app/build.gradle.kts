@@ -3,10 +3,14 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
-// Release builds are signed with the Google Play upload key from .secrets/prod/
-// (gitignored; see the README). Without it, release builds are left unsigned.
-val uploadKeystore = rootProject.file("../.secrets/prod/nc-upload.keystore")
-val uploadKeystorePassword = providers.environmentVariable("NC_ANDROID_KEYSTORE_PASS").orNull
+// Release builds are signed with the Google Play upload key: the one in the secrets folder
+// the release lanes read (-PncUploadKeystore=<path>), or else .secrets/prod/ (gitignored;
+// see the README), with its passwords from the environment. Without them, release builds
+// are left unsigned.
+val uploadKeystore = providers.gradleProperty("ncUploadKeystore").orNull?.let { file(it) }
+    ?: rootProject.file("../.secrets/prod/nc-upload.keystore")
+val uploadKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_STORE_PASS").orNull
+val uploadKeyPassword = providers.environmentVariable("ANDROID_KEYSTORE_KEY_PASS").orNull
 
 android {
     namespace = "net.a2f0.nc"
@@ -23,12 +27,12 @@ android {
     }
 
     signingConfigs {
-        if (uploadKeystore.isFile && uploadKeystorePassword != null) {
+        if (uploadKeystore.isFile && uploadKeystorePassword != null && uploadKeyPassword != null) {
             create("upload") {
                 storeFile = uploadKeystore
                 storePassword = uploadKeystorePassword
                 keyAlias = "nc-upload"
-                keyPassword = uploadKeystorePassword
+                keyPassword = uploadKeyPassword
             }
         }
     }

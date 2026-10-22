@@ -58,6 +58,9 @@ for_each_pushed_range sh scripts/checks/checkBinaryFiles.sh
 step "Linting shell scripts"
 sh scripts/checks/lintScripts.sh
 
+step "Linting Ruby"
+bundle exec rubocop
+
 step "Checking agent skills"
 bun run --silent agents:check >/dev/null
 

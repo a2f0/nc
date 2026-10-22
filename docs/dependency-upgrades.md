@@ -6,9 +6,10 @@ Use the managed `update-dependencies` skill and the repository's
 ## Compatibility and release boundaries
 
 Inventory packages, the Ruby bundle, every `.mise.toml` tool, Android's version
-catalog and Gradle wrapper, and CI action pins. Check upstream compatibility
-matrices and migrations together, then run the full local gate and audit resolved
-dependencies. Keep intentional minimum OS versions and supported toolchains
+catalog and Gradle wrapper, and CI action pins. Ruby is pinned in `.ruby-version`,
+which the Gemfile and CI read; keep `.mise.toml`'s ruby equal to it. Check upstream
+compatibility matrices and migrations together, then run the full local gate and
+audit resolved dependencies. Keep intentional minimum OS versions and supported toolchains
 explicit. Bun owns `bun.lock`; Bundler owns `Gemfile.lock`.
 
 The iOS and Android implementations have separate native toolchains, so validate
@@ -56,7 +57,8 @@ changed the default; enabling upload later needs an explicit decision about the
 source content sent to Cloudflare. This setting does not remove `.map` files
 already emitted by the static website build.
 
-Fastlane and its release SDK dependencies remain a coupled store-tool group.
+Fastlane and its release SDK dependencies remain a coupled store-tool group;
+RuboCop only lints and isn't part of it.
 The lanes register identifiers, create/renew profiles, modify signing keychains,
 and publish store builds and listings. Mocked helper tests validate local lane
 logic, but do not preview those real effects. Hold this group until a genuine

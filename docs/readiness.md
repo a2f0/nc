@@ -1,8 +1,8 @@
 # Release readiness lanes
 
-Run `bundle exec fastlane ios readiness` or `bundle exec fastlane android readiness` to
-inspect an existing signed release artifact and the corresponding store records. These
-lanes **do not build, upload, select a build, submit, or publish**. Android creates a temporary
+Run `bun run ios:readiness` or `bun run android:readiness` to inspect an existing signed
+release artifact and the corresponding store records. These lanes **do not build, upload,
+select a build, submit, or publish**. Android creates a temporary
 Play edit for its reads and deletes it without committing. Keep concurrent Play edits/listing
 uploads out of the same run.
 
@@ -42,10 +42,11 @@ inspection needs macOS `codesign` and `security`. Android needs a JDK and Google
 [bundletool](https://github.com/google/bundletool/releases): put its launcher on PATH or pass
 `bundletool:/path/to/bundletool-all.jar` / `BUNDLETOOL_JAR`. No tools are downloaded by the lanes.
 
-`ios build_release` builds/signs an IPA without uploading; `ios beta` reuses it before
-TestFlight upload. `android build_release` builds/signs the AAB, and `android internal` and
-`android beta` reuse it. Both build lanes write `<artifact>.build.json` with the source commit,
-dirty flag, build time, and artifact hash. Keep that receipt beside the artifact when copying it.
+`ios build_release` builds/signs an IPA without uploading; `ios upload_release` runs it
+before the TestFlight upload. `android build_release` builds/signs the AAB, and
+`android upload_release` runs it before the Play upload. Both build lanes write
+`<artifact>.build.json` with the source commit, dirty flag, build time, and artifact hash.
+Keep that receipt beside the artifact when copying it.
 
 A receipt with the wrong hash, a dirty source, or a source commit different from the audited
 checkout is a failed check. An older artifact without a receipt has unknown provenance;

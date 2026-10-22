@@ -1,0 +1,19 @@
+AllCops:
+  Exclude:
+    - android/**/*
+    - ios/**/*
+    - node_modules/**/*
+    - vendor/bundle/**/*
+  NewCops: enable
+  SuggestExtensions: false
+  TargetRubyVersion: 4.0
+
+Metrics/BlockLength:
+  Exclude:
+    - fastlane/lanes/android.rb
+    - fastlane/lanes/ios.rb
+
+# RuboCop leaves test code out of these by default; nc's is under fastlane/test.
+Style/OneClassPerFile:
+  Exclude:
+    - fastlane/test/**/*

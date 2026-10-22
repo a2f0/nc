@@ -31,7 +31,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@b1da4809b005e0178fe08a1d57317bffc00b7b4c # v1.332.0
         with:
-          ruby-version: "4.0.7"
+          ruby-version: .ruby-version
           bundler-cache: true
 
       - name: Install dependencies
@@ -42,6 +42,9 @@ jobs:
 
       - name: Lint shell scripts
         run: sh scripts/checks/lintScripts.sh
+
+      - name: Lint Ruby
+        run: bundle exec rubocop
 
       - name: Check agent skills
         run: bun run agents:check

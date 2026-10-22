@@ -31,6 +31,7 @@ Run individual pieces while iterating:
 
 ```sh
 sh scripts/checks/lintScripts.sh                       # ShellCheck
+bundle exec rubocop                                    # Ruby: fastlane lanes and helpers, scripts
 sh scripts/checks/checkBinaryFiles.sh --all            # no binary files
 bun run agents:check                                   # shared skills are current
 bun run l10n:check                                     # translations, generated strings, store listings

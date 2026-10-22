@@ -36,7 +36,7 @@ module StoreListing
   end
 
   def self.screenshots(dir)
-    files = Dir[File.join(dir, '*.png')].sort
+    files = Dir[File.join(dir, '*.png')]
     raise "No screenshots in #{dir}. Run scripts/takeScreenshots.sh first." if files.empty?
 
     files
