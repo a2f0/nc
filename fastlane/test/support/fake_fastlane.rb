@@ -68,6 +68,7 @@ class FakeFastfile
     @stubs = stubs
     @calls = []
     @lanes = Hash.new { |lanes, platform| lanes[platform] = {} }
+    @descriptions = Hash.new { |descriptions, platform| descriptions[platform] = {} }
     @fastfile = path
     instance_eval(File.read(path), path)
   end
@@ -85,6 +86,9 @@ class FakeFastfile
   # Each platform's lanes, in the order they're defined.
   def lane_names = @lanes.transform_values(&:keys)
 
+  # Each platform's lanes and the desc given before each, as fastlane lanes lists them.
+  def lane_descriptions = @descriptions.transform_values(&:dup)
+
   # Replaces a helper method the Fastfile defines.
   def stub_method(name, &) = define_singleton_method(name, &)
 
@@ -92,7 +96,7 @@ class FakeFastfile
 
   def default_platform(_platform) = nil
   def skip_docs = nil
-  def desc(_text) = nil
+  def desc(text) = @description = text
 
   # Like fastlane, resolves a relative path from the Fastfile's folder and
   # evaluates the file in the same context, so its lanes and helpers join the rest.
@@ -110,6 +114,8 @@ class FakeFastfile
 
   def lane(name, &block)
     @lanes[@defining][name] = block
+    @descriptions[@defining][name] = @description
+    @description = nil
   end
 
   # Lanes call other lanes of their platform, and actions, by name.

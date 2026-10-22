@@ -161,7 +161,8 @@ platform :ios do
   # (MATCH_GIT_URL), where build_release installs them from. This creates a
   # profile when it's missing or no longer valid; force:true regenerates them,
   # as after the bundle IDs' capabilities or the distribution certificate change.
-  desc 'Create or renew the match App Store profiles (App Store Connect API key; force:true regenerates them)'
+  # It signs in with the App Store Connect API key.
+  desc 'Create or renew the match App Store profiles (force:true regenerates them)'
   lane :profiles do |options|
     load_store_secrets(IOS_SECRETS)
     api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
@@ -208,8 +209,10 @@ platform :ios do
     profiles
   end
 
-  # build_number: defaults to one past the latest TestFlight build.
-  desc 'Build and sign an App Store IPA with a source/hash receipt, without uploading'
+  # Writes a source/hash receipt (<ipa>.build.json) beside the IPA, which the
+  # readiness lane checks. build_number: defaults to one past the latest
+  # TestFlight build.
+  desc 'Build a signed App Store IPA without uploading it (build_number:)'
   lane :build_release do |options|
     source = release_source
     load_store_secrets(IOS_SECRETS)
@@ -242,7 +245,7 @@ platform :ios do
     ipa
   end
 
-  desc 'Build a signed App Store IPA (build_release), then upload it to TestFlight'
+  desc 'Run build_release, then upload to TestFlight (build_number:)'
   lane :upload_release do |options|
     ipa = build_release(options)
     api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
@@ -252,7 +255,9 @@ platform :ios do
     )
   end
 
-  desc 'Inspect an existing IPA and store state; write a redacted readiness report (no uploads or submission)'
+  # docs/readiness.md describes the options.
+  desc 'Inspect an existing IPA and its store state and write a redacted readiness report, without uploading or ' \
+       'submitting (artifact:, output:, wait_timeout:0, store:false, precheck:false, strict:true)'
   lane :readiness do |options|
     artifact, output = readiness_options(options, 'ios', File.join(IOS_OUTPUT_DIR, IOS_IPA_NAME))
     timeout = ios_readiness_timeout(options)
