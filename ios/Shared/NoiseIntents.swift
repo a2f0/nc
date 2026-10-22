@@ -21,7 +21,7 @@ struct PlayNoiseIntent: AudioPlaybackIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        NoisePlayer.shared.play(noise)
+        NoisePlayer.shared.play(noise, source: "widget_or_shortcut")
         return .result()
     }
 }
@@ -32,7 +32,7 @@ struct StopNoiseIntent: AudioPlaybackIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        NoisePlayer.shared.stop()
+        NoisePlayer.shared.stop(source: "widget_or_shortcut")
         return .result()
     }
 }

@@ -45,6 +45,7 @@ struct ContentView: View {
         .sheet(item: $sheet) { sheet in
             Group {
                 switch sheet {
+                case .playbackLog: PlaybackLogSheet(log: player.playbackLog)
                 case .history: HistorySheet(history: player.history)
                 case .settings: SettingsSheet(player: player)
                 case .about: AboutSheet()
@@ -60,6 +61,7 @@ struct ContentView: View {
 /// The sheets the menu opens.
 private enum Sheet: Identifiable {
     case history
+    case playbackLog
     case settings
     case about
 
@@ -79,6 +81,9 @@ private struct MoreMenu: View {
         Menu {
             Button { sheet = .history } label: {
                 Label { localizedText(.history) } icon: { Image(systemName: "chart.bar") }
+            }
+            Button { sheet = .playbackLog } label: {
+                Label { localizedText(.playbackLog) } icon: { Image(systemName: "list.bullet.rectangle") }
             }
             Button { sheet = .settings } label: {
                 Label { localizedText(.settings) } icon: { Image(systemName: "gearshape") }
@@ -220,7 +225,7 @@ private struct AboutSheet: View {
 }
 
 /// A sheet with a title and a close button, as tall as its contents.
-private struct SheetContent<Content: View>: View {
+struct SheetContent<Content: View>: View {
     let title: LocalizedStringResource
     @ViewBuilder let content: Content
     @State private var height: CGFloat = 0
@@ -309,7 +314,7 @@ private struct PlayerBar: View {
     var body: some View {
         let isPlaying = player.nowPlaying != nil
         HStack(spacing: 16) {
-            Button(action: player.togglePlayback) {
+            Button(action: { player.togglePlayback() }) {
                 PlaybackSymbol(isPlaying: isPlaying)
             }
             .buttonStyle(.plain)

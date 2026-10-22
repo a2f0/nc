@@ -72,12 +72,14 @@ class NoiseEngineTest {
     fun failedSinkDoesNotReportPlayback() {
         val failed = CountDownLatch(1)
         var starts = 0
-        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { failed.countDown() }) {
+        var reason = ""
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { reason = it; failed.countDown() }) {
             error("audio output unavailable")
         }
         engine.play(NoiseType.FAN)
         assertTrue(failed.await(5, TimeUnit.SECONDS))
         assertEquals(0, starts)
+        assertTrue(reason.contains("audio output unavailable"))
     }
 
     @Test
@@ -85,7 +87,8 @@ class NoiseEngineTest {
         val failed = CountDownLatch(1)
         val released = CountDownLatch(1)
         var starts = 0
-        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { failed.countDown() }) {
+        var reason = ""
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { reason = it; failed.countDown() }) {
             object : AudioSink {
                 override val bufferSizeInFrames = 1024
                 override fun write(buffer: FloatArray, size: Int) = -1
@@ -96,6 +99,7 @@ class NoiseEngineTest {
         assertTrue(failed.await(5, TimeUnit.SECONDS))
         assertTrue(released.await(5, TimeUnit.SECONDS))
         assertEquals(0, starts)
+        assertEquals("AudioTrack.write=-1", reason)
     }
 
     @Test

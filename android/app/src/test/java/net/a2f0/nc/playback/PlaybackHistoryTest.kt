@@ -7,6 +7,10 @@ import android.os.Looper
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.audio.PlaybackEngine
 import net.a2f0.nc.history.ListeningHistory
+import net.a2f0.nc.diagnostics.PlaybackLog
+import net.a2f0.nc.diagnostics.PlaybackEvent
+import org.json.JSONObject
+import java.io.File
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -39,11 +43,13 @@ class PlaybackHistoryTest {
     }
 
     class TestService : PlaybackService() {
+        val diagnostics by lazy { PlaybackLog(File(noBackupFilesDir, "playback-log-v1.json")) }
+        internal override fun createLog(): PlaybackLog = diagnostics
         lateinit var started: (NoiseType) -> Unit
-        lateinit var failed: () -> Unit
+        lateinit var failed: (String) -> Unit
         var stops = 0
         val plays = mutableListOf<NoiseType>()
-        internal override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: () -> Unit): PlaybackEngine {
+        internal override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine {
             started = onStarted
             failed = onFailed
             return object : PlaybackEngine {
@@ -54,6 +60,7 @@ class PlaybackHistoryTest {
         }
     }
 
+    private var destroyed = false
     private lateinit var controller: ServiceController<TestService>
     private lateinit var service: TestService
     private lateinit var history: ListeningHistory
@@ -61,6 +68,7 @@ class PlaybackHistoryTest {
     private val main = shadowOf(Looper.getMainLooper())
 
     @Before fun setUp() {
+        destroyed = false
         val context = RuntimeEnvironment.getApplication()
         history = ListeningHistory.get(context)
         history.flush().get(5, TimeUnit.SECONDS)
@@ -71,7 +79,7 @@ class PlaybackHistoryTest {
         main.idle()
     }
 
-    @After fun tearDown() { controller.destroy(); main.idle() }
+    @After fun tearDown() { if (!destroyed) controller.destroy(); main.idle() }
 
     private fun rows() = history.snapshot().filter { it.id !in initialIds }
     private fun field(name: String): Any = PlaybackService::class.java.getDeclaredField(name).apply { isAccessible = true }.get(service)!!
@@ -85,7 +93,7 @@ class PlaybackHistoryTest {
 
     @Test fun failedStartCreatesNoSessionAndStopsTheService() {
         assertTrue(rows().isEmpty())
-        service.failed()
+        service.failed("test failure")
         main.idle()
         assertTrue(rows().isEmpty())
         assertNull(NoisePlayer.nowPlaying.value)
@@ -96,7 +104,7 @@ class PlaybackHistoryTest {
     @Test fun engineFailureClosesAnEstablishedSession() {
         started()
         assertNull(rows().single().endedAt)
-        service.failed()
+        service.failed("test failure")
         main.idle()
         assertNotNull(rows().single().endedAt)
         assertNull(NoisePlayer.nowPlaying.value)
@@ -136,4 +144,35 @@ class PlaybackHistoryTest {
         service.onStartCommand(PlaybackService.stopIntent(service), 0, 2)
         assertEquals(1, rows().size)
     }
+    private fun marker(): String? {
+        service.diagnostics.flush()
+        val data = JSONObject(File(service.noBackupFilesDir, "playback-log-v1.json").readText())
+        return data.optJSONObject("active")?.getString("soundId")
+    }
+
+    @Test fun recoveryMarkerTracksEngineFocusStopAndDestruction() {
+        assertNull(marker())
+        started()
+        assertEquals("pink", marker())
+        focus(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        assertNull(marker())
+        focus(AudioManager.AUDIOFOCUS_GAIN)
+        assertNull(marker()) // Resume is only durable once the engine confirms audio.
+        started()
+        assertEquals("pink", marker())
+        service.onStartCommand(PlaybackService.stopIntent(service, "notification"), 0, 2)
+        assertNull(marker())
+        service.onStartCommand(PlaybackService.playIntent(service, NoiseType.PINK, "widget"), 0, 3)
+        started()
+        assertEquals("pink", marker())
+        controller.destroy()
+        destroyed = true
+        main.idle()
+        assertNull(marker())
+        val events = service.diagnostics.entries.value
+        assertTrue(events.any { it.event == PlaybackEvent.STOP_REQUESTED && it.detail == "notification" })
+        assertTrue(events.any { it.event == PlaybackEvent.PLAY_REQUESTED && it.detail == "widget" })
+        assertEquals(PlaybackEvent.SERVICE_DESTROYED, events.last().event)
+    }
+
 }

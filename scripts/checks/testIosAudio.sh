@@ -27,6 +27,13 @@ xcrun swiftc -parse-as-library -o "$build_dir/history-tests" \
   "$REPO_ROOT/ios/HistoryTests/main.swift"
 "$build_dir/history-tests"
 
+# Playback diagnostics persist bounded events and recover interrupted processes.
+xcrun swiftc -parse-as-library -o "$build_dir/playback-log-tests" \
+  "$build_dir/GeneratedStringSymbols_Localizable.swift" \
+  "$REPO_ROOT/ios/Shared/PlaybackLog.swift" \
+  "$REPO_ROOT/ios/PlaybackLogTests/main.swift"
+"$build_dir/playback-log-tests"
+
 # Use a real app bundle so the generated symbols resolve the compiled catalog.
 language_app="$build_dir/LanguageTests.app/Contents"
 mkdir -p "$language_app/MacOS" "$language_app/Resources"

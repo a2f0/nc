@@ -6,6 +6,7 @@ import {
   PROCESSOR_NAME,
 } from "./noiseProtocol";
 import { t } from "./l10n";
+import { PlaybackLog } from "./playbackLog";
 import { ListeningHistory } from "./listeningHistory";
 import { NOISE_INFO, NOISE_TYPES, type NoiseType } from "./noiseType";
 
@@ -50,13 +51,14 @@ export class NoisePlayer {
   volume = loadVolume();
 
   private engine: Engine | null = null;
+  private activeSound: NoiseType | null = null;
   private commandId = 0;
   private readonly listeners = new Set<() => void>();
 
-  constructor(readonly history = new ListeningHistory()) {
-    this.setActionHandler("play", () => this.play(this.lastPlayed));
-    this.setActionHandler("pause", () => this.stop());
-    this.setActionHandler("stop", () => this.stop());
+  constructor(readonly history = new ListeningHistory(), readonly playbackLog = new PlaybackLog()) {
+    this.setActionHandler("play", () => this.play(this.lastPlayed, "media_play"));
+    this.setActionHandler("pause", () => this.stop("media_pause"));
+    this.setActionHandler("stop", () => this.stop("media_stop"));
   }
 
   subscribe(listener: () => void): void {
@@ -80,19 +82,29 @@ export class NoisePlayer {
    * Must run during a user gesture (or, after the first one, a media key): browsers only
    * let audio start then.
    */
-  play(type: NoiseType): void {
+  play(type: NoiseType, source = "ui"): void {
+    this.playbackLog.record("log_play_requested", type, source);
     if (this.nowPlaying !== type) this.history.transition(null);
     this.nowPlaying = type;
     this.lastPlayed = type;
     save(LAST_PLAYED_KEY, type);
     this.failed = false;
 
-    const engine = (this.engine ??= this.createEngine());
+    let engine: Engine;
+    try { engine = (this.engine ??= this.createEngine()); }
+    catch (error) {
+      this.playbackLog.record("log_engine_failed", type, String(error), false);
+      this.nowPlaying = this.activeSound = null;
+      this.history.transition(null);
+      this.failed = true;
+      this.publish();
+      return;
+    }
     const request = this.commandId + 1;
     Promise.all([engine.context.resume(), engine.audio.play(), engine.node]).then(() => {
       if (engine === this.engine && request === this.commandId && this.nowPlaying === type
         && engine.context.state === "running" && !engine.audio.paused) {
-        this.history.transition(type);
+        this.started(type);
       }
     }).catch((error: unknown) => {
       // A pause() that lands before play() settles is a stop, not a failure.
@@ -102,8 +114,11 @@ export class NoisePlayer {
     this.publish();
   }
 
-  stop(): void {
+  stop(source = "ui", requested = true): void {
+    if (requested) this.playbackLog.record("log_stop_requested", this.nowPlaying, source);
     if (this.nowPlaying === null) return;
+    this.playbackLog.record("log_stopped", this.nowPlaying, source, false);
+    this.activeSound = null;
     this.history.transition(null);
     this.nowPlaying = null;
     if (this.engine !== null) this.send(this.engine, false);
@@ -132,15 +147,25 @@ export class NoisePlayer {
     const audio = new Audio();
     audio.srcObject = output.stream;
     audio.addEventListener("pause", () => {
-      if (engine === this.engine && audio.paused && this.nowPlaying !== null) this.stop();
+      if (engine === this.engine && audio.paused && this.nowPlaying !== null) this.stop("media_element_pause", false);
+    });
+    audio.addEventListener("error", () => {
+      if (engine !== this.engine) return;
+      const detail = `code=${audio.error?.code}; ${audio.error?.message ?? ""}`;
+      this.playbackLog.record("log_media_error", this.nowPlaying, detail);
+      this.fail(engine, detail);
     });
     context.addEventListener("statechange", () => {
       if (engine !== this.engine) return;
-      if (context.state !== "running") this.history.transition(null);
+      this.playbackLog.record("log_context_state", this.nowPlaying, context.state, context.state === "running" ? undefined : false);
+      if (context.state !== "running") {
+        this.activeSound = null;
+        this.history.transition(null);
+      }
       else if (!audio.paused && this.nowPlaying !== null) {
         void node.then(() => {
           if (engine === this.engine && context.state === "running" && !audio.paused) {
-            this.history.transition(this.nowPlaying);
+            if (this.nowPlaying !== null) this.started(this.nowPlaying);
           }
         }, () => {});
       }
@@ -156,6 +181,11 @@ export class NoisePlayer {
           numberOfInputs: 0,
           outputChannelCount: [2],
           processorOptions: { seeds: [seeds[0] ?? 1, seeds[1] ?? 2] } satisfies NoiseOptions,
+        });
+        node.addEventListener("processorerror", () => {
+          if (engine !== this.engine) return;
+          this.playbackLog.record("log_worklet_error", this.nowPlaying, "processorerror");
+          this.fail(engine, "processorerror");
         });
         node.port.onmessage = (event: MessageEvent<NoiseEvent>) => this.onSilent(engine, event.data.silent);
         node.connect(volume);
@@ -185,6 +215,8 @@ export class NoisePlayer {
   private fail(engine: Engine, error: unknown): void {
     if (engine !== this.engine) return;
     console.error("Couldn't start audio", error);
+    this.playbackLog.record("log_engine_failed", this.nowPlaying, String(error), false);
+    this.activeSound = null;
     this.history.transition(null);
     this.engine = null;
     engine.audio.pause();
@@ -192,6 +224,13 @@ export class NoisePlayer {
     this.nowPlaying = null;
     this.failed = true;
     this.publish();
+  }
+
+  private started(type: NoiseType): void {
+    this.history.transition(type);
+    if (this.activeSound === type) return;
+    this.activeSound = type;
+    this.playbackLog.record("log_started", type, "", true);
   }
 
   private publish(): void {

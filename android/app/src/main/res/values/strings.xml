@@ -49,6 +49,40 @@
     <string name="volume">Volume</string>
     <!-- Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About. -->
     <string name="more">More</string>
+    <!-- Title and menu entry for local playback diagnostics. -->
+    <string name="playback_log">Playback log</string>
+    <!-- Explanation of the bounded local diagnostic log and user-initiated sharing. -->
+    <string name="playback_log_local">The last 300 events stay on this device. Nothing is sent unless you share the log. Details include system diagnostic codes.</string>
+    <!-- Empty playback event log. -->
+    <string name="playback_log_empty">No playback events recorded yet.</string>
+    <!-- Storage warning; playback continues if diagnostic persistence fails. -->
+    <string name="playback_log_storage_failed">Some playback events could not be loaded or saved.</string>
+    <!-- Opens the system share sheet for playback diagnostics. -->
+    <string name="playback_log_share">Share log</string>
+    <!-- Diagnostic event; details identify app, widget, notification, remote control, or system source. -->
+    <string name="log_play_requested">Play requested</string>
+    <!-- Diagnostic event; details identify the source of the stop request. -->
+    <string name="log_stop_requested">Stop requested</string>
+    <!-- Audio engine confirmed playback started. -->
+    <string name="log_started">Playback started</string>
+    <!-- Playback stopped; diagnostic details identify the reason. -->
+    <string name="log_stopped">Playback stopped</string>
+    <!-- Android audio focus event; details name gain, loss, transient loss, or ducking. -->
+    <string name="log_focus_changed">Audio focus changed</string>
+    <!-- Android could not obtain audio focus to start playback. -->
+    <string name="log_focus_denied">Audio focus request denied</string>
+    <!-- Headphones or another audio output disconnected; playback stops to avoid the speaker. -->
+    <string name="log_noisy">Audio output disconnected</string>
+    <!-- Android task was swiped from Recents; playback stops. -->
+    <string name="log_task_removed">App removed from Recents</string>
+    <!-- Audio error; details include the system error code or exception. -->
+    <string name="log_engine_failed">Audio engine failed</string>
+    <!-- Android playback service lifecycle event. -->
+    <string name="log_service_destroyed">Playback service destroyed</string>
+    <!-- Android recovered a process exit. Details include reason, process importance, and system description. -->
+    <string name="log_process_exit">System recorded a process exit during playback</string>
+    <!-- Recovered an unfinished playback marker after an unexpected exit. Timestamp is detection time, not a claimed stop time. -->
+    <string name="log_unclean_exit">Previous playback has no recorded stop; the cause is unknown.</string>
     <!-- Title of the local listening-history screen and its menu entry. -->
     <string name="history">Listening history</string>
     <!-- History view selector: total minutes per sound across all saved listening sessions. -->

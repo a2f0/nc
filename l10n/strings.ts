@@ -145,6 +145,135 @@ export const STRINGS = {
     text: "More",
     comment: "Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About.",
   },
+  playback_log: {
+    text: "Playback log",
+    comment: "Title and menu entry for local playback diagnostics.",
+  },
+  playback_log_local: {
+    text: "The last 300 events stay on this device. Nothing is sent unless you share the log. Details include system diagnostic codes.",
+    comment: "Explanation of the bounded local diagnostic log and user-initiated sharing.",
+  },
+  playback_log_empty: {
+    text: "No playback events recorded yet.",
+    comment: "Empty playback event log.",
+  },
+  playback_log_storage_failed: {
+    text: "Some playback events could not be loaded or saved.",
+    comment: "Storage warning; playback continues if diagnostic persistence fails.",
+  },
+  playback_log_share: {
+    text: "Share log",
+    comment: "Opens the system share sheet for playback diagnostics.",
+  },
+  playback_log_save: {
+    text: "Save log",
+    comment: "Downloads playback diagnostics as a text file when browser sharing is unavailable.",
+    platforms: ["web"],
+  },
+  playback_log_share_failed: {
+    text: "The log could not be shared. Try saving it instead.",
+    comment: "Browser share failure; the save button remains available.",
+    platforms: ["web"],
+  },
+  log_play_requested: {
+    text: "Play requested",
+    comment: "Diagnostic event; details identify app, widget, notification, remote control, or system source.",
+  },
+  log_stop_requested: {
+    text: "Stop requested",
+    comment: "Diagnostic event; details identify the source of the stop request.",
+  },
+  log_started: {
+    text: "Playback started",
+    comment: "Audio engine confirmed playback started.",
+  },
+  log_stopped: {
+    text: "Playback stopped",
+    comment: "Playback stopped; diagnostic details identify the reason.",
+  },
+  log_focus_changed: {
+    text: "Audio focus changed",
+    comment: "Android audio focus event; details name gain, loss, transient loss, or ducking.",
+    platforms: ["android"],
+  },
+  log_focus_denied: {
+    text: "Audio focus request denied",
+    comment: "Android could not obtain audio focus to start playback.",
+    platforms: ["android"],
+  },
+  log_noisy: {
+    text: "Audio output disconnected",
+    comment: "Headphones or another audio output disconnected; playback stops to avoid the speaker.",
+    platforms: ["android"],
+  },
+  log_task_removed: {
+    text: "App removed from Recents",
+    comment: "Android task was swiped from Recents; playback stops.",
+    platforms: ["android"],
+  },
+  log_engine_failed: {
+    text: "Audio engine failed",
+    comment: "Audio error; details include the system error code or exception.",
+  },
+  log_service_destroyed: {
+    text: "Playback service destroyed",
+    comment: "Android playback service lifecycle event.",
+    platforms: ["android"],
+  },
+  log_process_exit: {
+    text: "System recorded a process exit during playback",
+    comment: "Android recovered a process exit. Details include reason, process importance, and system description.",
+    platforms: ["android"],
+  },
+  log_unclean_exit: {
+    text: "Previous playback has no recorded stop; the cause is unknown.",
+    comment: "Recovered an unfinished playback marker after an unexpected exit. Timestamp is detection time, not a claimed stop time.",
+  },
+  log_interruption: {
+    text: "Audio session interruption",
+    comment: "iOS audio interruption; details identify began or ended and raw resume options.",
+    platforms: ["ios"],
+  },
+  log_route_changed: {
+    text: "Audio route changed",
+    comment: "iOS route notification; details include the system reason code.",
+    platforms: ["ios"],
+  },
+  log_configuration_changed: {
+    text: "Audio engine configuration changed",
+    comment: "iOS engine configuration notification; details include whether the engine is running.",
+    platforms: ["ios"],
+  },
+  log_termination: {
+    text: "App is terminating",
+    comment: "iOS delivered a termination notification; abrupt kills may not deliver one.",
+    platforms: ["ios"],
+  },
+  log_context_state: {
+    text: "Audio context state changed",
+    comment: "Browser audio context state, including running, suspended, interrupted, and closed.",
+    platforms: ["web"],
+  },
+  log_worklet_error: {
+    text: "Audio worklet failed",
+    comment: "Browser sound generator failed during audio processing.",
+    platforms: ["web"],
+  },
+  log_visibility: {
+    text: "Page visibility changed",
+    comment: "Browser page became visible or hidden; this does not necessarily stop playback.",
+    platforms: ["web"],
+  },
+  log_page_hidden: {
+    text: "Page closed or navigated away",
+    comment: "Browser pagehide event; details identify back-forward cache use.",
+    platforms: ["web"],
+  },
+  log_media_error: {
+    text: "Media playback failed",
+    comment: "Browser media element reported an error.",
+    platforms: ["web"],
+  },
   history: {
     text: "Listening history",
     comment: "Title of the local listening-history screen and its menu entry.",

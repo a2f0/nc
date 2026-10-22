@@ -64,10 +64,10 @@ object NoisePlayer {
         ContextCompat.startForegroundService(context, PlaybackService.playIntent(context, type))
     }
 
-    fun stop(context: Context) {
+    fun stop(context: Context, source: String = "ui") {
         // Only a running (foreground) service can be playing, so this never starts one from the background.
         if (_nowPlaying.value != null) {
-            context.startService(PlaybackService.stopIntent(context))
+            context.startService(PlaybackService.stopIntent(context, source))
         }
     }
 

@@ -91,5 +91,8 @@ xcodebuild \
 step "Testing iOS audio rendering"
 sh scripts/checks/testIosAudio.sh
 
+step "Testing iOS playback lifecycle"
+sh scripts/checks/testIosPlayback.sh
+
 echo ""
 echo "All checks passed."

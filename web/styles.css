@@ -441,7 +441,8 @@ button.toggle {
 }
 .history-views button,
 .history-detail button,
-.history-navigation button {
+.history-navigation button,
+#playback-log-content > button {
   padding: 8px;
   border: 1px solid var(--separator);
   border-radius: 8px;
@@ -472,3 +473,9 @@ button.toggle {
   --history-waves: #bbbbbb;
   --history-fan: #eeeeee;
 }
+
+/* Diagnostic values can contain long system messages or identifiers. */
+.playback-log-entries { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8rem; line-height: 1.5; }
+#playback-log-content > button { margin: 0 1rem 1rem 0; min-height: 44px; }
+
+#playback-log-content > button:disabled { opacity: 0.4; cursor: default; }

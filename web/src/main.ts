@@ -1,3 +1,5 @@
+import { setUpPlaybackLog } from "./playbackLogView";
+import { setUpPlaybackLifecycle } from "./playbackLifecycle";
 import { setUpHistory } from "./historyView";
 import { setUpAppearance } from "./appearanceView";
 import { setUpLanguage } from "./languageView";
@@ -27,11 +29,13 @@ bindVolume([volume, element("settings-volume") as HTMLInputElement], player);
 const more = element("more");
 const closeButtons = [...document.querySelectorAll<HTMLElement>(".close")];
 setUpMenu(document, more, element("menu"), [
+  [element("open-playback-log"), element("playback-log") as HTMLDialogElement, element("close-playback-log")],
   [element("open-history"), element("history") as HTMLDialogElement, element("close-history")],
   [element("open-settings"), element("settings") as HTMLDialogElement, element("close-settings")],
   [element("open-about"), element("about") as HTMLDialogElement, element("close-about")],
 ]);
 
+const renderPlaybackLog = setUpPlaybackLog(player.playbackLog);
 const renderHistory = setUpHistory(player.history);
 const renderAppearance = setUpAppearance();
 const renderLanguage = setUpLanguage(() => {
@@ -39,11 +43,7 @@ const renderLanguage = setUpLanguage(() => {
   player.updateMediaSession();
 });
 setInterval(() => player.history.checkpoint(), 15_000);
-addEventListener("pagehide", () => player.stop());
-document.addEventListener("visibilitychange", () => {
-  player.history.checkpoint();
-  if (document.visibilityState === "visible") void player.history.refresh();
-});
+setUpPlaybackLifecycle(player);
 
 const cards = new Map<NoiseType, HTMLButtonElement>(NOISE_TYPES.map((type) => [type, card(type)]));
 sounds.append(...cards.values());
@@ -68,6 +68,7 @@ function localize(): void {
   element("open-history").textContent = t("history");
   element("history-title").textContent = t("history");
   renderHistory();
+  renderPlaybackLog();
   renderAppearance();
   renderLanguage();
   element("open-settings").textContent = t("settings");

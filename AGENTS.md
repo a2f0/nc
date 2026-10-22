@@ -41,6 +41,7 @@ bunx wrangler deploy --config web/wrangler.jsonc --dry-run   # web deploy config
 (cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+sh scripts/checks/testIosPlayback.sh                   # iOS player lifecycle on an isolated simulator
 sh scripts/checks/testIosAudio.sh                      # iOS renderer, rendered offline on macOS
 ```
 

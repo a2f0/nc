@@ -7,10 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0FA850AB3E1C8BCD1B4B5204 /* PlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A119DD3136A8C6BA3B88D22A /* PlaybackTests.swift */; };
+		6890EBE75D900ECA8FD4D1BF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 60801BCDB37D5CB9642205DE /* Foundation.framework */; };
 		AA0000000000000000000015 /* NoiseWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000005 /* NoiseWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		21FD651829EC32D770CEEFD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000010;
+			remoteInfo = NoiseConnoisseur;
+		};
 		AA0000000000000000000017 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = AA0000000000000000000001 /* Project object */;
@@ -35,6 +44,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		60801BCDB37D5CB9642205DE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		A119DD3136A8C6BA3B88D22A /* PlaybackTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlaybackTests.swift; sourceTree = "<group>"; };
 		AA0000000000000000000004 /* NoiseConnoisseur.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NoiseConnoisseur.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000005 /* NoiseWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NoiseWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA000000000000000000000A /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
@@ -42,6 +53,7 @@
 		AA000000000000000000000C /* NoiseWidget-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "NoiseWidget-Info.plist"; sourceTree = "<group>"; };
 		AA000000000000000000000D /* NoiseConnoisseur.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NoiseConnoisseur.entitlements; sourceTree = "<group>"; };
 		AA000000000000000000000E /* NoiseWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NoiseWidget.entitlements; sourceTree = "<group>"; };
+		C51D88814E5A73B54E93EE64 /* PlaybackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PlaybackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -63,6 +75,14 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		72FA0F05420B94E54C14A666 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6890EBE75D900ECA8FD4D1BF /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA0000000000000000000012 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -80,6 +100,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2B6682E8F2BC948474C7FF96 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E8F6DAD3828146C209EADB6F /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		69167F4BFC533500DADB601F /* PlaybackTests */ = {
+			isa = PBXGroup;
+			children = (
+				A119DD3136A8C6BA3B88D22A /* PlaybackTests.swift */,
+			);
+			name = PlaybackTests;
+			path = PlaybackTests;
+			sourceTree = "<group>";
+		};
 		AA0000000000000000000002 = {
 			isa = PBXGroup;
 			children = (
@@ -88,6 +125,8 @@
 				AA0000000000000000000008 /* Shared */,
 				AA0000000000000000000009 /* Config */,
 				AA0000000000000000000003 /* Products */,
+				2B6682E8F2BC948474C7FF96 /* Frameworks */,
+				69167F4BFC533500DADB601F /* PlaybackTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -96,6 +135,7 @@
 			children = (
 				AA0000000000000000000004 /* NoiseConnoisseur.app */,
 				AA0000000000000000000005 /* NoiseWidgetExtension.appex */,
+				C51D88814E5A73B54E93EE64 /* PlaybackTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -112,9 +152,35 @@
 			path = Config;
 			sourceTree = "<group>";
 		};
+		E8F6DAD3828146C209EADB6F /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				60801BCDB37D5CB9642205DE /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8227D21594D443B8CF67ABD3 /* PlaybackTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 642F4B2262A91BEE18F93F35 /* Build configuration list for PBXNativeTarget "PlaybackTests" */;
+			buildPhases = (
+				7D585D3E7BA91635C255F749 /* Sources */,
+				72FA0F05420B94E54C14A666 /* Frameworks */,
+				50879F9199B4FD77CA7F65E8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2D7554E818E0A3C6E69C5C8D /* PBXTargetDependency */,
+			);
+			name = PlaybackTests;
+			productName = PlaybackTests;
+			productReference = C51D88814E5A73B54E93EE64 /* PlaybackTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		AA0000000000000000000010 /* NoiseConnoisseur */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = AA0000000000000000000040 /* Build configuration list for PBXNativeTarget "NoiseConnoisseur" */;
@@ -135,8 +201,6 @@
 				AA0000000000000000000008 /* Shared */,
 			);
 			name = NoiseConnoisseur;
-			packageProductDependencies = (
-			);
 			productName = NoiseConnoisseur;
 			productReference = AA0000000000000000000004 /* NoiseConnoisseur.app */;
 			productType = "com.apple.product-type.application";
@@ -158,8 +222,6 @@
 				AA0000000000000000000008 /* Shared */,
 			);
 			name = NoiseWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = NoiseWidgetExtension;
 			productReference = AA0000000000000000000005 /* NoiseWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -198,11 +260,19 @@
 			targets = (
 				AA0000000000000000000010 /* NoiseConnoisseur */,
 				AA0000000000000000000020 /* NoiseWidgetExtension */,
+				8227D21594D443B8CF67ABD3 /* PlaybackTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		50879F9199B4FD77CA7F65E8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA0000000000000000000013 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -252,6 +322,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		7D585D3E7BA91635C255F749 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FA850AB3E1C8BCD1B4B5204 /* PlaybackTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		AA0000000000000000000011 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -269,6 +347,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		2D7554E818E0A3C6E69C5C8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NoiseConnoisseur;
+			target = AA0000000000000000000010 /* NoiseConnoisseur */;
+			targetProxy = 21FD651829EC32D770CEEFD0 /* PBXContainerItemProxy */;
+		};
 		AA0000000000000000000016 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = AA0000000000000000000020 /* NoiseWidgetExtension */;
@@ -277,6 +361,22 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		9F6AEEB0F7B3D878E5123806 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.a2f0.nc.playback-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoiseConnoisseur.app/NoiseConnoisseur";
+			};
+			name = Debug;
+		};
 		AA0000000000000000000031 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AA000000000000000000000A /* Base.xcconfig */;
@@ -432,9 +532,35 @@
 			};
 			name = Release;
 		};
+		DCB9D855DC82209D8CE6AC14 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.a2f0.nc.playback-tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NoiseConnoisseur.app/NoiseConnoisseur";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		642F4B2262A91BEE18F93F35 /* Build configuration list for PBXNativeTarget "PlaybackTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DCB9D855DC82209D8CE6AC14 /* Release */,
+				9F6AEEB0F7B3D878E5123806 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		AA0000000000000000000030 /* Build configuration list for PBXProject "NoiseConnoisseur" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

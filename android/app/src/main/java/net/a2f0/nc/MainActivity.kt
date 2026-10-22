@@ -11,6 +11,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import net.a2f0.nc.diagnostics.PlaybackLog
 import net.a2f0.nc.playback.NoisePlayer
 import net.a2f0.nc.ui.AppearancePreferences
 import net.a2f0.nc.ui.LocalAppearancePreferences
@@ -30,6 +31,7 @@ class MainActivity : ComponentActivity() {
         // the deprecated APIs Google Play flags. The theme makes the system bars transparent and
         // lets the app into display cutouts; Android 15 and later draw edge to edge anyway.
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        PlaybackLog.get(applicationContext)
         NoisePlayer.refreshWidgets(applicationContext)
         setContent {
             val preferences = remember {

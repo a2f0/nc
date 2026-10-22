@@ -57,6 +57,35 @@ session ends at its last saved checkpoint, so downtime is never added (the unsav
 be lost). Playback still works if storage fails; History shows a warning. Clearing app/site
 data removes the history; operating-system backups may include the native files.
 
+## Playback log
+
+Open **More → Playback log** to view the latest 300 playback events and share them as
+text (or save a text file on the web). Each event includes a UTC timestamp, sound, and
+reason. Labels follow the app language; diagnostic codes and OS error messages retain
+their original form. Details are limited to 512 characters per event. The log stays on
+the device and is never automatically uploaded. Native log files are excluded from backups.
+Storage failures show a warning and do not prevent playback; a few queued events can be
+lost if the process is killed before they reach disk.
+
+Android records UI, widget, notification and media commands, focus changes, output
+disconnections, task removal, engine failures, and service destruction. On Android 11+
+it matches unfinished playback to the system's retained process-exit records, including
+package updates, low memory, crashes and ANRs. Older Android, iOS and the web cannot always
+recover a cause: an unfinished playback marker is reported with an unknown cause, at the
+time it was detected. Web recovery uses Web Locks to avoid confusing a live tab with a
+closed one; without that API, only the original events are shown. iOS also records audio
+interruptions, route and engine configuration changes, and delivered termination notices;
+web logs context state, worklet/media failures, visibility and page exits.
+
+Android logs live to `adb logcat -s NoisePlayback`; iOS uses the `NoisePlayback` Logger
+category; the browser console uses the same tag. The persisted native files are
+`no_backup/playback-log-v1.json` (Android) and `Application Support/playback-log-v1.json`
+(iOS); web uses the `playback-log` IndexedDB database, with bounded localStorage receipts
+for page closes whose database writes may be discarded during navigation. Recovery consumes
+those receipts so ordinary tab closes retain their known cause. Clear app/site data to remove them.
+Google Play auto-updates can interrupt ongoing playback. This diagnostic feature does
+not restart playback after an update; reopen the app and press Play.
+
 ## Setup
 
 ```sh
@@ -190,7 +219,7 @@ refuses to run stale).
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
   ShellCheck; RuboCop; shared agent skills are current; localization is current; fastlane
   helper, web, and localization tests; web typecheck, build, and deploy dry run; Android
-  debug build, lint, and unit tests; iOS simulator build and audio rendering checks.
+  debug build, lint, and unit tests; iOS simulator build, audio rendering checks, and player lifecycle tests on an isolated simulator.
 
 CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
 

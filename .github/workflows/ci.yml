@@ -112,6 +112,9 @@ jobs:
       - name: Test audio rendering
         run: sh scripts/checks/testIosAudio.sh
 
+      - name: Test playback lifecycle
+        run: sh scripts/checks/testIosPlayback.sh
+
   web:
     name: Web
     runs-on: ubuntu-latest

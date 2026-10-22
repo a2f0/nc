@@ -83,7 +83,12 @@ Android APK. Run:
 maestro --device <device-id> test maestro/readiness.yaml
 maestro --device <android-device-id> test maestro/history-background.yaml
 maestro --device <device-id> test maestro/appearance.yaml
+maestro --device <device-id> test maestro/playback-log.yaml
 ```
+
+The playback-log flow verifies start/stop events and persistence across relaunches.
+On Android, also inspect `adb -s <serial> logcat -d -s NoisePlayback:I '*:S'` after
+running it on a minified release build to verify the diagnostic stream is retained.
 
 The appearance flow verifies System/Light/Dark selection across process restarts on both
 platforms. Also inspect the visible colors while Settings is open, switch the device's

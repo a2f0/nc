@@ -199,6 +199,7 @@ private fun NoiseScreen(
     sheet?.let { open ->
         SheetContent(open, onDismiss = { sheet = null }) { scrollToTop ->
             when (open) {
+                Sheet.PLAYBACK_LOG -> PlaybackLogContent()
                 Sheet.HISTORY -> HistoryContent(onNavigate = scrollToTop)
                 Sheet.SETTINGS -> SettingsContent(volume = volume, onVolumeChange = onVolumeChange)
                 Sheet.ABOUT -> AboutContent()
@@ -210,6 +211,7 @@ private fun NoiseScreen(
 /** The sheets the menu opens. */
 private enum class Sheet(@StringRes val title: Int) {
     HISTORY(R.string.history),
+    PLAYBACK_LOG(R.string.playback_log),
     SETTINGS(R.string.settings),
     ABOUT(R.string.about),
 }
@@ -231,6 +233,10 @@ private fun MoreMenu(onOpen: (Sheet) -> Unit, modifier: Modifier = Modifier) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.history)) },
                 onClick = { expanded = false; onOpen(Sheet.HISTORY) },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.playback_log)) },
+                onClick = { expanded = false; onOpen(Sheet.PLAYBACK_LOG) },
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.settings)) },
