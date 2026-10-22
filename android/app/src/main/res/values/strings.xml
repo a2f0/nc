@@ -49,7 +49,7 @@
     <string name="volume">Volume</string>
     <!-- Screen reader label for the three-dot menu button beside the app's name, which opens Settings and About. -->
     <string name="more">More</string>
-    <!-- Title and menu entry for local playback diagnostics. -->
+    <!-- Second tab in Settings, containing local playback diagnostics. Also the title of exported logs. -->
     <string name="playback_log">Playback log</string>
     <!-- Explanation of the bounded local diagnostic log and user-initiated sharing. -->
     <string name="playback_log_local">The last 300 events stay on this device. Nothing is sent unless you share the log. Details include system diagnostic codes.</string>
@@ -117,6 +117,8 @@
     <string name="history_value">%1$s: %2$s min</string>
     <!-- Item in the three-dot menu, and the title of the sheet it opens. -->
     <string name="settings">Settings</string>
+    <!-- Default first tab in Settings, containing language, appearance, and volume preferences. -->
+    <string name="settings_general">General</string>
     <!-- Settings section for the app's saved light or dark appearance. -->
     <string name="appearance">Appearance</string>
     <!-- Appearance option that follows the device's light or dark mode automatically. -->

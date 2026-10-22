@@ -72,6 +72,7 @@ export default {
   log_page_hidden: "Seite geschlossen oder verlassen",
   log_media_error: "Medienwiedergabe fehlgeschlagen",
   settings: "Einstellungen",
+  settings_general: "Allgemein",
   appearance: "Erscheinungsbild",
   appearance_system: "System",
   appearance_light: "Hell",

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct PlaybackLogSheet: View {
+struct PlaybackLogContent: View {
     let log: PlaybackLog
 
     private var text: String {
@@ -11,7 +11,7 @@ struct PlaybackLogSheet: View {
     }
 
     var body: some View {
-        SheetContent(title: .playbackLog) {
+        VStack(alignment: .leading, spacing: 16) {
             localizedText(.playbackLogLocal).foregroundStyle(Gray.secondaryLabel)
             if log.storageFailed { localizedText(.playbackLogStorageFailed) }
             ShareLink(item: LanguageSettings.string(.playbackLog) + "\n\n" + text) {

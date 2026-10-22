@@ -45,7 +45,6 @@ struct ContentView: View {
         .sheet(item: $sheet) { sheet in
             Group {
                 switch sheet {
-                case .playbackLog: PlaybackLogSheet(log: player.playbackLog)
                 case .history: HistorySheet(history: player.history)
                 case .settings: SettingsSheet(player: player)
                 case .about: AboutSheet()
@@ -61,7 +60,6 @@ struct ContentView: View {
 /// The sheets the menu opens.
 private enum Sheet: Identifiable {
     case history
-    case playbackLog
     case settings
     case about
 
@@ -81,9 +79,6 @@ private struct MoreMenu: View {
         Menu {
             Button { sheet = .history } label: {
                 Label { localizedText(.history) } icon: { Image(systemName: "chart.bar") }
-            }
-            Button { sheet = .playbackLog } label: {
-                Label { localizedText(.playbackLog) } icon: { Image(systemName: "list.bullet.rectangle") }
             }
             Button { sheet = .settings } label: {
                 Label { localizedText(.settings) } icon: { Image(systemName: "gearshape") }
@@ -110,55 +105,83 @@ private struct MoreMenu: View {
 /// Local playback and appearance preferences.
 private struct SettingsSheet: View {
     let player: NoisePlayer
+    @State private var showLog = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @AppStorage("appearance") private var appearance = Appearance.system.rawValue
     @AppStorage(LanguageSettings.key, store: LanguageSettings.defaults) private var language = AppLanguage.device.rawValue
 
     var body: some View {
         SheetContent(title: .settings) {
-            VStack(alignment: .leading, spacing: 4) {
-                localizedText(.language).font(.headline).accessibilityAddTraits(.isHeader)
-                Picker(selection: $language) {
-                    ForEach(AppLanguage.allCases) { option in
-                        Group {
-                            if option == .device { localizedText(.languageDevice) }
-                            else { Text(verbatim: option.nativeName) }
-                        }.tag(option.rawValue)
-                    }
-                } label: { localizedText(.language) }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .tint(Gray.label)
-                .accessibilityLabel(localizedText(.language))
-                .accessibilityIdentifier("language-picker")
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 8))
+            layout {
+                tab(.settingsGeneral, log: false)
+                tab(.playbackLog, log: true)
             }
-            VStack(alignment: .leading, spacing: 4) {
-                localizedText(.appearance).font(.headline).accessibilityAddTraits(.isHeader)
-                ForEach(Appearance.allCases) { option in
-                    let selected = (Appearance(rawValue: appearance) ?? .system) == option
-                    Button { appearance = option.rawValue } label: {
-                        HStack {
-                            localizedText(option.title)
-                            Spacer()
-                            Image(systemName: "checkmark").opacity(selected ? 1 : 0)
-                                .accessibilityHidden(true)
-                        }
-                        .foregroundStyle(Gray.label)
-                        .frame(minHeight: 44).contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selected ? .isSelected : [])
-                    .accessibilityIdentifier("appearance-\(option.rawValue)")
+            if showLog { PlaybackLogContent(log: player.playbackLog) }
+            else { generalSettings }
+        }
+    }
+
+    private func tab(_ title: LocalizedStringResource, log: Bool) -> some View {
+        Button { showLog = log } label: {
+            localizedText(title).font(.subheadline.weight(.semibold))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12).padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .foregroundStyle(showLog == log ? Gray.background : Gray.label)
+                .background(showLog == log ? Gray.label : Gray.secondaryFill, in: .rect(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(showLog == log ? .isSelected : [])
+        .accessibilityIdentifier(log ? "settings-log-tab" : "settings-general-tab")
+    }
+
+    @ViewBuilder private var generalSettings: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            localizedText(.language).font(.headline).accessibilityAddTraits(.isHeader)
+            Picker(selection: $language) {
+                ForEach(AppLanguage.allCases) { option in
+                    Group {
+                        if option == .device { localizedText(.languageDevice) }
+                        else { Text(verbatim: option.nativeName) }
+                    }.tag(option.rawValue)
                 }
+            } label: { localizedText(.language) }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .tint(Gray.label)
+            .accessibilityLabel(localizedText(.language))
+            .accessibilityIdentifier("language-picker")
+        }
+        VStack(alignment: .leading, spacing: 4) {
+            localizedText(.appearance).font(.headline).accessibilityAddTraits(.isHeader)
+            ForEach(Appearance.allCases) { option in
+                let selected = (Appearance(rawValue: appearance) ?? .system) == option
+                Button { appearance = option.rawValue } label: {
+                    HStack {
+                        localizedText(option.title)
+                        Spacer()
+                        Image(systemName: "checkmark").opacity(selected ? 1 : 0)
+                            .accessibilityHidden(true)
+                    }
+                    .foregroundStyle(Gray.label)
+                    .frame(minHeight: 44).contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? .isSelected : [])
+                .accessibilityIdentifier("appearance-\(option.rawValue)")
             }
-            VStack(alignment: .leading, spacing: 8) {
-                // The slider reads its own label.
-                localizedText(.volume)
-                    .font(.headline)
-                    .accessibilityHidden(true)
-                VolumeSlider(volume: Binding(get: { player.volume }, set: { player.setVolume($0) }))
-                    // For the Maestro flows (maestro/screenshots/).
-                    .accessibilityIdentifier("settings-volume")
-            }
+        }
+        VStack(alignment: .leading, spacing: 8) {
+            // The slider reads its own label.
+            localizedText(.volume)
+                .font(.headline)
+                .accessibilityHidden(true)
+            VolumeSlider(volume: Binding(get: { player.volume }, set: { player.setVolume($0) }))
+                // For the Maestro flows (maestro/screenshots/).
+                .accessibilityIdentifier("settings-volume")
         }
     }
 }

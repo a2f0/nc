@@ -3,6 +3,7 @@ import { setUpPlaybackLifecycle } from "./playbackLifecycle";
 import { setUpHistory } from "./historyView";
 import { setUpAppearance } from "./appearanceView";
 import { setUpLanguage } from "./languageView";
+import { setUpSettings } from "./settingsView";
 import { bindVolume, setUpMenu } from "./controls";
 import { currentLocale, t, tParts } from "./l10n";
 import { NoisePlayer } from "./noisePlayer";
@@ -29,13 +30,13 @@ bindVolume([volume, element("settings-volume") as HTMLInputElement], player);
 const more = element("more");
 const closeButtons = [...document.querySelectorAll<HTMLElement>(".close")];
 setUpMenu(document, more, element("menu"), [
-  [element("open-playback-log"), element("playback-log") as HTMLDialogElement, element("close-playback-log")],
   [element("open-history"), element("history") as HTMLDialogElement, element("close-history")],
   [element("open-settings"), element("settings") as HTMLDialogElement, element("close-settings")],
   [element("open-about"), element("about") as HTMLDialogElement, element("close-about")],
 ]);
 
 const renderPlaybackLog = setUpPlaybackLog(player.playbackLog);
+const renderSettings = setUpSettings(() => { void player.playbackLog.refresh(); });
 const renderHistory = setUpHistory(player.history);
 const renderAppearance = setUpAppearance();
 const renderLanguage = setUpLanguage(() => {
@@ -69,6 +70,7 @@ function localize(): void {
   element("history-title").textContent = t("history");
   renderHistory();
   renderPlaybackLog();
+  renderSettings();
   renderAppearance();
   renderLanguage();
   element("open-settings").textContent = t("settings");

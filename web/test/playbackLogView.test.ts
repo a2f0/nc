@@ -12,7 +12,7 @@ class Element extends EventTarget {
 }
 
 test("log view exports text, handles missing sharing, and retains translated warnings", async () => {
-  const elements = new Map(["playback-log-content", "open-playback-log", "playback-log-title"].map(id => [id, new Element()]));
+  const elements = new Map([["playback-log-content", new Element()]]);
   let download: Element | undefined;
   const navigator: { share?: (data: ShareData) => Promise<void> } = {};
   const replacements = { navigator, document: {

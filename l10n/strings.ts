@@ -147,7 +147,7 @@ export const STRINGS = {
   },
   playback_log: {
     text: "Playback log",
-    comment: "Title and menu entry for local playback diagnostics.",
+    comment: "Second tab in Settings, containing local playback diagnostics. Also the title of exported logs.",
   },
   playback_log_local: {
     text: "The last 300 events stay on this device. Nothing is sent unless you share the log. Details include system diagnostic codes.",
@@ -341,6 +341,10 @@ export const STRINGS = {
   settings: {
     text: "Settings",
     comment: "Item in the three-dot menu, and the title of the sheet it opens.",
+  },
+  settings_general: {
+    text: "General",
+    comment: "Default first tab in Settings, containing language, appearance, and volume preferences.",
   },
   appearance: {
     text: "Appearance",

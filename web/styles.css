@@ -434,12 +434,14 @@ button.toggle {
 }
 
 .history-views,
+.settings-tabs,
 .history-navigation {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
 .history-views button,
+.settings-tabs button,
 .history-detail button,
 .history-navigation button,
 #playback-log-content > button {
@@ -454,6 +456,9 @@ button.toggle {
 .history-views { margin-bottom: 16px; }
 .history-views button { flex: 1; min-height: 44px; }
 .history-views button[aria-pressed="true"] { background: var(--primary); color: var(--background); }
+.settings-tabs { margin-bottom: 16px; }
+.settings-tabs button { flex: 1; min-width: 0; min-height: 44px; overflow-wrap: anywhere; }
+.settings-tabs button[aria-selected="true"] { background: var(--primary); color: var(--background); }
 .history-navigation[hidden], .history-views[hidden], .history-legend[hidden] { display: none; }
 .history-navigation button:disabled { opacity: 0.4; cursor: default; }
 .history-range { text-align: center; }
