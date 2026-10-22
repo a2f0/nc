@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -84,6 +85,7 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
@@ -199,9 +201,8 @@ private fun NoiseScreen(
     sheet?.let { open ->
         SheetContent(open, onDismiss = { sheet = null }) { scrollToTop ->
             when (open) {
-                Sheet.PLAYBACK_LOG -> PlaybackLogContent()
                 Sheet.HISTORY -> HistoryContent(onNavigate = scrollToTop)
-                Sheet.SETTINGS -> SettingsContent(volume = volume, onVolumeChange = onVolumeChange)
+                Sheet.SETTINGS -> SettingsContent(volume = volume, onVolumeChange = onVolumeChange, onNavigate = scrollToTop)
                 Sheet.ABOUT -> AboutContent()
             }
         }
@@ -211,7 +212,6 @@ private fun NoiseScreen(
 /** The sheets the menu opens. */
 private enum class Sheet(@StringRes val title: Int) {
     HISTORY(R.string.history),
-    PLAYBACK_LOG(R.string.playback_log),
     SETTINGS(R.string.settings),
     ABOUT(R.string.about),
 }
@@ -233,10 +233,6 @@ private fun MoreMenu(onOpen: (Sheet) -> Unit, modifier: Modifier = Modifier) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.history)) },
                 onClick = { expanded = false; onOpen(Sheet.HISTORY) },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.playback_log)) },
-                onClick = { expanded = false; onOpen(Sheet.PLAYBACK_LOG) },
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.settings)) },
@@ -329,7 +325,30 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
 
 /** Local playback and appearance preferences. */
 @Composable
-private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
+private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit, onNavigate: () -> Unit) {
+    var showLog by rememberSaveable { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(false, true).forEach { log ->
+            val selected = showLog == log
+            Text(
+                stringResource(if (log) R.string.playback_log else R.string.settings_general),
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
+                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                    .testTag(if (log) "settings-log-tab" else "settings-general-tab")
+                    .selectable(selected = selected, role = Role.Tab, onClick = { showLog = log; onNavigate() })
+                    .heightIn(min = 48.dp).padding(12.dp),
+                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+    if (showLog) PlaybackLogContent()
+    else GeneralSettingsContent(volume, onVolumeChange)
+}
+
+@Composable
+private fun GeneralSettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
     val languages = LocalLanguageControl.current
     var languageMenu by remember { mutableStateOf(false) }
     val languageTitle = stringResource(R.string.language)

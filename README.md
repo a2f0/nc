@@ -59,7 +59,7 @@ data removes the history; operating-system backups may include the native files.
 
 ## Playback log
 
-Open **More → Playback log** to view the latest 300 playback events and share them as
+Open **More → Settings → Playback log** to view the latest 300 playback events and share them as
 text (or save a text file on the web). Each event includes a UTC timestamp, sound, and
 reason. Labels follow the app language; diagnostic codes and OS error messages retain
 their original form. Details are limited to 512 characters per event. The log stays on

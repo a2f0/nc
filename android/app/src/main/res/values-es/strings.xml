@@ -58,6 +58,7 @@
     <string name="history_storage_failed">No se pudo cargar o guardar parte del historial de escucha.</string>
     <string name="history_value">%1$s: %2$s min</string>
     <string name="settings">Ajustes</string>
+    <string name="settings_general">General</string>
     <string name="appearance">Apariencia</string>
     <string name="appearance_system">Sistema</string>
     <string name="appearance_light">Claro</string>

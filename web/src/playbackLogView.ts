@@ -35,8 +35,6 @@ export function setUpPlaybackLog(log: PlaybackLog): () => void {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
   const render = () => {
-    document.getElementById("open-playback-log")!.textContent = t("playback_log");
-    document.getElementById("playback-log-title")!.textContent = t("playback_log");
     description.textContent = t("playback_log_local");
     warning.textContent = [log.storageFailed ? t("playback_log_storage_failed") : "",
       shareFailed ? t("playback_log_share_failed") : ""].filter(Boolean).join(" ");
@@ -47,6 +45,5 @@ export function setUpPlaybackLog(log: PlaybackLog): () => void {
     entries.textContent = log.entries.length ? entriesText() : t("playback_log_empty");
   };
   log.subscribe(render);
-  document.getElementById("open-playback-log")!.addEventListener("click", () => { void log.refresh(); });
   return render;
 }

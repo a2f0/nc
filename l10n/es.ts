@@ -73,6 +73,7 @@ export default {
   log_page_hidden: "Página cerrada o abandonada",
   log_media_error: "Fallo de reproducción multimedia",
   settings: "Ajustes",
+  settings_general: "General",
   appearance: "Apariencia",
   appearance_system: "Sistema",
   appearance_light: "Claro",

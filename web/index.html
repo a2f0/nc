@@ -24,7 +24,6 @@
         </button>
         <div id="menu" class="menu" hidden>
           <button id="open-history" type="button">Listening history</button>
-          <button id="open-playback-log" type="button">Playback log</button>
           <button id="open-settings" type="button">Settings</button>
           <button id="open-about" type="button">About</button>
         </div>
@@ -58,17 +57,6 @@
         <div id="history-content"></div>
       </div>
     </dialog>
-    <dialog id="playback-log" class="sheet" aria-labelledby="playback-log-title">
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <h2 id="playback-log-title">Playback log</h2>
-          <button id="close-playback-log" type="button" class="close" aria-label="Close">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
-          </button>
-        </div>
-        <div id="playback-log-content"></div>
-      </div>
-    </dialog>
     <dialog id="settings" class="sheet" aria-labelledby="settings-title">
       <div class="sheet-content">
         <div class="sheet-header">
@@ -77,27 +65,34 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>
         </div>
-        <fieldset id="language" class="appearance-options">
-          <legend id="language-label">Language</legend>
-        </fieldset>
-        <p id="language-storage-failed" role="status"></p>
-        <fieldset class="appearance-options">
-          <legend id="appearance-title">Appearance</legend>
-          <label><input id="appearance-system" name="appearance" type="radio" value="system" /><span id="appearance-label-system">System</span></label>
-          <label><input id="appearance-light" name="appearance" type="radio" value="light" /><span id="appearance-label-light">Light</span></label>
-          <label><input id="appearance-dark" name="appearance" type="radio" value="dark" /><span id="appearance-label-dark">Dark</span></label>
-        </fieldset>
-        <p id="appearance-storage-failed" role="status"></p>
-        <label class="setting" for="settings-volume">Volume</label>
-        <div class="volume">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9v6h4l5 5V4l-5 5H7z" /></svg>
-          <input id="settings-volume" type="range" min="0" max="1" step="0.01" />
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
-            />
-          </svg>
+        <div class="settings-tabs" role="tablist" aria-labelledby="settings-title">
+          <button id="settings-general-tab" type="button" role="tab" aria-controls="settings-general" aria-selected="true">General</button>
+          <button id="settings-log-tab" type="button" role="tab" aria-controls="playback-log-content" aria-selected="false" tabindex="-1">Playback log</button>
         </div>
+        <div id="settings-general" role="tabpanel" aria-labelledby="settings-general-tab">
+          <fieldset id="language" class="appearance-options">
+            <legend id="language-label">Language</legend>
+          </fieldset>
+          <p id="language-storage-failed" role="status"></p>
+          <fieldset class="appearance-options">
+            <legend id="appearance-title">Appearance</legend>
+            <label><input id="appearance-system" name="appearance" type="radio" value="system" /><span id="appearance-label-system">System</span></label>
+            <label><input id="appearance-light" name="appearance" type="radio" value="light" /><span id="appearance-label-light">Light</span></label>
+            <label><input id="appearance-dark" name="appearance" type="radio" value="dark" /><span id="appearance-label-dark">Dark</span></label>
+          </fieldset>
+          <p id="appearance-storage-failed" role="status"></p>
+          <label class="setting" for="settings-volume">Volume</label>
+          <div class="volume">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9v6h4l5 5V4l-5 5H7z" /></svg>
+            <input id="settings-volume" type="range" min="0" max="1" step="0.01" />
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
+              />
+            </svg>
+          </div>
+        </div>
+        <div id="playback-log-content" role="tabpanel" aria-labelledby="settings-log-tab" hidden></div>
       </div>
     </dialog>
     <dialog id="about" class="sheet" aria-labelledby="about-title">
