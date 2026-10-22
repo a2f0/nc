@@ -35,7 +35,7 @@ final class NoisePlayer {
     @ObservationIgnored private var interruptedNoise: NoiseType?
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
-    private static let log = Logger(subsystem: "NoiseConnoisseur", category: "playback")
+    private static let log = Logger(subsystem: "net.a2f0.nc", category: "NoisePlayback")
     private static let volumeKey = "volume"
     private static let lastPlayedKey = "lastPlayed"
 

@@ -10,6 +10,7 @@ export function setUpPlaybackLog(log: PlaybackLog): () => void {
   const share = document.createElement("button");
   const save = document.createElement("button");
   const entries = document.createElement("pre");
+  let shareFailed = false;
   entries.className = "playback-log-entries";
   share.type = save.type = "button";
   content.append(description, warning, share, save, entries);
@@ -18,8 +19,11 @@ export function setUpPlaybackLog(log: PlaybackLog): () => void {
   ).join("\n\n");
   const exportText = () => t("playback_log") + "\n\n" + entriesText();
   share.addEventListener("click", () => {
+    shareFailed = false;
+    render();
     void navigator.share({ title: t("playback_log"), text: exportText() }).catch((error: unknown) => {
-      if (!(error instanceof DOMException && error.name === "AbortError")) warning.textContent = t("playback_log_share_failed");
+      shareFailed = !(error instanceof DOMException && error.name === "AbortError");
+      render();
     });
   });
   save.addEventListener("click", () => {
@@ -34,7 +38,8 @@ export function setUpPlaybackLog(log: PlaybackLog): () => void {
     document.getElementById("open-playback-log")!.textContent = t("playback_log");
     document.getElementById("playback-log-title")!.textContent = t("playback_log");
     description.textContent = t("playback_log_local");
-    warning.textContent = log.storageFailed ? t("playback_log_storage_failed") : "";
+    warning.textContent = [log.storageFailed ? t("playback_log_storage_failed") : "",
+      shareFailed ? t("playback_log_share_failed") : ""].filter(Boolean).join(" ");
     share.textContent = t("playback_log_share");
     share.hidden = typeof navigator.share !== "function";
     save.textContent = t("playback_log_save");

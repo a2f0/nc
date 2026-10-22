@@ -1,4 +1,5 @@
 import { setUpPlaybackLog } from "./playbackLogView";
+import { setUpPlaybackLifecycle } from "./playbackLifecycle";
 import { setUpHistory } from "./historyView";
 import { setUpAppearance } from "./appearanceView";
 import { setUpLanguage } from "./languageView";
@@ -42,16 +43,7 @@ const renderLanguage = setUpLanguage(() => {
   player.updateMediaSession();
 });
 setInterval(() => player.history.checkpoint(), 15_000);
-window.addEventListener("pagehide", (event) => {
-  if (player.nowPlaying === null) return;
-  player.playbackLog.record("log_page_hidden", player.nowPlaying, `persisted=${event.persisted}`);
-  player.stop("pagehide", false);
-});
-document.addEventListener("visibilitychange", () => {
-  if (player.nowPlaying !== null) player.playbackLog.record("log_visibility", player.nowPlaying, document.visibilityState);
-  player.history.checkpoint();
-  if (document.visibilityState === "visible") void player.history.refresh();
-});
+setUpPlaybackLifecycle(player);
 
 const cards = new Map<NoiseType, HTMLButtonElement>(NOISE_TYPES.map((type) => [type, card(type)]));
 sounds.append(...cards.values());

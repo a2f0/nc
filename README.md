@@ -80,7 +80,9 @@ web logs context state, worklet/media failures, visibility and page exits.
 Android logs live to `adb logcat -s NoisePlayback`; iOS uses the `NoisePlayback` Logger
 category; the browser console uses the same tag. The persisted native files are
 `no_backup/playback-log-v1.json` (Android) and `Application Support/playback-log-v1.json`
-(iOS); web uses the `playback-log` IndexedDB database. Clear app/site data to remove them.
+(iOS); web uses the `playback-log` IndexedDB database, with bounded localStorage receipts
+for page closes whose database writes may be discarded during navigation. Recovery consumes
+those receipts so ordinary tab closes retain their known cause. Clear app/site data to remove them.
 Google Play auto-updates can interrupt ongoing playback. This diagnostic feature does
 not restart playback after an update; reopen the app and press Play.
 

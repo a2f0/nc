@@ -98,6 +98,48 @@ function opened(factory: IDBFactory, version = 1): Promise<IDBDatabase> {
 }
 
 describe("IndexedDB playback storage", () => {
+  test("a synchronous pagehide receipt survives discarded IndexedDB writes and is consumed once", async () => {
+    const factory = new IDBFactory();
+    const values = new Map<string, string>([["unrelated", "keep"]]);
+    const local = {
+      get length() { return values.size; }, key: (index: number) => [...values.keys()][index] ?? null,
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { values.set(key, value); },
+      removeItem: (key: string) => { values.delete(key); },
+    } as Storage;
+    const storage = new IndexedDBPlaybackLogStorage(() => factory, () => local);
+    await storage.write(entry(1, "closed-tab"), true);
+    const hidden: PlaybackLogEntry = { ...entry(2, "closed-tab"), event: "log_page_hidden", detail: "persisted=false" };
+    storage.close(hidden); // Browser discards the document before its async write runs.
+    const next = new PlaybackLog(new IndexedDBPlaybackLogStorage(() => factory, () => local), new Locks().manager);
+    await next.ready;
+    expect(next.entries.map(row => row.event)).toEqual(["log_started", "log_page_hidden"]);
+    expect(await storage.markers()).toHaveLength(0);
+    expect(values.size).toBe(1);
+    const again = new PlaybackLog(storage, new Locks().manager);
+    await again.ready;
+    expect(again.entries).toEqual(next.entries);
+    for (let index = 0; index < 350; index++) storage.close({ ...entry(index), event: "log_page_hidden" });
+    expect(values.size).toBe(LOG_LIMIT + 1);
+    expect(values.get("unrelated")).toBe("keep");
+    expect(storage.closure({ owner: "owner-0", timestamp: 0, soundId: "pink" })).toBeUndefined();
+    expect(storage.closure({ owner: "owner-349", timestamp: 400, soundId: "pink" })).toBeUndefined();
+    values.set("playback-log-close:malformed", "not JSON");
+    expect(storage.closure({ owner: "malformed", timestamp: 0, soundId: "pink" })).toBeUndefined();
+  });
+
+  test("blocked synchronous closure storage never prevents stopping or the async write", async () => {
+    const factory = new IDBFactory();
+    const storage = new IndexedDBPlaybackLogStorage(() => factory, () => { throw new Error("blocked"); });
+    const log = new PlaybackLog(storage, null);
+    await log.ready;
+    log.record("log_started", "white", "", true);
+    expect(() => log.record("log_page_hidden", "white", "persisted=false", false)).not.toThrow();
+    await log.flushed();
+    expect(log.storageFailed).toBe(true);
+    expect(await storage.markers()).toHaveLength(0);
+  });
+
   test("concurrent writers retain 300 events and markers; stopping clears only its owner", async () => {
     const factory = new IDBFactory();
     const first = new IndexedDBPlaybackLogStorage(() => factory);
@@ -120,7 +162,7 @@ describe("IndexedDB playback storage", () => {
     await storage.write(entry(1), true);
     const db = await opened(factory);
     const tx = db.transaction(["events", "active"], "readwrite");
-    for (const row of [null, { ...entry(2), event: "log_future_event" }, { ...entry(3), soundId: "future_sound" },
+    for (const row of [null, { ...entry(2), event: "log_future_event" }, { ...entry(2), event: "log_focus_changed" }, { ...entry(3), soundId: "future_sound" },
       { ...entry(4), timestamp: Infinity }, { ...entry(5), detail: "x".repeat(513) }]) tx.objectStore("events").add(row);
     tx.objectStore("active").put({ owner: "unknown-sound", timestamp: 1, soundId: "future_sound" });
     tx.objectStore("active").put({ owner: "bad-time", timestamp: Infinity, soundId: "pink" });

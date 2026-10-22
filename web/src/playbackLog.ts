@@ -1,4 +1,4 @@
-import { STRINGS, type PlatformKey } from "../../l10n/strings";
+import { STRINGS, type PlatformKey, type SourceString } from "../../l10n/strings";
 import { NOISE_TYPES, type NoiseType } from "./noiseType";
 
 export type PlaybackEvent = Extract<PlatformKey<"web">, `log_${string}`>;
@@ -15,8 +15,14 @@ export interface PlaybackLogStorage {
   read(): Promise<PlaybackLogEntry[]>;
   write(row: PlaybackLogEntry, active: boolean | undefined): Promise<void>;
   markers(): Promise<PlaybackMarker[]>;
+  close?(row: PlaybackLogEntry): void;
+  closure?(marker: PlaybackMarker): PlaybackLogEntry | undefined;
 }
 export const LOG_LIMIT = 300;
+const WEB_EVENTS = new Set(Object.entries(STRINGS).filter(([key, definition]) => {
+  const platforms = (definition as SourceString).platforms;
+  return key.startsWith("log_") && (!platforms || platforms.includes("web"));
+}).map(([key]) => key));
 
 function isMarker(value: unknown): value is PlaybackMarker {
   if (!value || typeof value !== "object") return false;
@@ -32,14 +38,45 @@ function isEntry(value: unknown): value is PlaybackLogEntry {
   return isMarker({ ...row, soundId: row.soundId ?? "white" })
     && (row.soundId === null || NOISE_TYPES.includes(row.soundId as NoiseType))
     && typeof row.id === "string" && row.id.length > 0 && row.id.length <= 100
-    && typeof row.event === "string" && row.event.startsWith("log_") && Object.hasOwn(STRINGS, row.event)
+    && typeof row.event === "string" && WEB_EVENTS.has(row.event)
     && typeof row.detail === "string" && row.detail.length <= 512;
 }
 
 /** Transactions serialize pruning and writes across tabs; no tab can overwrite another's log. */
 export class IndexedDBPlaybackLogStorage implements PlaybackLogStorage {
   private database?: Promise<IDBDatabase>;
-  constructor(private readonly factory: () => IDBFactory = () => indexedDB) {}
+  private readonly closePrefix = "playback-log-close:";
+  constructor(private readonly factory: () => IDBFactory = () => indexedDB,
+    private readonly local: () => Storage | null = () => globalThis.localStorage ?? null) {}
+
+  // IndexedDB transactions may be discarded during navigation. Preserve the known
+  // pagehide cause synchronously, until its event and marker deletion are committed.
+  close(row: PlaybackLogEntry): void {
+    const local = this.local();
+    if (!local) return;
+    local.setItem(this.closePrefix + row.owner, JSON.stringify(row));
+    const keys: { key: string; timestamp: number }[] = [];
+    for (let index = 0; index < local.length; index++) {
+      const key = local.key(index)!;
+      if (!key.startsWith(this.closePrefix)) continue;
+      const entry = this.closedRow(local.getItem(key));
+      keys.push({ key, timestamp: entry?.timestamp ?? -Infinity });
+    }
+    keys.sort((a, b) => a.timestamp - b.timestamp);
+    for (const { key } of keys.slice(0, -LOG_LIMIT)) local.removeItem(key);
+  }
+
+  private closedRow(value: string | null): PlaybackLogEntry | undefined {
+    try {
+      const row: unknown = JSON.parse(value ?? "null");
+      return isEntry(row) && row.event === "log_page_hidden" ? row : undefined;
+    } catch { return undefined; }
+  }
+
+  closure(marker: PlaybackMarker): PlaybackLogEntry | undefined {
+    const row = this.closedRow(this.local()?.getItem(this.closePrefix + marker.owner) ?? null);
+    return row?.owner === marker.owner && row.timestamp >= marker.timestamp ? row : undefined;
+  }
 
   private open(): Promise<IDBDatabase> {
     return this.database ??= new Promise<IDBDatabase>((resolve, reject) => {
@@ -92,7 +129,16 @@ export class IndexedDBPlaybackLogStorage implements PlaybackLogStorage {
         })).sort((a, b) => a.timestamp - b.timestamp);
         for (const marker of rows.slice(0, -LOG_LIMIT)) markers.delete(marker.key);
       };
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => {
+        if (row.event === "log_page_hidden") {
+          try {
+            const local = this.local();
+            const key = this.closePrefix + row.owner;
+            if (this.closedRow(local?.getItem(key) ?? null)?.id === row.id) local?.removeItem(key);
+          } catch { /* A stale closure is harmless: recovery also checks the active timestamp. */ }
+        }
+        resolve();
+      };
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });
@@ -124,7 +170,9 @@ export class PlaybackLog {
             if (!lock) return;
             // Another new tab may have recovered it while this page was opening.
             if (!(await this.storage.markers()).some((row) => row.owner === marker.owner)) return;
-            const row = this.row("log_unclean_exit", marker.soundId,
+            let closure: PlaybackLogEntry | undefined;
+            try { closure = this.storage.closure?.(marker); } catch { this.storageFailed = true; }
+            const row = closure ?? this.row("log_unclean_exit", marker.soundId,
               `startedAt=${new Date(marker.timestamp).toISOString()}`, marker.owner);
             await this.storage.write(row, false);
             console.info("NoisePlayback", row);
@@ -153,6 +201,9 @@ export class PlaybackLog {
 
   record(event: PlaybackEvent, soundId: NoiseType | null = null, detail = "", active?: boolean): void {
     const row = this.row(event, soundId, detail);
+    if (event === "log_page_hidden" && active === false) {
+      try { this.storage.close?.(row); } catch { this.storageFailed = true; }
+    }
     console.info("NoisePlayback", row);
     this.entries = [...this.entries, row].slice(-LOG_LIMIT);
     this.publish();
