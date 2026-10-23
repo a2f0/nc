@@ -158,9 +158,7 @@ test("the not-found page works at any depth and stays out of search", async () =
   expect(html.indexOf('name="theme-color"')).toBeLessThan(html.indexOf('<script src="/appearance-init.js"></script>'));
   expect(html.indexOf("/appearance-init.js")).toBeLessThan(html.indexOf('<link rel="stylesheet" href="/styles.css" />'));
   expect(html).not.toContain("clickTracking.js");
-  // Workers static assets serve it for unknown paths only with this setting.
-  const config = await readFile(join(import.meta.dir, "../wrangler.jsonc"), "utf8");
-  expect(config).toContain('"not_found_handling": "404-page"');
+  // routing.test.ts checks that Workers static assets serve it.
 });
 
 test("robots.txt allows crawling and names the sitemap of every page", async () => {

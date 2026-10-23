@@ -101,6 +101,7 @@ results can show, matching `og:site_name`) and describes a `WebApplication` whos
 banners once they're published.
 The metadata is English, like the static page; the landing page's `localize()` retitles
 the tab in the chosen language from `web_title` in `l10n/strings.ts`.
-`web/test/build.test.ts` checks all of it in the built site, and
-`web/test/playEvidence.test.ts` the review page. nc.a2f0.net is the only
+`web/test/build.test.ts` checks all of it in the built site,
+`web/test/routing.test.ts` the paths and status codes Wrangler's local Workers runtime
+serves it with, and `web/test/playEvidence.test.ts` the review page. nc.a2f0.net is the only
 deployment, so nothing is tier-specific.
