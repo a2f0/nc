@@ -79,3 +79,17 @@ The website overrides GPC while honoring DNT and CT's extension and saved opt-ou
 The public [privacy notice](https://nc.a2f0.net/privacy) describes click metadata,
 IP/geolocation, 90-day retention, and opt-out instructions. No sound names, settings,
 history, or playback logs are sent. Browser integration tests intercept every CT request.
+
+## Web search and social metadata
+
+`web/build.ts` adds the metadata every page in `PAGES` shares after its `<title>`: the
+canonical URL (`https://nc.a2f0.net/`, `/privacy`, `/ios/support`, and so on, the paths
+Workers static assets serve without redirecting), a theme color per color scheme, and Open
+Graph and Twitter cards built from the page's own title and description, with the web
+image target's 1200x630 `og-image.png`. It also writes `robots.txt`, which allows every
+crawler and names the sitemap, and `sitemap.xml`, which lists every page's canonical URL.
+The Worker's `/review/*` responses carry `X-Robots-Tag: noindex` and stay out of the
+sitemap. The landing page's JSON-LD describes a `WebApplication` whose `operatingSystem` is
+only the web; add the store apps, their store links, and any app banners once they're
+published. `web/test/build.test.ts` checks all of it in the built site. nc.a2f0.net is the
+only deployment, so nothing is tier-specific.

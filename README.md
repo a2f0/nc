@@ -51,7 +51,8 @@ The application ID is in `android/app/build.gradle.kts`.
 **Web:** `bun run web:dev` serves the app at http://localhost:8080 (set `PORT` to change it)
 and rebuilds when `web/` changes; reload to pick up a rebuild. `bun run web:build` writes the production site to the gitignored `web/dist/` (`AudioWorklet` needs a secure context, so it must
 be served over HTTPS or from localhost, not `file://`). The page, audio worklet, and click tracker are
-separate bundles (`web/build.ts`); the favicon, also the logo beside the title, is the app icon, built from `assets/brand/*.svg`. The iOS and
+separate bundles (`web/build.ts`); the favicon, also the logo beside the title, is the app icon, built from `assets/brand/*.svg`
+with the social preview image. The build also adds each page's [search and social metadata](docs/architecture.md#web-search-and-social-metadata). The iOS and
 Android apps and their store listings link to their own privacy and support pages in `web/ios/` and
 `web/android/` (served at `/ios/privacy`, `/android/support`, and so on); `web/privacy.html` and
 `web/support.html` cover the website and every platform. Keep each privacy policy accurate when an

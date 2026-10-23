@@ -266,6 +266,23 @@
                 ]
               }
             ]
+          },
+          {
+            "path": "og-image.png",
+            "size": [
+              1200,
+              630
+            ],
+            "opaque": true,
+            "layers": [
+              {
+                "source": "background",
+                "fit": "cover"
+              },
+              {
+                "source": "logo"
+              }
+            ]
           }
         ]
       }
