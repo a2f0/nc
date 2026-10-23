@@ -69,6 +69,6 @@ privacy, and opt-outs.
 - [Dependency maintenance](docs/dependency-upgrades.md): upgrade procedures and compatibility boundaries.
 - [Agent guidance](AGENTS.md): validation, managed skills, review, and shipping policy.
 
-Use [app-store-readiness](.agents/skills/app-store-readiness/SKILL.md) for an iOS,
+Use [app-store-readiness](skills/app-store-readiness/SKILL.md) for an iOS,
 Android, and web pre-release assessment. Record candidate findings and prerequisites
 in the release PR.

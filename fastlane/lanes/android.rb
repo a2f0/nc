@@ -16,6 +16,22 @@ ANDROID_RELEASE_MAPPING = File.join(ANDROID_OUTPUTS_DIR, 'mapping/release/mappin
 ANDROID_METADATA_DIR = File.join(REPO_ROOT, 'fastlane/metadata/android')
 ANDROID_EVIDENCE_MANIFEST = '.store-evidence/android-media-playback/manifest.json'
 GOOGLE_PLAY_TRACKS = %w[production beta alpha internal].freeze
+# What the readiness lane expects the App Bundle to hold. Without INTERNET,
+# native playback and history stay on the device; the other permissions come
+# from foreground media playback, the widgets' WorkManager, and AndroidX.
+# Release builds are minified.
+ANDROID_READINESS_EXPECTATIONS = {
+  identifier: NATIVE_APP_IDENTIFIER,
+  permissions: %W[
+    android.permission.FOREGROUND_SERVICE
+    android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+    android.permission.WAKE_LOCK
+    android.permission.ACCESS_NETWORK_STATE
+    android.permission.RECEIVE_BOOT_COMPLETED
+    #{NATIVE_APP_IDENTIFIER}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+  ],
+  minified: true
+}.freeze
 
 def google_play_track(options)
   track = options.fetch(:track, 'internal').to_s
@@ -140,10 +156,10 @@ platform :android do
     track = google_play_track(options)
     online = options[:store].to_s != 'false'
     report = Readiness::Report.new('android', artifact, REPO_ROOT)
-    Readiness.android_artifact(report, artifact, bundletool: bundletool_path(options))
+    Readiness.android_artifact(report, artifact, ANDROID_READINESS_EXPECTATIONS, bundletool: bundletool_path(options))
     if online
-      Readiness.android_store(report, key_path: GOOGLE_PLAY_JSON_KEY_PATH,
-                                      locales: listing_locales(ANDROID_METADATA_DIR, 'title.txt'), track: track)
+      Readiness.android_store(report, package: NATIVE_APP_IDENTIFIER, key_path: GOOGLE_PLAY_JSON_KEY_PATH,
+                                      listing: readiness_listing(ANDROID_METADATA_DIR, 'title.txt'), track: track)
     else
       report.add('store.android', 'unverified', 'Store inspection explicitly skipped.')
     end
