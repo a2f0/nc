@@ -223,10 +223,10 @@ private struct AboutSheet: View {
                     .foregroundStyle(Gray.secondaryLabel)
                     // Links take the tint, which would otherwise be the blue accent color.
                     .tint(Gray.secondaryLabel)
-                Link(destination: Self.webURL.appending(path: "privacy")) {
+                Link(destination: Self.webURL.appending(path: "ios/privacy")) {
                     localizedText(.privacyPolicy).underline().frame(minHeight: 44, alignment: .leading)
                 }.tint(Gray.label)
-                Link(destination: Self.webURL.appending(path: "support")) {
+                Link(destination: Self.webURL.appending(path: "ios/support")) {
                     localizedText(.support).underline().frame(minHeight: 44, alignment: .leading)
                 }.tint(Gray.label)
             }

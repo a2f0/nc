@@ -9,6 +9,11 @@ const REPO_ROOT = join(WEB_DIR, "..");
 export const DIST_DIR = join(WEB_DIR, "dist");
 const PACKAGE_JSON = join(REPO_ROOT, "package.json");
 const AGENT_TOOL = join(REPO_ROOT, "node_modules/.bin/agent-tool");
+// The website's pages, and the privacy and support pages the iOS and Android apps link to.
+export const PAGES = [
+  "index.html", "privacy.html", "support.html",
+  "ios/privacy.html", "ios/support.html", "android/privacy.html", "android/support.html",
+];
 
 export async function build(outDir: string = DIST_DIR, tracking = false): Promise<void> {
   await rm(outDir, { recursive: true, force: true });
@@ -33,7 +38,7 @@ export async function build(outDir: string = DIST_DIR, tracking = false): Promis
   });
   if (!appearance.success) throw new AggregateError(appearance.logs, "Appearance bootstrap build failed");
 
-  for (const file of ["index.html", "privacy.html", "support.html", "styles.css"]) {
+  for (const file of [...PAGES, "styles.css"]) {
     await cp(join(WEB_DIR, file), join(outDir, file));
   }
 
