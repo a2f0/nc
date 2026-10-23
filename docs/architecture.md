@@ -10,7 +10,7 @@ Open **More → Settings → Appearance** and choose **System**, **Light**, or *
 System is the default and follows the device's appearance automatically. Explicit choices
 take effect immediately and stay saved across app restarts and device reboots, using native
 preferences or browser local storage. The web app applies the saved choice before rendering
-and keeps open tabs in sync. Clearing app/site data removes the preference; blocked browser
+and keeps open tabs in sync, retinting the browser's theme color with it. Clearing app/site data removes the preference; blocked browser
 storage shows a warning and keeps the choice only for the current page.
 The system-controlled mobile launch screen can briefly use the system appearance before
 the app's saved appearance takes over.
@@ -84,7 +84,8 @@ history, or playback logs are sent. Browser integration tests intercept every CT
 
 `web/build.ts` adds the metadata every page in `PAGES` shares after its `<title>`: the
 canonical URL (`https://nc.a2f0.net/`, `/privacy`, `/ios/support`, and so on, the paths
-Workers static assets serve without redirecting), a theme color per color scheme, and Open
+Workers static assets serve without redirecting), a theme color per color scheme, which
+`applyAppearance()` points at the chosen appearance's color, and Open
 Graph and Twitter cards built from the page's own title and description, with the web
 image target's 1200x630 `og-image.png`. It also writes `robots.txt`, which allows every
 crawler and names the sitemap, and `sitemap.xml`, which lists every page's canonical URL.

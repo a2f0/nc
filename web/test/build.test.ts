@@ -93,8 +93,10 @@ test("every page has its canonical URL, theme color, and social cards from its o
       "twitter:card": ["summary_large_image"],
     } });
     expect(contents(html, 'property="og:image:alt"')[0]).toBeTruthy();
-    expect(html).toContain('<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />');
-    expect(html).toContain('<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />');
+    expect(html).toContain('<meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#ffffff" />');
+    expect(html).toContain('<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000" />');
+    // Before the appearance script, so it can retint them before the first paint.
+    expect(html.indexOf('name="theme-color"')).toBeLessThan(html.indexOf("appearance-init.js"));
     expect(html).not.toContain('name="robots"');
   }
   expect(titles.size).toBe(PAGES.length);
@@ -147,22 +149,38 @@ test("every app page applies the saved appearance before styles and the main scr
   let saved: string | null = "dark";
   const localStorage = { getItem: () => saved };
   const root = { dataset: {} as Record<string, string> };
+  // The theme-color tags, by scheme, and the media query each applies in.
+  const media: Record<string, string> = {};
+  const metas = ["light", "dark"].map(scheme => ({
+    dataset: { scheme },
+    setAttribute(name: string, value: string) { expect(name).toBe("media"); media[scheme] = value; },
+  }));
+  const document = {
+    documentElement: root,
+    querySelectorAll(selector: string) {
+      expect(selector).toBe('meta[name="theme-color"][data-scheme]');
+      return metas;
+    },
+  };
   let listener!: (event: { key: string | null; storageArea: unknown }) => void;
   const window = { addEventListener(type: string, callback: typeof listener) {
     expect(type).toBe("storage");
     listener = callback;
   } };
-  runInNewContext(script, { localStorage, document: { documentElement: root }, window });
+  runInNewContext(script, { localStorage, document, window });
   expect(root.dataset.appearance).toBe("dark");
+  expect(media).toEqual({ light: "not all", dark: "all" });
   saved = "light";
   listener({ key: "appearance", storageArea: {} }); // Session storage must not affect the app.
   listener({ key: "volume", storageArea: localStorage });
   expect(root.dataset.appearance).toBe("dark");
   listener({ key: "appearance", storageArea: localStorage });
   expect(root.dataset.appearance).toBe("light");
+  expect(media).toEqual({ light: "all", dark: "not all" });
   saved = null;
   listener({ key: null, storageArea: localStorage }); // localStorage.clear() in another tab.
   expect(root.dataset.appearance).toBe("system");
+  expect(media).toEqual({ light: "(prefers-color-scheme: light)", dark: "(prefers-color-scheme: dark)" });
   saved = "future-mode";
   listener({ key: "appearance", storageArea: localStorage });
   expect(root.dataset.appearance).toBe("system");
@@ -170,7 +188,7 @@ test("every app page applies the saved appearance before styles and the main scr
   root.dataset.appearance = "dark";
   runInNewContext(script, {
     get localStorage() { throw new Error("Blocked storage"); },
-    document: { documentElement: root }, window,
+    document, window,
   });
   expect(root.dataset.appearance).toBe("system");
 });

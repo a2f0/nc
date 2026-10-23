@@ -60,8 +60,8 @@ export async function build(outDir: string = DIST_DIR, tracking = false): Promis
 }
 
 // Adds the search and social metadata every page shares after its <title>: the canonical
-// URL, the browser's theme color (the page background), and Open Graph and Twitter cards
-// built from the page's own title and description.
+// URL, the browser's theme color, and Open Graph and Twitter cards built from the page's
+// own title and description.
 export function withMetadata(page: string, html: string): string {
   const [line, indent, title] = /^( *)<title>([^<]+)<\/title>$/m.exec(html) ?? [];
   const description = /<meta name="description" content="([^"]+)" \/>/.exec(html)?.[1];
@@ -71,8 +71,9 @@ export function withMetadata(page: string, html: string): string {
   const url = canonicalUrl(page);
   const tags = [
     `<link rel="canonical" href="${url}" />`,
-    `<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />`,
-    `<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000" />`,
+    // The page background in styles.css; applyAppearance() follows a chosen appearance.
+    `<meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#ffffff" />`,
+    `<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="Noise Connoisseur" />`,
     `<meta property="og:title" content="${title.replaceAll('"', "&quot;")}" />`,

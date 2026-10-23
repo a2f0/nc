@@ -42,7 +42,11 @@ function withPage(run: (page: {
   const window = new EventTarget();
   const replacements = {
     window,
-    document: { documentElement: { dataset }, getElementById: (id: string) => elements.get(id) ?? null },
+    document: {
+      documentElement: { dataset },
+      getElementById: (id: string) => elements.get(id) ?? null,
+      querySelectorAll: () => [],
+    },
     HTMLInputElement: Input,
     localStorage,
   };
