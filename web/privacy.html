@@ -59,8 +59,8 @@
 
       <h2>Website click analytics</h2>
       <p>
-        The production website uses CT, operated by Tearleads, LLC, to record clicks with their time,
-        element type, application, and environment. Every page is recorded as <code>/</code>.
+        The production website uses CT, operated by Tearleads, LLC, to record clicks with a random per-click identifier, time,
+        element type, site, application, and environment. Every page is recorded as <code>/</code>.
         CT does not record text, form values, link destinations, query strings, fragments, listening
         history, playback logs, volume, or the sound selected. Editable fields are excluded.
       </p>
@@ -72,7 +72,8 @@
       <p>
         This website overrides Global Privacy Control. Do Not Track, saved CT opt-outs, and the
         <a href="https://github.com/a2f0/ct/tree/main/packages/extension">CT browser extension</a>
-        still stop collection. Automated browsers and development previews are excluded.
+        still stop collection. Clearing site data also clears a saved CT opt-out; reapply it
+        afterward or use the extension or Do Not Track. Automated browsers and development previews are excluded.
         See <a href="https://github.com/a2f0/ct/blob/main/docs/privacy.md">CT privacy and opt-out instructions</a>.
         These analytics apply only to the website, not the native apps.
       </p>

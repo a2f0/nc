@@ -46,7 +46,7 @@ platform :android do
     artifact = File.expand_path(options.fetch(:artifact, ANDROID_RELEASE_AAB), REPO_ROOT)
     tool = bundletool_path(options)
     UI.user_error!('Pass bundletool:/absolute/path/bundletool.jar or set BUNDLETOOL_JAR') unless tool
-    sh('ruby', File.join(REPO_ROOT, 'scripts/recordAndroidForegroundVideo.rb'), artifact, tool)
+    sh('ruby', File.join(REPO_ROOT, 'scripts/testing/recordAndroidForegroundVideo.rb'), artifact, tool)
   end
 
   desc 'Publish a reviewed foreground-service video to R2, updating the stable pointer last ' \
@@ -82,7 +82,7 @@ platform :android do
 
     build_number = options[:build_number]&.to_i || next_google_play_version_code
     UI.message("Building #{NATIVE_APP_IDENTIFIER} version code #{build_number}")
-    sh('sh', File.join(REPO_ROOT, 'scripts/ensureGradleWrapper.sh'))
+    sh('sh', File.join(REPO_ROOT, 'scripts/dev/ensureGradleWrapper.sh'))
     # Gradle reads the keystore passwords from the environment loaded above.
     gradle(
       project_dir: ANDROID_DIR, task: 'bundleRelease', flags: '--console=plain',
@@ -167,7 +167,7 @@ platform :android do
 
     Dir.mktmpdir('nc-listing') do |dir|
       images = StoreListing.stage_play_listing(ANDROID_METADATA_DIR, SCREENSHOTS_DIR, dir)
-      sh('sh', File.join(REPO_ROOT, 'scripts/buildImages.sh'), 'store', '--out', images)
+      sh('sh', File.join(REPO_ROOT, 'scripts/build/buildImages.sh'), 'store', '--out', images)
       upload_to_play_store(
         package_name: NATIVE_APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH, metadata_path: dir,
         track: 'internal', version_code: version_code,

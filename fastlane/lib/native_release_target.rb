@@ -31,7 +31,7 @@ NATIVE_APP_IDENTIFIER = NATIVE_RELEASE_TARGET.fetch(:app_identifier)
 REPO_ROOT = File.expand_path('../..', __dir__)
 
 # .secrets is a gitignored symlink to this project's folder in matrix-secrets
-# (see the README). NATIVE_RELEASE_SECRETS_DIR names another folder, as tests
+# (see docs/releasing.md). NATIVE_RELEASE_SECRETS_DIR names another folder, as tests
 # do; a relative one is resolved from the repository root.
 secrets_override = ENV.fetch('NATIVE_RELEASE_SECRETS_DIR', '')
 SECRETS_DIR = if secrets_override.empty?

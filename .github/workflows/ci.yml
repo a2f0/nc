@@ -66,7 +66,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The Gradle build renders its images with agent-tool (scripts/buildImages.sh).
+      # The Gradle build renders its images with agent-tool (scripts/build/buildImages.sh).
       - name: Set up Bun, Java, and Gradle
         uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
@@ -79,7 +79,7 @@ jobs:
 
       - name: Build and lint
         run: |
-          sh scripts/ensureGradleWrapper.sh
+          sh scripts/dev/ensureGradleWrapper.sh
           cd android
           ./gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest
 
@@ -91,7 +91,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The Xcode build renders its images with agent-tool (scripts/buildImages.sh).
+      # The Xcode build renders its images with agent-tool (scripts/build/buildImages.sh).
       - name: Set up Bun
         uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
@@ -113,10 +113,10 @@ jobs:
             build
 
       - name: Test audio rendering
-        run: sh scripts/checks/testIosAudio.sh
+        run: sh scripts/testing/testIosAudio.sh
 
       - name: Test playback lifecycle
-        run: sh scripts/checks/testIosPlayback.sh
+        run: sh scripts/testing/testIosPlayback.sh
 
   web:
     name: Web

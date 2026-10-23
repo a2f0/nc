@@ -41,7 +41,7 @@ and verify the distribution SHA-256; the wrapper jar stays gitignored.
 Preserve the explicit WorkManager constraint: Glance's older transitive request
 can select Room keep rules that let R8 strip a required database constructor.
 Revisit only when Glance itself selects a safe WorkManager/Room graph. Validate
-with the minified release build and `scripts/takeAndroidScreenshots.sh`, which
+with the minified release build and `scripts/testing/takeAndroidScreenshots.sh`, which
 installs it using the local debug key and exercises startup and playback. A debug
 build alone does not cover this regression.
 

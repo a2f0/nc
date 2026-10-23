@@ -5,7 +5,7 @@ plugins {
 
 // Release builds are signed with the Google Play upload key: the one in the secrets folder
 // the release lanes read (-PncUploadKeystore=<path>), or else .secrets/prod/ (gitignored;
-// see the README), with its passwords from the environment. Without them, release builds
+// see docs/releasing.md), with its passwords from the environment. Without them, release builds
 // are left unsigned.
 val uploadKeystore = providers.gradleProperty("ncUploadKeystore").orNull?.let { file(it) }
     ?: rootProject.file("../.secrets/prod/nc-upload.keystore")
@@ -105,7 +105,7 @@ dependencies {
 }
 
 // Launcher, notification, and splash images are generated from the SVGs in
-// assets/brand/ as agent-tool.json declares (see scripts/buildImages.sh) and
+// assets/brand/ as agent-tool.json declares (see scripts/build/buildImages.sh) and
 // gitignored. Regenerate them whenever the sources or the renderer (agent-tool, in
 // bun.lock) change, before anything reads resources.
 val repoRoot: Directory = rootProject.layout.projectDirectory.dir("..")
@@ -115,7 +115,7 @@ val generateImages = tasks.register<Exec>("generateImages") {
         repoRoot.file("agent-tool.json"),
         repoRoot.file("assets/brand/logo.svg"),
         repoRoot.file("assets/brand/background.svg"),
-        repoRoot.file("scripts/buildImages.sh"),
+        repoRoot.file("scripts/build/buildImages.sh"),
         repoRoot.file("bun.lock"),
     )
     val res = layout.projectDirectory.dir("src/main/res")
@@ -124,6 +124,6 @@ val generateImages = tasks.register<Exec>("generateImages") {
         outputs.dir(res.dir("drawable-$density"))
     }
     outputs.file(res.file("values/generated_colors.xml"))
-    commandLine("sh", repoRoot.file("scripts/buildImages.sh").asFile.path, "android")
+    commandLine("sh", repoRoot.file("scripts/build/buildImages.sh").asFile.path, "android")
 }
 tasks.named("preBuild") { dependsOn(generateImages) }

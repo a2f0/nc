@@ -87,5 +87,5 @@ test("missing screenshots point at the screenshot script", async () => {
 
   const staged = await stage("stage_ios_screenshots", join(root, "shots"), join(root, "out"));
 
-  expect(staged.error).toBe(`No screenshots in ${join(root, "shots/ios/ipad")}. Run scripts/takeScreenshots.sh first.`);
+  expect(staged.error).toBe(`No screenshots in ${join(root, "shots/ios/ipad")}. Run scripts/testing/takeScreenshots.sh first.`);
 });

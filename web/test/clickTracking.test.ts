@@ -52,6 +52,7 @@ async function openSite(
     const request = route.request();
     const url = new URL(request.url());
     if (request.url() === endpoint) {
+      expect(request.headers()["referer"]).toBeUndefined();
       batches.push(request.postDataJSON() as Batch);
       await route.fulfill({
         status: 204,

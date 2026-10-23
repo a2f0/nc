@@ -5,7 +5,7 @@ set -eu
 # emulator, and write Google Play screenshots below the gitignored
 # .screenshots/android/.
 
-# shellcheck source=scripts/lib/screenshots.sh
+# shellcheck source=scripts/testing/lib/screenshots.sh
 . "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)/lib/screenshots.sh"
 
 ANDROID_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"
@@ -41,7 +41,7 @@ fi
 # A minified release build, so this run exercises the same R8 output that ships (debug
 # builds aren't minified). It's signed with the local debug key, only to install it here.
 echo "Building the Android app (release)..."
-sh "$REPO_ROOT/scripts/ensureGradleWrapper.sh"
+sh "$REPO_ROOT/scripts/dev/ensureGradleWrapper.sh"
 (cd "$REPO_ROOT/android" && ./gradlew --quiet assembleRelease \
   -Pandroid.injected.signing.store.file="$HOME/.android/debug.keystore" \
   -Pandroid.injected.signing.store.password=android \

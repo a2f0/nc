@@ -1,7 +1,7 @@
 import AVFoundation
 
 // Renders NoiseRenderer offline through AVAudioEngine and checks the output level: the fade,
-// the volume curve, and the volume ramp. scripts/checks/testIosAudio.sh compiles this with
+// the volume curve, and the volume ramp. scripts/testing/testIosAudio.sh compiles this with
 // the renderer's sources from ios/Shared for macOS and runs it. This folder isn't part of
 // the Xcode project. Also checks seeded generator parity and wave backwash acoustics.
 

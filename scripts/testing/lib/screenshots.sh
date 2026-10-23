@@ -1,7 +1,7 @@
 # shellcheck shell=sh
-# Shared by scripts/takeIosScreenshots.sh and scripts/takeAndroidScreenshots.sh.
+# Shared by scripts/testing/takeIosScreenshots.sh and scripts/testing/takeAndroidScreenshots.sh.
 
-SCREENSHOTS_REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)"
+SCREENSHOTS_REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd -P)"
 # shellcheck disable=SC2034 # read by the scripts that source this file
 SCREENSHOT_FLOWS_DIR="$SCREENSHOTS_REPO_ROOT/maestro/screenshots"
 # shellcheck disable=SC2034

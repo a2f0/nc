@@ -3,7 +3,9 @@
 Player for white, pink, and brown noise, a fan, and ocean waves, native on `ios/` (SwiftUI,
 WidgetKit) and `android/` (Jetpack Compose, Glance), plus a desktop web version in `web/`
 (TypeScript, AudioWorklet). There is no shared code between them; their strings come from
-`l10n/`. See `README.md` for architecture, setup, and releasing.
+`l10n/`. See [README.md](README.md) for setup and normal commands,
+[development](docs/development.md) for repository layout, [architecture](docs/architecture.md)
+for app behavior, and [releasing](docs/releasing.md) for publishing.
 
 ## Setup
 
@@ -11,7 +13,7 @@ WidgetKit) and `android/` (Jetpack Compose, Glance), plus a desktop web version 
 mise install && bundle install && bun install
 bun x --no-install playwright install --with-deps chromium
 sh scripts/git/install-hooks.sh
-sh scripts/ensureGradleWrapper.sh
+sh scripts/dev/ensureGradleWrapper.sh
 ```
 
 ## Validation
@@ -42,12 +44,12 @@ bunx wrangler deploy --config web/wrangler.jsonc --dry-run   # web deploy config
 (cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
-sh scripts/checks/testIosPlayback.sh                   # iOS player lifecycle on an isolated simulator
-sh scripts/checks/testIosAudio.sh                      # iOS renderer, rendered offline on macOS
+sh scripts/testing/testIosPlayback.sh                   # iOS player lifecycle on an isolated simulator
+sh scripts/testing/testIosAudio.sh                      # iOS renderer, rendered offline on macOS
 ```
 
 Changes to app behavior should also be checked in a simulator, emulator, or browser
-(`bun run web:dev`); `sh scripts/takeScreenshots.sh` drives the mobile apps end to end. On
+(`bun run web:dev`); `sh scripts/testing/takeScreenshots.sh` drives the mobile apps end to end. On
 Android it runs the minified (R8) release build: debug builds aren't minified, so they can
 hide release-only crashes.
 
@@ -60,8 +62,8 @@ hide release-only crashes.
   as the `images` section of `agent-tool.json` declares, and gitignored; edit the SVGs or
   that section, never the PNGs. The Gradle wrapper jar is regenerated.
 - Store credentials live in `.secrets/prod/`; `.secrets` is a gitignored symlink to
-  `../matrix-secrets/nc`, managed and backed up from a2f0/matrix (see "Releasing" in
-  `README.md`). Never copy secrets into the repository.
+  `../matrix-secrets/nc`, managed and backed up from a2f0/matrix (see
+  [releasing](docs/releasing.md)). Never copy secrets into the repository.
 - Grayscale only: nothing in the apps, the app icon, the website, or the store graphics and
   screenshots has color. Use black, white, and grays with equal red, green, and blue, and
   don't fall back on system or theme colors that carry a hue: Material's baseline and dynamic
@@ -74,8 +76,7 @@ hide release-only crashes.
   edit `strings.xml` or `Localizable.xcstrings` directly. Use `R.string.*` on Android, the
   generated symbols on iOS (`localizedText(.volume)` or `LanguageSettings.string(.volume)`,
   or `LocalizedStringResource("key")` in App Intents' metadata), and `t()` from
-  `web/src/l10n.ts` on the web. See "Localization" in
-  `README.md`.
+  `web/src/l10n.ts` on the web. See [localization](docs/localization.md).
 - Keep the apps' behavior in step: a feature or fix on one platform usually needs the same
   change on the others. The web app has no widget, and its noise generator must keep
   matching the native ones (`web/test/noiseGenerator.test.ts` compares it with iOS output).
@@ -103,4 +104,4 @@ the bumped `package.json` and `bun.lock`. Resolve a conflict confined to version
 `bun run agent-tool versions resolve-conflicts`, then `git commit --no-edit`. Before merging,
 `bun run agent-tool versions check "$BASE_OID"` must pass against the live base. The mobile
 apps' versions are separate, in `ios/Config/Base.xcconfig` and `android/app/build.gradle.kts`. Merging doesn't deploy the web app; `bun run web:deploy` publishes it to
-`nc.a2f0.net` (see "Releasing" in `README.md`).
+`nc.a2f0.net` (see [releasing](docs/releasing.md)).

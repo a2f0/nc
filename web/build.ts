@@ -1,5 +1,5 @@
-// Builds the web app into web/dist. The page script and the audio worklet are separate
-// bundles because the worklet is loaded by URL.
+// Builds the web app into web/dist with separate page, audio-worklet, and tracker
+// bundles. Only the production CLI --tracking flag enables the tracker.
 
 import { cp, rm } from "node:fs/promises";
 import { join } from "node:path";

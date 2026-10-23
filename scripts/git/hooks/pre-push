@@ -76,7 +76,7 @@ bun run --silent web:build >/dev/null
 bunx --no-install wrangler deploy --config web/wrangler.jsonc --dry-run >/dev/null
 
 step "Building Android (debug build + lint + unit tests)"
-sh scripts/ensureGradleWrapper.sh
+sh scripts/dev/ensureGradleWrapper.sh
 (cd android && ./gradlew --quiet assembleDebug lintDebug testDebugUnitTest)
 
 step "Building iOS (simulator)"
@@ -89,10 +89,10 @@ xcodebuild \
   build
 
 step "Testing iOS audio rendering"
-sh scripts/checks/testIosAudio.sh
+sh scripts/testing/testIosAudio.sh
 
 step "Testing iOS playback lifecycle"
-sh scripts/checks/testIosPlayback.sh
+sh scripts/testing/testIosPlayback.sh
 
 echo ""
 echo "All checks passed."

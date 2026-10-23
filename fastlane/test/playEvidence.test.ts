@@ -148,7 +148,7 @@ Dir.mktmpdir do |dir|
 
   # A real temporary Git history exercises the Android-tree freshness gate.
   repo = File.join(dir, 'repo')
-  FileUtils.mkdir_p(%w[android assets/brand web scripts].map { |p| File.join(repo, p) })
+  FileUtils.mkdir_p(%w[android assets/brand web scripts/dev].map { |p| File.join(repo, p) })
   Readiness.command('git', 'init', '--quiet', repo)
   git = ->(*args) { Readiness.command('git', '-C', repo, *args) }
   commit = lambda do
@@ -157,7 +157,7 @@ Dir.mktmpdir do |dir|
              '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture')
     git.call('rev-parse', 'HEAD').strip
   end
-  %w[android/app assets/brand/icon.svg web/app agent-tool.json .mise.toml scripts/ensureGradleWrapper.sh].each do |p|
+  %w[android/app assets/brand/icon.svg web/app agent-tool.json .mise.toml scripts/dev/ensureGradleWrapper.sh].each do |p|
     File.write(File.join(repo, p), 'initial')
   end
   source = { 'commit' => commit.call, 'dirty' => false }
@@ -166,7 +166,7 @@ Dir.mktmpdir do |dir|
   File.write(File.join(repo, 'web/app'), 'web-only change')
   commit.call
   result[:web_source_matches] = PlayEvidence.artifact_source(artifact, repo) == source
-  result[:build_input_rejected] = %w[agent-tool.json .mise.toml scripts/ensureGradleWrapper.sh].map do |p|
+  result[:build_input_rejected] = %w[agent-tool.json .mise.toml scripts/dev/ensureGradleWrapper.sh].map do |p|
     File.write(File.join(repo, p), 'changed build input')
     commit.call
     rejected = false
@@ -238,7 +238,7 @@ test("evidence readiness verifies bytes and rejects a different candidate", () =
 });
 test("capture requires bundletool and forwards resolved paths", () => {
   expect(result.tool_required).toBe(true);
-  expect(result.capture_args).toEqual([["ruby", resolve(root, "scripts/recordAndroidForegroundVideo.rb"),
+  expect(result.capture_args).toEqual([["ruby", resolve(root, "scripts/testing/recordAndroidForegroundVideo.rb"),
     expect.stringContaining("candidate.aab"), resolve(root, "tools/bundletool.jar")]]);
 });
 test("capture accepts web-only commits but rejects changed Android code or a mismatched receipt", () => {
