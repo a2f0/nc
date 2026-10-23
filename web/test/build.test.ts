@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
+import { STRINGS } from "../../l10n/strings";
 import { build, canonicalUrl, PAGES, SITE_URL, withMetadata } from "../build";
 
 const BRAND_DIR = join(import.meta.dir, "../../assets/brand");
@@ -99,6 +100,8 @@ test("every page has its canonical URL, theme color, and social cards from its o
     expect(html.indexOf('name="theme-color"')).toBeLessThan(html.indexOf("appearance-init.js"));
     expect(html).not.toContain('name="robots"');
   }
+  // The English the page's localize() sets in other languages.
+  expect(titles).toContain(`${STRINGS.web_title.text} · ${STRINGS.app_name.text}`);
   expect(titles.size).toBe(PAGES.length);
   expect(descriptions.size).toBe(PAGES.length);
   expect(() => withMetadata("broken.html", "<title>Broken</title>")).toThrow("broken.html");

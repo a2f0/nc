@@ -64,6 +64,7 @@ function card(type: NoiseType): HTMLButtonElement {
 
 /** Puts the page's text in the current language; index.html has the English. */
 function localize(): void {
+  document.title = `${t("web_title")} · ${t("app_name")}`;
   volume.setAttribute("aria-label", t("volume"));
   more.setAttribute("aria-label", t("more"));
   element("open-history").textContent = t("history");

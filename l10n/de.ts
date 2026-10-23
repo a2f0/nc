@@ -95,6 +95,7 @@ export default {
   intent_stop_description: "Stoppt die Wiedergabe.",
   support: "Support",
   privacy_policy: "Datenschutzerklärung",
+  web_title: "Generator für weißes, rosa und braunes Rauschen",
   review_title: "Android-Hintergrundwiedergabe",
   review_intro: "Diese Aufnahme zeigt, wie vom Nutzer gestartetes Audio weiterläuft, während Noise Connoisseur im Hintergrund ist. Schalten Sie den Ton ein, um die Wiedergabe zu hören.",
   review_start: "In der App auf „Play White Noise“ (Weißes Rauschen abspielen) tippen.",

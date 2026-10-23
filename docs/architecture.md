@@ -85,12 +85,14 @@ history, or playback logs are sent. Browser integration tests intercept every CT
 `web/build.ts` adds the metadata every page in `PAGES` shares after its `<title>`: the
 canonical URL (`https://nc.a2f0.net/`, `/privacy`, `/ios/support`, and so on, the paths
 Workers static assets serve without redirecting), a theme color per color scheme, which
-`applyAppearance()` points at the chosen appearance's color, and Open
-Graph and Twitter cards built from the page's own title and description, with the web
-image target's 1200x630 `og-image.png`. It also writes `robots.txt`, which allows every
-crawler and names the sitemap, and `sitemap.xml`, which lists every page's canonical URL.
-The Worker's `/review/*` responses carry `X-Robots-Tag: noindex` and stay out of the
-sitemap. The landing page's JSON-LD describes a `WebApplication` whose `operatingSystem` is
-only the web; add the store apps, their store links, and any app banners once they're
-published. `web/test/build.test.ts` checks all of it in the built site. nc.a2f0.net is the
-only deployment, so nothing is tier-specific.
+`applyAppearance()` points at the chosen appearance's color, and Open Graph and Twitter
+cards built from the page's own title and description, with the web image target's
+1200x630 `og-image.png`. It also writes `robots.txt`, which allows every crawler and names
+the sitemap, and `sitemap.xml`, which lists every page's canonical URL. The Worker's
+`/review/*` responses carry `X-Robots-Tag: noindex` and stay out of the sitemap. The
+landing page's JSON-LD describes a `WebApplication` whose `operatingSystem` is only the
+web; add the store apps, their store links, and any app banners once they're published.
+The metadata is English, like the static page; the landing page's `localize()` retitles
+the tab in the chosen language from `web_title` in `l10n/strings.ts`.
+`web/test/build.test.ts` checks all of it in the built site. nc.a2f0.net is the only
+deployment, so nothing is tier-specific.
