@@ -55,8 +55,8 @@ To try one, use Settings → Language. To test the device default, choose Device
 then on iOS set the scheme's App Language (Edit Scheme → Run → Options); on Android,
 change the system language in device Settings; on the web, change the browser's language
 settings. On Android 13+, `adb shell cmd locale set-app-locales net.a2f0.nc --locales <tag>`
-tests an explicit per-app choice, not the device default. The privacy policy and support
-pages are in English only.
+tests an explicit per-app choice, not the device default. The privacy policy, support,
+and website not-found pages are in English only.
 
 On iOS, an explicit in-app choice overrides the device and iOS Settings language for the
 app and widget. OS-owned App Intents and Shortcuts metadata still follows iOS's language.

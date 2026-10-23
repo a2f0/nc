@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { STRINGS } from "../../l10n/strings";
-import { build, canonicalUrl, PAGES, SITE_URL, withMetadata } from "../build";
+import { build, canonicalUrl, NOT_FOUND_PAGE, PAGES, SITE_URL, withMetadata } from "../build";
 
 const BRAND_DIR = join(import.meta.dir, "../../assets/brand");
 let dir: string;
@@ -114,11 +114,19 @@ test("the social preview image is a 1200x630 PNG without transparency", async ()
   expect(png[25]).toBe(2); // Truecolor, with no alpha channel.
 });
 
-test("the landing page describes the web app in JSON-LD", async () => {
+test("the landing page names the site and describes the web app in JSON-LD", async () => {
   const html = await readFile(join(dir, "index.html"), "utf8");
-  const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
-  expect(blocks).toHaveLength(1);
-  expect(JSON.parse(blocks[0]?.[1] ?? "")).toEqual({
+  const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+    .map(block => JSON.parse(block[1] ?? "") as unknown);
+  expect(blocks).toHaveLength(2);
+  // The site name search results show, the same as og:site_name.
+  expect(blocks[0]).toEqual({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: contents(html, 'property="og:site_name"')[0],
+    url: canonicalUrl("index.html"),
+  });
+  expect(blocks[1]).toEqual({
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: "Noise Connoisseur",
@@ -128,6 +136,29 @@ test("the landing page describes the web app in JSON-LD", async () => {
     // Only the web: list the native apps once they're in the stores.
     operatingSystem: "Web",
   });
+});
+
+test("the not-found page works at any depth and stays out of search", async () => {
+  const html = await readFile(join(dir, NOT_FOUND_PAGE), "utf8");
+  expect(PAGES).not.toContain(NOT_FOUND_PAGE);
+  // Served for any missing path, such as /ios/missing, so every link and file is from the root.
+  const references = [...html.matchAll(/ (?:href|src)="([^"]*)"/g)].map(m => m[1] ?? "");
+  expect(references.length).toBeGreaterThan(0);
+  for (const reference of references) expect(reference).toMatch(/^\/(?!\/)/);
+  expect(references).toContain("/");
+  // /404 answers 200, so it's noindex, with no canonical URL or social cards.
+  expect(html).toContain('<meta name="robots" content="noindex" />');
+  expect(html).not.toContain('rel="canonical"');
+  expect(html).not.toContain('property="og:');
+  expect(html).toContain("<title>Page Not Found · Noise Connoisseur</title>");
+  expect(html.match(/<h1[ >]/g)).toHaveLength(1);
+  // Retinted like every page before the first paint; no click tracker, which the apps' pages
+  // under /ios/ and /android/ don't load either.
+  expect(html.indexOf('name="theme-color"')).toBeGreaterThan(-1);
+  expect(html.indexOf('name="theme-color"')).toBeLessThan(html.indexOf('<script src="/appearance-init.js"></script>'));
+  expect(html.indexOf("/appearance-init.js")).toBeLessThan(html.indexOf('<link rel="stylesheet" href="/styles.css" />'));
+  expect(html).not.toContain("clickTracking.js");
+  // routing.test.ts checks that Workers static assets serve it.
 });
 
 test("robots.txt allows crawling and names the sitemap of every page", async () => {

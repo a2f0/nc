@@ -3,7 +3,7 @@
 
 import { watch } from "node:fs";
 import { extname, join } from "node:path";
-import { build, DIST_DIR } from "./build";
+import { build, DIST_DIR, NOT_FOUND_PAGE } from "./build";
 
 const WEB_DIR = import.meta.dir;
 const port = Number(process.env.PORT ?? 8080);
@@ -15,16 +15,17 @@ const server = Bun.serve({
   port,
   async fetch(request) {
     // URL parsing resolves "..", so paths stay inside dist. Like Cloudflare's static
-    // assets, "/privacy" serves privacy.html.
+    // assets, "/privacy" serves privacy.html, and a missing file the not-found page.
     const path = new URL(request.url).pathname;
     const name = path === "/" ? "index.html" : extname(path) === "" ? `${path}.html` : path;
     const file = Bun.file(join(DIST_DIR, name));
-    return (await file.exists()) ? new Response(file) : new Response("Not found", { status: 404 });
+    if (await file.exists()) return new Response(file);
+    return new Response(Bun.file(join(DIST_DIR, NOT_FOUND_PAGE)), { status: 404 });
   },
 });
 
 let pending: ReturnType<typeof setTimeout> | undefined;
-for (const source of ["src", "../l10n", "index.html", "privacy.html", "support.html", "ios", "android", "styles.css", "../assets/brand", "../agent-tool.json"]) {
+for (const source of ["src", "../l10n", "index.html", "privacy.html", "support.html", "404.html", "ios", "android", "styles.css", "../assets/brand", "../agent-tool.json"]) {
   watch(join(WEB_DIR, source), { recursive: true }, () => {
     clearTimeout(pending);
     pending = setTimeout(() => {

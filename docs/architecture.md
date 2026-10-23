@@ -74,7 +74,8 @@ Production pages explicitly initialize `@a2f0/ct-client` with site `nc`, app
 `web-app`, and environment `production`. Tracking requires both the production
 build and the exact `https://nc.a2f0.net` origin. Native apps, local previews, and
 module imports do not initialize it, and the apps' privacy and support pages (`/ios/*`
-and `/android/*`) don't load it; automated browsers are excluded from collection.
+and `/android/*`) and the not-found page, which can answer under those paths, don't load
+it; automated browsers are excluded from collection.
 The website overrides GPC while honoring DNT and CT's extension and saved opt-outs.
 The public [privacy notice](https://nc.a2f0.net/privacy) describes click metadata,
 IP/geolocation, 90-day retention, and opt-out instructions. No sound names, settings,
@@ -88,11 +89,19 @@ Workers static assets serve without redirecting), a theme color per color scheme
 `applyAppearance()` points at the chosen appearance's color, and Open Graph and Twitter
 cards built from the page's own title and description, with the web image target's
 1200x630 `og-image.png`. It also writes `robots.txt`, which allows every crawler and names
-the sitemap, and `sitemap.xml`, which lists every page's canonical URL. The Worker's
-`/review/*` responses carry `X-Robots-Tag: noindex` and stay out of the sitemap. The
-landing page's JSON-LD describes a `WebApplication` whose `operatingSystem` is only the
-web; add the store apps, their store links, and any app banners once they're published.
+the sitemap, and `sitemap.xml`, which lists every page's canonical URL. A path with no
+page or file, outside `/review/`, gets `web/404.html` with status 404 (`not_found_handling` in
+`web/wrangler.jsonc`, and `web:dev` does the same). It is not in `PAGES`: it has no
+canonical URL or social cards, uses root-relative links because it answers at any depth,
+and is `noindex` because `/404` itself answers 200. The Worker's `/review/*` responses
+carry `X-Robots-Tag: noindex`, the review page a matching robots meta tag, and they stay
+out of the sitemap. The landing page's JSON-LD names the `WebSite` (the site name search
+results can show, matching `og:site_name`) and describes a `WebApplication` whose
+`operatingSystem` is only the web; add the store apps, their store links, and any app
+banners once they're published.
 The metadata is English, like the static page; the landing page's `localize()` retitles
 the tab in the chosen language from `web_title` in `l10n/strings.ts`.
-`web/test/build.test.ts` checks all of it in the built site. nc.a2f0.net is the only
+`web/test/build.test.ts` checks all of it in the built site,
+`web/test/routing.test.ts` the paths and status codes Wrangler's local Workers runtime
+serves it with, and `web/test/playEvidence.test.ts` the review page. nc.a2f0.net is the only
 deployment, so nothing is tier-specific.

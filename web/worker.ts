@@ -66,6 +66,7 @@ function page(data: Manifest, locale: Locale): string {
     .format(new Date(data.recorded_at));
   return `<!doctype html><html lang="${escape(locale.tag)}"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
 <title>${text("review_title")} · ${text("app_name")}</title>
 <link rel="stylesheet" href="/styles.css">
 <style>
