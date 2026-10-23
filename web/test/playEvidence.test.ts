@@ -42,6 +42,7 @@ describe("public Play review evidence", () => {
     expect(html).toContain("controls playsinline");
     expect(html).not.toContain("autoplay");
     expect(html).toContain('aria-describedby="steps"');
+    expect(html).toContain('<meta name="robots" content="noindex">');
     const redirect = await f.fetch("/review/android-media-playback.mp4");
     expect(redirect.status).toBe(307);
     expect(redirect.headers.get("Location")).toBe(path);

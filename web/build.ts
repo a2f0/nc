@@ -14,6 +14,11 @@ export const PAGES = [
   "index.html", "privacy.html", "support.html",
   "ios/privacy.html", "ios/support.html", "android/privacy.html", "android/support.html",
 ];
+// Served with status 404 for every path outside /review/ that has no page or file
+// (not_found_handling in wrangler.jsonc), at any depth, so its links are root-relative.
+// Not in PAGES: it has no canonical URL, stays out of the sitemap, and is noindex because
+// /404 itself answers 200.
+export const NOT_FOUND_PAGE = "404.html";
 // The production site, the only one: there is no staging deployment.
 export const SITE_URL = "https://nc.a2f0.net";
 // The social preview image, the web target's og-image.png in agent-tool.json.
@@ -52,6 +57,8 @@ export async function build(outDir: string = DIST_DIR, tracking = false): Promis
     await mkdir(dirname(join(outDir, page)), { recursive: true });
     await writeFile(join(outDir, page), withMetadata(page, await readFile(join(WEB_DIR, page), "utf8")));
   }
+  const notFound = await readFile(join(WEB_DIR, NOT_FOUND_PAGE), "utf8");
+  await writeFile(join(outDir, NOT_FOUND_PAGE), afterTitle(NOT_FOUND_PAGE, notFound, THEME_COLORS));
   await cp(join(WEB_DIR, "styles.css"), join(outDir, "styles.css"));
   await writeFile(join(outDir, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
   await writeFile(join(outDir, "sitemap.xml"), sitemap());
@@ -59,21 +66,26 @@ export async function build(outDir: string = DIST_DIR, tracking = false): Promis
   await buildImages(outDir);
 }
 
+// The browser's theme color, the page background in styles.css; applyAppearance() follows
+// a chosen appearance.
+const THEME_COLORS = [
+  `<meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#ffffff" />`,
+  `<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000" />`,
+];
+
 // Adds the search and social metadata every page shares after its <title>: the canonical
-// URL, the browser's theme color, and Open Graph and Twitter cards built from the page's
-// own title and description.
+// URL, the theme color, and Open Graph and Twitter cards built from the page's own title
+// and description.
 export function withMetadata(page: string, html: string): string {
-  const [line, indent, title] = /^( *)<title>([^<]+)<\/title>$/m.exec(html) ?? [];
+  const title = /^ *<title>([^<]+)<\/title>$/m.exec(html)?.[1];
   const description = /<meta name="description" content="([^"]+)" \/>/.exec(html)?.[1];
-  if (!line || indent === undefined || !title || !description) {
+  if (!title || !description) {
     throw new Error(`${page} needs a <title> line and a <meta name="description">`);
   }
   const url = canonicalUrl(page);
-  const tags = [
+  return afterTitle(page, html, [
     `<link rel="canonical" href="${url}" />`,
-    // The page background in styles.css; applyAppearance() follows a chosen appearance.
-    `<meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#ffffff" />`,
-    `<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000" />`,
+    ...THEME_COLORS,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="Noise Connoisseur" />`,
     `<meta property="og:title" content="${title.replaceAll('"', "&quot;")}" />`,
@@ -84,7 +96,13 @@ export function withMetadata(page: string, html: string): string {
     `<meta property="og:image:height" content="${OG_IMAGE.height}" />`,
     `<meta property="og:image:alt" content="${OG_IMAGE.alt}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
-  ];
+  ]);
+}
+
+// Inserts tags after the page's <title> line, at its indentation.
+function afterTitle(page: string, html: string, tags: string[]): string {
+  const [line, indent] = /^( *)<title>[^<]+<\/title>$/m.exec(html) ?? [];
+  if (!line || indent === undefined) throw new Error(`${page} needs a <title> line`);
   return html.replace(line, () => [line, ...tags.map(tag => indent + tag)].join("\n"));
 }
 
