@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
-import { build } from "../build";
+import { build, PAGES } from "../build";
 
 const BRAND_DIR = join(import.meta.dir, "../../assets/brand");
 let dir: string;
@@ -16,6 +16,9 @@ beforeAll(async () => {
 afterAll(async () => {
   await rm(dir, { recursive: true, force: true });
 });
+
+// The relative path from a page to the site root, where the shared files are.
+const siteRoot = (page: string) => "../".repeat(page.split("/").length - 1);
 
 test("the About sheet shows the root package's version", async () => {
   const { version } = (await Bun.file(join(import.meta.dir, "../../package.json")).json()) as { version: string };
@@ -42,16 +45,16 @@ test("every page's favicon is the app icon without the mark's unlit segments", a
   // Rounded like the app icon: 224 of 1024.
   expect(svg).toContain('rx="224"');
 
-  for (const page of ["index.html", "privacy.html", "support.html"]) {
-    expect(await readFile(join(dir, page), "utf8")).toContain('<link rel="icon" href="icon.svg" type="image/svg+xml" />');
+  for (const page of PAGES) {
+    expect(await readFile(join(dir, page), "utf8")).toContain(`<link rel="icon" href="${siteRoot(page)}icon.svg" type="image/svg+xml" />`);
   }
 });
 
 test("every app page applies the saved appearance before styles and the main script", async () => {
   const script = await readFile(join(dir, "appearance-init.js"), "utf8");
-  for (const page of ["index.html", "privacy.html", "support.html"]) {
+  for (const page of PAGES) {
     const html = await readFile(join(dir, page), "utf8");
-    const position = html.indexOf('<script src="appearance-init.js"></script>');
+    const position = html.indexOf(`<script src="${siteRoot(page)}appearance-init.js"></script>`);
     expect(position).toBeGreaterThan(-1);
     expect(position).toBeLessThan(html.indexOf('<link rel="stylesheet"'));
     if (page === "index.html") expect(position).toBeLessThan(html.indexOf('src="main.js"'));

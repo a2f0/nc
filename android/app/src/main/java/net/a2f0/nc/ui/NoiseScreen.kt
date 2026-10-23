@@ -445,10 +445,10 @@ private fun AboutContent() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        TextButton(onClick = { openInfoPage("privacy") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
+        TextButton(onClick = { openInfoPage("android/privacy") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
             Text(stringResource(R.string.privacy_policy), textDecoration = TextDecoration.Underline)
         }
-        TextButton(onClick = { openInfoPage("support") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
+        TextButton(onClick = { openInfoPage("android/support") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
             Text(stringResource(R.string.support), textDecoration = TextDecoration.Underline)
         }
     }

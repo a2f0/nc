@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { type Browser, chromium } from "playwright";
 import { build } from "../build";
 
@@ -65,7 +65,7 @@ async function openSite(
       return;
     }
     const name = url.pathname === "/" ? "index.html" :
-      ["/privacy", "/support"].includes(url.pathname) ? `${url.pathname}.html` : url.pathname;
+      extname(url.pathname) === "" ? `${url.pathname}.html` : url.pathname;
     const file = Bun.file(join(directory, name));
     if (!(await file.exists())) {
       await route.fulfill({ status: 404 });
@@ -239,6 +239,25 @@ for (const path of ["/privacy", "/support"]) {
       await sent;
       expect(batches).toHaveLength(1);
       expect(batches[0]?.events).toMatchObject([{ app: "web-app", page: "/", target: "a", label: null }]);
+    } finally { await context.close(); }
+  }, 15_000);
+}
+
+for (const path of ["/ios/privacy", "/ios/support", "/android/privacy", "/android/support"]) {
+  test(`native app page ${path} never loads the tracker`, async () => {
+    const { context, page, batches } = await openSite("gpc");
+    try {
+      const loaded: Record<string, number> = {};
+      page.on("response", (response) => { loaded[new URL(response.url()).pathname] = response.status(); });
+      await page.goto(origin + path, { waitUntil: "load" });
+      expect(loaded).toMatchObject({ [path]: 200, "/appearance-init.js": 200, "/styles.css": 200 });
+      expect(Object.keys(loaded)).not.toContain("/clickTracking.js");
+      await page.evaluate(() => document.addEventListener("click", (event) => event.preventDefault()));
+      await page.locator("footer a").first().click();
+      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+      await page.clock.runFor(6_000);
+      await page.waitForTimeout(200);
+      expect(batches).toEqual([]);
     } finally { await context.close(); }
   }, 15_000);
 }

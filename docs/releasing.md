@@ -70,7 +70,9 @@ One-time store setup that has no API:
   that, `bun run android:upload-release` uploads and rolls out each build. Before
   `track:beta`, set up open testing in Play Console (its countries and, for a personal account
   created since November 2023, production access), and before `bun run android:promote-release`,
-  production's countries.
+  production's countries. The privacy policy URL under **App content** is
+  `https://nc.a2f0.net/android/privacy`; the App Store's privacy and support URLs come from
+  `fastlane/metadata/ios`.
 - **App Store:** after `create_app`, set the price ($0.99), App Review contact details, App
   Privacy, and age rating in App Store Connect. Selling paid apps requires an active Paid Apps
   Agreement.
