@@ -7,7 +7,9 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
 echo "Linting branch name..."
-sh scripts/checks/lintBranchName.sh
+if branch=$(git symbolic-ref --quiet --short HEAD); then
+  bun run --silent lint:branch-name "$branch"
+fi
 
 echo "Checking for binary files..."
-sh scripts/checks/checkBinaryFiles.sh --staged
+bun run --silent lint:binary-files --staged

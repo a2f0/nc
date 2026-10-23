@@ -12,14 +12,21 @@ for app behavior, and [releasing](docs/releasing.md) for publishing.
 ```sh
 mise install && bundle install && bun install
 bun x --no-install playwright install --with-deps chromium
-sh scripts/git/install-hooks.sh
+bun run hooks:install
 sh scripts/dev/ensureGradleWrapper.sh
 ```
 
+Existing clones migrating from the old hook installer must inspect their installed
+hooks, then run `bun run hooks:install --adopt` once; see [development](docs/development.md#git-hooks).
+
 ## Validation
 
-The pre-push hook (`scripts/git/hooks/pre-push`) is the full local gate; CI runs the same
-checks.
+`bun run check` (`scripts/testing/check.json`) is the full local gate. Pre-push checks
+its actual pushed refs and managed hook installation, then runs the same gate as CI.
+The group records each command, source fingerprint, and private log; run it directly
+to keep its structured receipt visible. Do not wrap a standalone group invocation
+in another capture command. A captured push includes its hook's group receipt in
+the push log; inspect it there or with `agent-tool runs list --head <commit>`.
 
 For agent sessions, use `bun run --silent agent:run --label <name> -- <command> [args...]`
 for finite noisy commands, including tests, builds, and pushes through the full
@@ -33,19 +40,19 @@ interactive commands and development servers directly too.
 Run individual pieces while iterating:
 
 ```sh
-sh scripts/checks/lintScripts.sh                       # ShellCheck
-bundle exec rubocop                                    # Ruby: fastlane lanes and helpers, scripts
-sh scripts/checks/checkBinaryFiles.sh --all            # no binary files
-bun run agents:check                                   # shared skills are current
-bun run l10n:check                                     # translations, generated strings, store listings
-bun run test                                           # fastlane helper, web, and localization tests
-bun run web:check && bun run web:build                 # web typecheck and build
-bunx wrangler deploy --config web/wrangler.jsonc --dry-run   # web deploy config
+bun run lint:scripts                                  # ShellCheck
+bundle exec rubocop                                   # Ruby: fastlane lanes and helpers, scripts
+bun run lint:binary-files --all                       # no binary files
+bun run agents:check                                  # shared skills are current
+bun run l10n:check                                    # translations, generated strings, store listings
+bun run test                                          # fastlane, web, localization, and workflow tests
+bun run web:check && bun run web:build                # web typecheck and build
+bun run web:deploy:preview                            # web deploy config
 (cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
-sh scripts/testing/testIosPlayback.sh                   # iOS player lifecycle on an isolated simulator
-sh scripts/testing/testIosAudio.sh                      # iOS renderer, rendered offline on macOS
+sh scripts/testing/testIosPlayback.sh                 # iOS player lifecycle on an isolated simulator
+sh scripts/testing/testIosAudio.sh                    # iOS renderer, rendered offline on macOS
 ```
 
 Changes to app behavior should also be checked in a simulator, emulator, or browser

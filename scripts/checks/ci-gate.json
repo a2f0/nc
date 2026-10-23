@@ -1,0 +1,10 @@
+{
+  "required": [
+    "lint",
+    "android",
+    "ios",
+    "web"
+  ],
+  "allowSkipped": [],
+  "conditional": []
+}

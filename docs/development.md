@@ -19,7 +19,7 @@ maintenance in [localization](localization.md), and publishing in [releasing](re
 
 ## No binary files
 
-Nothing binary is committed; the hooks reject it (`scripts/checks/checkBinaryFiles.sh`).
+Nothing binary is committed; the hooks reject it (`bun run lint:binary-files`).
 
 **Images** are generated from two SVGs in `assets/brand/`, and the outputs are gitignored:
 
@@ -45,17 +45,44 @@ the favicon, and the title logo leave out the mark's `unlit` group of dim segmen
 
 ## Git hooks
 
-Installed by `scripts/git/install-hooks.sh` (rerun it after hooks change; pre-push
-refuses to run stale).
+`bun run hooks:install` installs the three hook bodies declared in `agent-tool.json`;
+rerun it after hooks change. `bun run hooks:check` checks every managed file, and
+pre-push also compares its own copied body so stale hooks cannot gate a push.
 
-- **pre-commit:** branch name is `<type>/<name>` (or `main`); no binary files staged.
+When migrating an existing clone from the old installer, inspect its effective hook
+directory (`git config --path core.hooksPath`, or the common Git directory's `hooks/`).
+After confirming the installed files are the expected repository copies, run
+`bun run hooks:install --adopt` once. The shared installer backs them up and preserves
+unknown hooks; resolve local hook edits before adoption. Later installs omit `--adopt`.
+
+- **pre-commit:** branch name is `<type>/<name>` (or `main`); detached commits during
+  a rebase skip the branch-name check; no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
   ShellCheck; RuboCop; shared agent skills are current; localization is current; fastlane
-  helper, web, and localization tests; web typecheck, build, and deploy dry run; Android
+  helper, web, localization, and workflow adapter tests; web typecheck, build, and deploy dry run; Android
   debug build, lint, and unit tests; iOS simulator build, audio rendering checks, and player lifecycle tests on an isolated simulator.
 
-CI (`.github/workflows/ci.yml`) runs the same checks; `CI gate` is the single required check.
+Branch names use the configured Conventional Commits types, with `main` exempt and no
+additional length cap. Native Git ref rules also apply. Commit headers keep the existing
+50-character limit, lowercase initial subject, no terminal period, and generated-message
+exemptions. A small commit-message adapter preserves nc's lowercase scope grammar,
+counts the whole header including a PR suffix, and skips leading blank/comment lines
+before applying shared policy. Signatures must be present and not provably bad;
+local key trust is not required.
+
+Pre-push validates every destination branch from Git's ref tuples. Trust checks exclude
+commits reachable from all of the named remote's tracking refs, including other published
+feature branches, even for an existing branch update,
+so integrating previously published mainline commits does not revalidate historical policy.
+New local commits still undergo signature, attribution, and subject checks. URL-only pushes
+use their remote tip, or local `main` for a new branch, because they have no named tracking refs.
+
+`bun run check` keeps the full application gate in `scripts/testing/check.json` and records
+per-step logs and source fingerprints. A failed command or changed source fails the group.
+Use `bun run agent-tool runs list --head <commit>` to find stored receipts. CI passes the actual
+PR branch explicitly and runs the same checks; `CI gate` remains the single required check,
+with every lint, Android, iOS, and web job required to succeed.
 
 ## Screenshots
 
