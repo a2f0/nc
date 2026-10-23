@@ -37,7 +37,7 @@ in these automated reports, so strict mode intentionally cannot certify full rea
 
 ## Tools and build provenance
 
-Use the repository's Ruby/Bundler setup and existing store credentials (README). iOS
+Use the repository's Ruby/Bundler setup and existing [store credentials](releasing.md#stores). iOS
 inspection needs macOS `codesign` and `security`. Android needs a JDK and Google's
 [bundletool](https://github.com/google/bundletool/releases): put its launcher on PATH or pass
 `bundletool:/path/to/bundletool-all.jar` / `BUNDLETOOL_JAR`. No tools are downloaded by the lanes.

@@ -4,9 +4,9 @@ require 'fileutils'
 
 # Stages store listing uploads. The text is committed under fastlane/metadata;
 # screenshots are generated into the gitignored .screenshots/
-# (scripts/takeScreenshots.sh), so the lanes copy them into a temporary directory
+# (scripts/testing/takeScreenshots.sh), so the lanes copy them into a temporary directory
 # laid out the way deliver and supply expect. The Play lane renders its graphics
-# there too (the store target in agent-tool.json, via scripts/buildImages.sh).
+# there too (the store target in agent-tool.json, via scripts/build/buildImages.sh).
 module StoreListing
   LOCALE = 'en-US'
   IOS_DEVICES = %w[iphone ipad].freeze
@@ -37,7 +37,7 @@ module StoreListing
 
   def self.screenshots(dir)
     files = Dir[File.join(dir, '*.png')]
-    raise "No screenshots in #{dir}. Run scripts/takeScreenshots.sh first." if files.empty?
+    raise "No screenshots in #{dir}. Run scripts/testing/takeScreenshots.sh first." if files.empty?
 
     files
   end

@@ -11,7 +11,7 @@ set -eu
 #
 # Usage: buildImages.sh [target...] [--out <dir>]
 
-REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)"
+REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd -P)"
 AGENT_TOOL="$REPO_ROOT/node_modules/.bin/agent-tool"
 
 # Xcode and Android Studio run builds with a minimal PATH, and agent-tool runs on Bun.

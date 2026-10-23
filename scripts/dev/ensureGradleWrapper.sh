@@ -5,7 +5,7 @@ set -eu
 # Regenerate it when missing. Only the jar is written; the committed
 # gradle-wrapper.properties keeps deciding which Gradle version builds run on.
 
-REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd -P)"
+REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd -P)"
 WRAPPER_DIR="$REPO_ROOT/android/gradle/wrapper"
 WRAPPER_JAR="$WRAPPER_DIR/gradle-wrapper.jar"
 

@@ -15,7 +15,7 @@ module PlayEvidence
   MAX_VIDEO_BYTES = 25 * 1024 * 1024
   STEPS = %w[user_start background_media_playback notification_stop].freeze
   # Web-only releases do not require rebuilding the Android artifact.
-  AAB_INPUTS = %w[android assets/brand agent-tool.json .mise.toml scripts/ensureGradleWrapper.sh].freeze
+  AAB_INPUTS = %w[android assets/brand agent-tool.json .mise.toml scripts/dev/ensureGradleWrapper.sh].freeze
   INTEGRITY_FAILURE = 'Evidence manifest or video failed integrity validation. ' \
                       'Regenerate and review the recording before publishing.'
   class InvalidEvidence < StandardError; end

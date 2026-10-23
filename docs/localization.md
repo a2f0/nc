@@ -1,4 +1,67 @@
-# Localization maintenance and rollout
+# Localization
+
+The apps are in English, German, and Spanish. Settings → Language defaults to **Device
+language**, with English fallback for unsupported languages. Users can choose an explicit
+language, saved across relaunches and reboots. Android 13+ shares the OS per-app language
+setting; older Android and iOS save the choice locally (iOS shares it with its widget).
+Web stores the choice in localStorage, synchronizes tabs, and follows browser language
+changes only while Device language is selected. If storage is blocked, the choice works
+for the open page and a translated warning explains that it could not be saved.
+Changing language refreshes playback labels without stopping audio; native settings may
+close as the app's UI is recreated. The App Store lists the languages the binary has, and both stores show the listing
+in the user's language when there is one.
+
+Every user-facing string is in `l10n/strings.ts`, the source: its English text, a comment
+for translators, and the platforms that show it. Translations are `l10n/<tag>.ts` files typed
+against it, so a missing or extra string, or a dropped `{placeholder}`, is a type error.
+`bun run l10n` checks them and writes the native files, which are committed; don't edit those.
+
+| | Generated | Used as |
+|---|---|---|
+| Android | `res/values*/strings.xml`, `res/resources.properties` | `R.string.play_noise`. The Android Gradle plugin builds the per-app language list from the `values-*` folders (`generateLocaleConfig`), and App Bundles keep every language so that list works |
+| iOS | `Shared/Localizable.xcstrings`, for the app and the widget | Xcode's generated symbols through `localizedText(.volume)` or `LanguageSettings.string(.playNoise(title))`, applying the saved locale. App Intents' metadata needs literal keys, `LocalizedStringResource("intent_noise")`, which `bun run l10n` checks. Xcode doesn't add strings it finds in code to the catalog (`SWIFT_EMIT_LOC_STRINGS = NO`) |
+| Web | Nothing: `web/src/l10n.ts` imports `l10n/` | `t("play_noise", { noise })`, with the keys and placeholders type-checked |
+
+Placeholders become `%1$s` (Android) and `%1$@` (iOS), numbered in the order English has them,
+so a translation can put them anywhere. Each platform gets only its own strings; names
+(`translatable: false`) stay English.
+
+Each locale in `l10n/locales.ts` also names its App Store Connect and Google Play codes
+(Spanish has two in each store, for Spain and Latin America), and needs a store listing for
+each in `fastlane/metadata/ios/<code>/` and `fastlane/metadata/android/<code>/` with the same
+files as `en-US`, within the stores' length limits (the `listing` lanes upload every one).
+Screenshots are English for every language. `bun run l10n:check`, run by
+pre-push and CI, typechecks the translations and fails if a generated file is out of date or
+a listing is missing or too long.
+
+To add a language:
+
+1. Write `l10n/<tag>.ts` (`export default { ... } satisfies Translation`), translating each
+   string with the help of its comment.
+2. Add its native name as a nontranslatable, web-only `language_name_*` entry in `strings.ts`
+   (native picker enums also use this source text, so separate native resources aren't needed).
+   List it in `l10n/locales.ts` with its tag (`de`, `pt-BR`, `zh-Hans`), native name,
+   reading direction, and store codes. This registry generates the Android and iOS picker
+   enums; the web imports it directly. Do not maintain separate platform language lists.
+3. Add its listings under `fastlane/metadata/`.
+4. Run `bun run l10n`.
+
+`bun run l10n:report` provides a read-only coverage, store-listing, and generated-file
+inventory. `l10n:check` also compiles negative type tests so missing interpolation
+arguments, unsupported language IDs, and platform-inappropriate keys remain errors.
+Validation and rollout guidance follows below.
+
+To try one, use Settings → Language. To test the device default, choose Device language,
+then on iOS set the scheme's App Language (Edit Scheme → Run → Options); on Android,
+change the system language in device Settings; on the web, change the browser's language
+settings. On Android 13+, `adb shell cmd locale set-app-locales net.a2f0.nc --locales <tag>`
+tests an explicit per-app choice, not the device default. The privacy policy and support
+pages are in English only.
+
+On iOS, an explicit in-app choice overrides the device and iOS Settings language for the
+app and widget. OS-owned App Intents and Shortcuts metadata still follows iOS's language.
+
+## Catalog maintenance
 
 `l10n/strings.ts` is the source catalog, and `l10n/locales.ts` is the published language
 registry. Native names (English, Deutsch, Español) let someone recover after choosing a
@@ -37,7 +100,7 @@ JAVA_TOOL_OPTIONS=-Djava.net.preferIPv4Stack=true \
 
 The flow starts audio, changes to German, checks that playback continues, restarts the
 app, changes to Spanish, and returns to Device language. Use a minified Android release
-build, as in `scripts/takeAndroidScreenshots.sh`. Also test reboot persistence and a
+build, as in `scripts/testing/takeAndroidScreenshots.sh`. Also test reboot persistence and a
 non-English device language. Android tests cover the preference/context fallback on
 Android 9; Android 13+ uses `LocaleManager` and its OS-managed persistence.
 

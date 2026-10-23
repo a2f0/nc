@@ -1,6 +1,6 @@
 // Every string the apps show, in English, the source language. Translations are typed
 // against these (see locales.ts), and `bun run l10n` writes each platform's native string
-// files from both; the web app imports them directly. See "Localization" in README.md.
+// files from both; the web app imports them directly. See docs/localization.md.
 
 export type Platform = "android" | "ios" | "web";
 
