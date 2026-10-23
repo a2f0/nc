@@ -95,6 +95,10 @@ test("trusted clicks flush with website attribution and GPC override", async () 
     await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
     await sent;
     expect(batches).toHaveLength(1);
+    expect(Object.keys(batches[0] ?? {}).sort()).toEqual(["environment", "events", "site"]);
+    expect(await context.cookies()).toEqual([]);
+    expect(await page.evaluate(() => ({ local: Object.keys(localStorage), session: Object.keys(sessionStorage) })))
+      .toEqual({ local: [], session: [] });
     expect(batches[0]).toMatchObject({
       site: "nc",
       environment: "production",
@@ -138,6 +142,30 @@ test("links and controls omit sound names, text, values, and destinations", asyn
   } finally { await context.close(); }
 }, 15_000);
 
+test("sound cards, playback controls, and history omit sound identity", async () => {
+  const { context, page, batches } = await openSite("gpc");
+  try {
+    await page.locator("#sounds .card").first().click();
+    await page.locator("#playback").click();
+    await page.locator("#more").click();
+    await page.locator("#open-history").click();
+    await page.locator(".history-legend button").first().click();
+    const sent = page.waitForResponse(endpoint);
+    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+    await sent;
+    expect(batches).toHaveLength(1);
+    expect(Object.keys(batches[0] ?? {}).sort()).toEqual(["environment", "events", "site"]);
+    expect(batches[0]?.events).toHaveLength(5);
+    for (const event of batches[0]?.events ?? []) {
+      expect(event).toMatchObject({ app: "web-app", page: "/", target: "button", label: null });
+      expect(Object.keys(event).sort()).toEqual(["app", "id", "label", "page", "target", "timestamp"]);
+    }
+    for (const value of ["white", "pink", "brown", "waves", "fan", "playback", "history", "soundId", "minutes"]) {
+      expect(JSON.stringify(batches)).not.toContain(value);
+    }
+  } finally { await context.close(); }
+}, 15_000);
+
 for (const privacy of ["dnt", "extension", "saved", "automation"] as const) {
   test(`${privacy} prevents collection despite the GPC override`, async () => {
     const { context, page, batches } = await openSite(privacy);
@@ -145,6 +173,7 @@ for (const privacy of ["dnt", "extension", "saved", "automation"] as const) {
       await page.locator("#more").click();
       await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
       await page.clock.runFor(6_000);
+      await page.waitForTimeout(200);
       expect(batches).toEqual([]);
     } finally {
       await context.close();
@@ -162,6 +191,7 @@ test("the extension clears clicks queued before opting out", async () => {
       window.dispatchEvent(new Event("pagehide"));
     });
     await page.clock.runFor(6_000);
+    await page.waitForTimeout(200);
     expect(batches).toEqual([]);
   } finally {
     await context.close();
@@ -175,6 +205,7 @@ for (const site of ["http://localhost:8787", "https://preview.example.com"]) {
       await page.locator("#more").click();
       await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
       await page.clock.runFor(6_000);
+      await page.waitForTimeout(200);
       expect(batches).toEqual([]);
     } finally {
       await context.close();
@@ -188,6 +219,7 @@ test("default preview builds are inert even on the production host", async () =>
     await page.locator("#more").click();
     await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
     await page.clock.runFor(6_000);
+    await page.waitForTimeout(200);
     expect(batches).toEqual([]);
   } finally {
     await context.close();

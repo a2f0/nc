@@ -9,6 +9,7 @@ WidgetKit) and `android/` (Jetpack Compose, Glance), plus a desktop web version 
 
 ```sh
 mise install && bundle install && bun install
+bun x --no-install playwright install --with-deps chromium
 sh scripts/git/install-hooks.sh
 sh scripts/ensureGradleWrapper.sh
 ```

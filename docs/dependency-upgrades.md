@@ -23,6 +23,10 @@ Store lanes and `web:deploy` are separate release operations. Never deploy merel
 to establish that an upgrade is safe; follow the skill's preview gates before
 any separately authorized release.
 
+Playwright's browser revision is tied to its package version. After changing that
+pin, reinstall Chromium with `bun x --no-install playwright install --with-deps chromium`
+and run the web integration cases against the actual production and preview builds.
+
 ## Android toolchain and release validation
 
 Keep the Kotlin Compose compiler aligned with the Kotlin compiler selected by
