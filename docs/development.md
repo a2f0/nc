@@ -28,15 +28,15 @@ Nothing binary is committed; the hooks reject it (`bun run lint:binary-files`).
 
 | Source | Becomes |
 |---|---|
-| `assets/brand/logo.svg` | The mark, an LCD equalizer drawn full-bleed so its columns touch the icon's bottom edge: the iOS app icon and launch screen logo; the Android adaptive icon foreground, themed (monochrome) icon, and notification icon; the favicon; the logo beside each app's title; the Play Store icon and feature graphic |
-| `assets/brand/background.svg` | The iOS app icon backdrop and full-bleed launch screen; the Android adaptive icon background and splash color; the favicon, title logo, and Play Store graphics |
+| `assets/brand/logo.svg` | The mark, an LCD equalizer drawn full-bleed so its columns touch the icon's bottom edge: the iOS app icon and launch screen logo; the Android adaptive icon foreground, themed (monochrome) icon, and notification icon; the favicon; the logo beside each app's title; the website's social preview image; the Play Store icon and feature graphic |
+| `assets/brand/background.svg` | The iOS app icon backdrop and full-bleed launch screen; the Android adaptive icon background and splash color; the favicon, title logo, social preview image, and Play Store graphics |
 
 The `images` section of `agent-tool.json` declares every output's size, layers, and
 destination, and `agent-tool images` renders them
 ([reference](https://github.com/a2f0/agent-tool/blob/main/docs/images.md)), with no image
 tools to install. Builds regenerate them when the sources change (an Xcode build phase and a
 Gradle task before `preBuild`), or run `sh scripts/build/buildImages.sh`; `web/build.ts` writes the
-favicon, and the `android listing` lane the Play Store graphics. To look at those, run
+favicon and social preview image, and the `android listing` lane the Play Store graphics. To look at those, run
 `sh scripts/build/buildImages.sh store --out .screenshots/android` (`--out` is relative to the
 repository root). Android 12+ splash screens only take a solid color, so Android uses the
 background's average color there. Android adaptive icons show the inner 72dp of a 108dp layer,

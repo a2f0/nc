@@ -3,7 +3,8 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
-import { build, PAGES } from "../build";
+import { STRINGS } from "../../l10n/strings";
+import { build, canonicalUrl, PAGES, SITE_URL, withMetadata } from "../build";
 
 const BRAND_DIR = join(import.meta.dir, "../../assets/brand");
 let dir: string;
@@ -50,6 +51,93 @@ test("every page's favicon is the app icon without the mark's unlit segments", a
   }
 });
 
+// The content of each tag in html that has the attribute, such as property="og:url".
+const contents = (html: string, attribute: string): string[] =>
+  [...html.matchAll(new RegExp(`<meta ${attribute} content="([^"]*)" />`, "g"))].map(match => match[1] ?? "");
+
+test("canonical URLs are the paths Workers static assets serve without redirecting", () => {
+  expect(canonicalUrl("index.html")).toBe("https://nc.a2f0.net/");
+  expect(canonicalUrl("privacy.html")).toBe("https://nc.a2f0.net/privacy");
+  expect(canonicalUrl("android/support.html")).toBe("https://nc.a2f0.net/android/support");
+});
+
+test("every page has its canonical URL, theme color, and social cards from its own title and description", async () => {
+  const titles = new Set<string>(), descriptions = new Set<string>();
+  for (const page of PAGES) {
+    const html = await readFile(join(dir, page), "utf8");
+    const title = html.match(/<title>([^<]+)<\/title>/)?.[1] ?? "";
+    const [description = ""] = contents(html, 'name="description"');
+    titles.add(title);
+    descriptions.add(description);
+    const url = canonicalUrl(page);
+    expect({ page, canonical: [...html.matchAll(/<link rel="canonical" href="([^"]*)" \/>/g)].map(m => m[1]) })
+      .toEqual({ page, canonical: [url] });
+    expect({ page, tags: {
+      "og:type": contents(html, 'property="og:type"'),
+      "og:site_name": contents(html, 'property="og:site_name"'),
+      "og:title": contents(html, 'property="og:title"'),
+      "og:description": contents(html, 'property="og:description"'),
+      "og:url": contents(html, 'property="og:url"'),
+      "og:image": contents(html, 'property="og:image"'),
+      "og:image:width": contents(html, 'property="og:image:width"'),
+      "og:image:height": contents(html, 'property="og:image:height"'),
+      "twitter:card": contents(html, 'name="twitter:card"'),
+    } }).toEqual({ page, tags: {
+      "og:type": ["website"],
+      "og:site_name": ["Noise Connoisseur"],
+      "og:title": [title],
+      "og:description": [description],
+      "og:url": [url],
+      "og:image": [`${SITE_URL}/og-image.png`],
+      "og:image:width": ["1200"],
+      "og:image:height": ["630"],
+      "twitter:card": ["summary_large_image"],
+    } });
+    expect(contents(html, 'property="og:image:alt"')[0]).toBeTruthy();
+    expect(html).toContain('<meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#ffffff" />');
+    expect(html).toContain('<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000" />');
+    // Before the appearance script, so it can retint them before the first paint.
+    expect(html.indexOf('name="theme-color"')).toBeLessThan(html.indexOf("appearance-init.js"));
+    expect(html).not.toContain('name="robots"');
+  }
+  // The English the page's localize() sets in other languages.
+  expect(titles).toContain(`${STRINGS.web_title.text} · ${STRINGS.app_name.text}`);
+  expect(titles.size).toBe(PAGES.length);
+  expect(descriptions.size).toBe(PAGES.length);
+  expect(() => withMetadata("broken.html", "<title>Broken</title>")).toThrow("broken.html");
+});
+
+test("the social preview image is a 1200x630 PNG without transparency", async () => {
+  const png = await readFile(join(dir, "og-image.png"));
+  expect([...png.subarray(0, 8)]).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+  expect(png[25]).toBe(2); // Truecolor, with no alpha channel.
+});
+
+test("the landing page describes the web app in JSON-LD", async () => {
+  const html = await readFile(join(dir, "index.html"), "utf8");
+  const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+  expect(blocks).toHaveLength(1);
+  expect(JSON.parse(blocks[0]?.[1] ?? "")).toEqual({
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Noise Connoisseur",
+    url: canonicalUrl("index.html"),
+    description: contents(html, 'name="description"')[0],
+    applicationCategory: "MultimediaApplication",
+    // Only the web: list the native apps once they're in the stores.
+    operatingSystem: "Web",
+  });
+});
+
+test("robots.txt allows crawling and names the sitemap of every page", async () => {
+  expect(await readFile(join(dir, "robots.txt"), "utf8"))
+    .toBe("User-agent: *\nAllow: /\n\nSitemap: https://nc.a2f0.net/sitemap.xml\n");
+  const sitemap = await readFile(join(dir, "sitemap.xml"), "utf8");
+  expect(sitemap).toStartWith('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+  expect([...sitemap.matchAll(/<loc>([^<]*)<\/loc>/g)].map(m => m[1])).toEqual(PAGES.map(canonicalUrl));
+});
+
 test("every app page applies the saved appearance before styles and the main script", async () => {
   const script = await readFile(join(dir, "appearance-init.js"), "utf8");
   for (const page of PAGES) {
@@ -64,22 +152,38 @@ test("every app page applies the saved appearance before styles and the main scr
   let saved: string | null = "dark";
   const localStorage = { getItem: () => saved };
   const root = { dataset: {} as Record<string, string> };
+  // The theme-color tags, by scheme, and the media query each applies in.
+  const media: Record<string, string> = {};
+  const metas = ["light", "dark"].map(scheme => ({
+    dataset: { scheme },
+    setAttribute(name: string, value: string) { expect(name).toBe("media"); media[scheme] = value; },
+  }));
+  const document = {
+    documentElement: root,
+    querySelectorAll(selector: string) {
+      expect(selector).toBe('meta[name="theme-color"][data-scheme]');
+      return metas;
+    },
+  };
   let listener!: (event: { key: string | null; storageArea: unknown }) => void;
   const window = { addEventListener(type: string, callback: typeof listener) {
     expect(type).toBe("storage");
     listener = callback;
   } };
-  runInNewContext(script, { localStorage, document: { documentElement: root }, window });
+  runInNewContext(script, { localStorage, document, window });
   expect(root.dataset.appearance).toBe("dark");
+  expect(media).toEqual({ light: "not all", dark: "all" });
   saved = "light";
   listener({ key: "appearance", storageArea: {} }); // Session storage must not affect the app.
   listener({ key: "volume", storageArea: localStorage });
   expect(root.dataset.appearance).toBe("dark");
   listener({ key: "appearance", storageArea: localStorage });
   expect(root.dataset.appearance).toBe("light");
+  expect(media).toEqual({ light: "all", dark: "not all" });
   saved = null;
   listener({ key: null, storageArea: localStorage }); // localStorage.clear() in another tab.
   expect(root.dataset.appearance).toBe("system");
+  expect(media).toEqual({ light: "(prefers-color-scheme: light)", dark: "(prefers-color-scheme: dark)" });
   saved = "future-mode";
   listener({ key: "appearance", storageArea: localStorage });
   expect(root.dataset.appearance).toBe("system");
@@ -87,7 +191,7 @@ test("every app page applies the saved appearance before styles and the main scr
   root.dataset.appearance = "dark";
   runInNewContext(script, {
     get localStorage() { throw new Error("Blocked storage"); },
-    document: { documentElement: root }, window,
+    document, window,
   });
   expect(root.dataset.appearance).toBe("system");
 });

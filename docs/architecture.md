@@ -10,7 +10,7 @@ Open **More → Settings → Appearance** and choose **System**, **Light**, or *
 System is the default and follows the device's appearance automatically. Explicit choices
 take effect immediately and stay saved across app restarts and device reboots, using native
 preferences or browser local storage. The web app applies the saved choice before rendering
-and keeps open tabs in sync. Clearing app/site data removes the preference; blocked browser
+and keeps open tabs in sync, retinting the browser's theme color with it. Clearing app/site data removes the preference; blocked browser
 storage shows a warning and keeps the choice only for the current page.
 The system-controlled mobile launch screen can briefly use the system appearance before
 the app's saved appearance takes over.
@@ -79,3 +79,20 @@ The website overrides GPC while honoring DNT and CT's extension and saved opt-ou
 The public [privacy notice](https://nc.a2f0.net/privacy) describes click metadata,
 IP/geolocation, 90-day retention, and opt-out instructions. No sound names, settings,
 history, or playback logs are sent. Browser integration tests intercept every CT request.
+
+## Web search and social metadata
+
+`web/build.ts` adds the metadata every page in `PAGES` shares after its `<title>`: the
+canonical URL (`https://nc.a2f0.net/`, `/privacy`, `/ios/support`, and so on, the paths
+Workers static assets serve without redirecting), a theme color per color scheme, which
+`applyAppearance()` points at the chosen appearance's color, and Open Graph and Twitter
+cards built from the page's own title and description, with the web image target's
+1200x630 `og-image.png`. It also writes `robots.txt`, which allows every crawler and names
+the sitemap, and `sitemap.xml`, which lists every page's canonical URL. The Worker's
+`/review/*` responses carry `X-Robots-Tag: noindex` and stay out of the sitemap. The
+landing page's JSON-LD describes a `WebApplication` whose `operatingSystem` is only the
+web; add the store apps, their store links, and any app banners once they're published.
+The metadata is English, like the static page; the landing page's `localize()` retitles
+the tab in the chosen language from `web_title` in `l10n/strings.ts`.
+`web/test/build.test.ts` checks all of it in the built site. nc.a2f0.net is the only
+deployment, so nothing is tier-specific.

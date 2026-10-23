@@ -1,8 +1,8 @@
 // Builds the web app into web/dist with separate page, audio-worklet, and tracker
 // bundles. Only the production CLI --tracking flag enables the tracker.
 
-import { cp, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 const WEB_DIR = import.meta.dir;
 const REPO_ROOT = join(WEB_DIR, "..");
@@ -14,6 +14,16 @@ export const PAGES = [
   "index.html", "privacy.html", "support.html",
   "ios/privacy.html", "ios/support.html", "android/privacy.html", "android/support.html",
 ];
+// The production site, the only one: there is no staging deployment.
+export const SITE_URL = "https://nc.a2f0.net";
+// The social preview image, the web target's og-image.png in agent-tool.json.
+const OG_IMAGE = { path: "og-image.png", width: 1200, height: 630, alt: "The Noise Connoisseur logo, an LCD equalizer" };
+
+// Workers static assets serve privacy.html at /privacy and index.html at /, redirecting the
+// .html forms there, so those are the canonical URLs.
+export function canonicalUrl(page: string): string {
+  return `${SITE_URL}/${page === "index.html" ? "" : page.replace(/\.html$/, "")}`;
+}
 
 export async function build(outDir: string = DIST_DIR, tracking = false): Promise<void> {
   await rm(outDir, { recursive: true, force: true });
@@ -38,11 +48,51 @@ export async function build(outDir: string = DIST_DIR, tracking = false): Promis
   });
   if (!appearance.success) throw new AggregateError(appearance.logs, "Appearance bootstrap build failed");
 
-  for (const file of [...PAGES, "styles.css"]) {
-    await cp(join(WEB_DIR, file), join(outDir, file));
+  for (const page of PAGES) {
+    await mkdir(dirname(join(outDir, page)), { recursive: true });
+    await writeFile(join(outDir, page), withMetadata(page, await readFile(join(WEB_DIR, page), "utf8")));
   }
+  await cp(join(WEB_DIR, "styles.css"), join(outDir, "styles.css"));
+  await writeFile(join(outDir, "robots.txt"), `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+  await writeFile(join(outDir, "sitemap.xml"), sitemap());
 
-  await buildIcon(outDir);
+  await buildImages(outDir);
+}
+
+// Adds the search and social metadata every page shares after its <title>: the canonical
+// URL, the browser's theme color, and Open Graph and Twitter cards built from the page's
+// own title and description.
+export function withMetadata(page: string, html: string): string {
+  const [line, indent, title] = /^( *)<title>([^<]+)<\/title>$/m.exec(html) ?? [];
+  const description = /<meta name="description" content="([^"]+)" \/>/.exec(html)?.[1];
+  if (!line || indent === undefined || !title || !description) {
+    throw new Error(`${page} needs a <title> line and a <meta name="description">`);
+  }
+  const url = canonicalUrl(page);
+  const tags = [
+    `<link rel="canonical" href="${url}" />`,
+    // The page background in styles.css; applyAppearance() follows a chosen appearance.
+    `<meta name="theme-color" data-scheme="light" media="(prefers-color-scheme: light)" content="#ffffff" />`,
+    `<meta name="theme-color" data-scheme="dark" media="(prefers-color-scheme: dark)" content="#000000" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta property="og:site_name" content="Noise Connoisseur" />`,
+    `<meta property="og:title" content="${title.replaceAll('"', "&quot;")}" />`,
+    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:url" content="${url}" />`,
+    `<meta property="og:image" content="${SITE_URL}/${OG_IMAGE.path}" />`,
+    `<meta property="og:image:width" content="${OG_IMAGE.width}" />`,
+    `<meta property="og:image:height" content="${OG_IMAGE.height}" />`,
+    `<meta property="og:image:alt" content="${OG_IMAGE.alt}" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+  ];
+  return html.replace(line, () => [line, ...tags.map(tag => indent + tag)].join("\n"));
+}
+
+// Every page, at its canonical URL.
+function sitemap(): string {
+  const urls = PAGES.map(page => `  <url><loc>${canonicalUrl(page)}</loc></url>`);
+  return ['<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', ...urls, "</urlset>", ""].join("\n");
 }
 
 // The About sheet's version: the root package's, which shipping bumps with each change
@@ -53,10 +103,10 @@ async function appVersion(): Promise<string> {
   return version;
 }
 
-// The favicon, also the logo beside the title, is the app icon with rounded corners,
-// leaving out the mark's unlit segments, which are noise at tab size: the web target in
-// agent-tool.json, rendered from assets/brand/.
-async function buildIcon(outDir: string): Promise<void> {
+// The web target in agent-tool.json, rendered from assets/brand/: the favicon, also the logo
+// beside the title, is the app icon with rounded corners, leaving out the mark's unlit
+// segments, which are noise at tab size; og-image.png is the social preview image.
+async function buildImages(outDir: string): Promise<void> {
   const command = [process.execPath, AGENT_TOOL, "--repo", REPO_ROOT, "images", "build", "web", "--out", outDir];
   const agentTool = Bun.spawn(command, { stdout: "pipe", stderr: "pipe" });
   const [stdout, stderr, exitCode] = await Promise.all([

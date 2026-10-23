@@ -460,6 +460,11 @@ export const STRINGS = {
     text: "Privacy policy",
     comment: "Link to the privacy policy, in About on mobile and the website footer.",
   },
+  web_title: {
+    text: "White, Pink, and Brown Noise Generator",
+    comment: "The website's title in the browser tab and history, followed by “ · Noise Connoisseur”.",
+    platforms: ["web"],
+  },
   review_title: {
     text: "Android background playback",
     comment: "Heading of the public Google Play foreground-service demonstration page.",
