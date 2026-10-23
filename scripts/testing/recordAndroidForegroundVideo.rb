@@ -6,9 +6,9 @@ require 'tmpdir'
 require 'tempfile'
 require 'timeout'
 require 'rexml/document'
-require_relative '../fastlane/lib/play_evidence'
+require_relative '../../fastlane/lib/play_evidence'
 
-ROOT = File.expand_path('..', __dir__)
+ROOT = File.expand_path('../..', __dir__)
 OUT = File.join(ROOT, '.store-evidence/android-media-playback')
 SERIAL = 'emulator-5586'
 AVD = 'NoiseConnoisseur_Evidence'

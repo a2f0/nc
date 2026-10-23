@@ -4,7 +4,7 @@ set -eu
 # Build the iOS app, drive it with Maestro on dedicated simulators, and write
 # App Store screenshots below the gitignored .screenshots/ios/.
 
-# shellcheck source=scripts/lib/screenshots.sh
+# shellcheck source=scripts/testing/lib/screenshots.sh
 . "$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)/lib/screenshots.sh"
 
 require_command maestro "See https://maestro.mobile.dev."

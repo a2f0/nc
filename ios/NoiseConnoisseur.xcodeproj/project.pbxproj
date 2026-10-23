@@ -301,7 +301,7 @@
 				"$(SRCROOT)/../agent-tool.json",
 				"$(SRCROOT)/../assets/brand/logo.svg",
 				"$(SRCROOT)/../assets/brand/background.svg",
-				"$(SRCROOT)/../scripts/buildImages.sh",
+				"$(SRCROOT)/../scripts/build/buildImages.sh",
 				"$(SRCROOT)/../bun.lock",
 			);
 			name = "Generate Images";
@@ -317,7 +317,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Icons and launch images are generated from assets/brand/*.svg and gitignored.\nexec sh \"$SRCROOT/../scripts/buildImages.sh\" ios\n";
+			shellScript = "# Icons and launch images are generated from assets/brand/*.svg and gitignored.\nexec sh \"$SRCROOT/../scripts/build/buildImages.sh\" ios\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
