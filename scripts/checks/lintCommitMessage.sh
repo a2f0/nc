@@ -17,7 +17,9 @@ cd "$REPO_ROOT"
 normalized=$(mktemp)
 trap 'rm -f "$normalized"' EXIT
 trap 'exit 1' HUP INT TERM
-awk '!/^#/ { if (started || /[^[:space:]]/) { print; started = 1 } }' "$message_file" >"$normalized"
+scissors=$(printf '%s\n' '------------------------ >8 ------------------------' | git stripspace --comment-lines)
+awk -v scissors="$scissors" '$0 == scissors { exit } { print }' "$message_file" |
+  git stripspace --strip-comments >"$normalized"
 header=$(sed -n '1p' "$normalized")
 
 fail() {

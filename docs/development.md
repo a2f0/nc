@@ -72,7 +72,8 @@ before applying shared policy. Signatures must be present and not provably bad;
 local key trust is not required.
 
 Pre-push validates every destination branch from Git's ref tuples. Trust checks exclude
-commits reachable from the named remote's tracking refs even for an existing branch update,
+commits reachable from all of the named remote's tracking refs, including other published
+feature branches, even for an existing branch update,
 so integrating previously published mainline commits does not revalidate historical policy.
 New local commits still undergo signature, attribution, and subject checks. URL-only pushes
 use their remote tip, or local `main` for a new branch, because they have no named tracking refs.
