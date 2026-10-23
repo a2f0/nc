@@ -92,6 +92,7 @@ not restart playback after an update; reopen the app and press Play.
 mise install                        # Java, Gradle, Ruby, Bun, ShellCheck, jq (see .mise.toml)
 bundle install                      # fastlane, RuboCop
 bun install                         # agent-tool, TypeScript
+bun x --no-install playwright install --with-deps chromium   # web integration tests
 brew install imagemagick            # screenshots only
 curl -fsSL https://get.maestro.mobile.dev | bash   # screenshots only
 git init && sh scripts/git/install-hooks.sh
@@ -118,6 +119,15 @@ be served over HTTPS or from localhost, not `file://`). The page and the audio w
 separate bundles (`web/build.ts`); the favicon, also the logo beside the title, is the app icon, built from `assets/brand/*.svg`. The store
 listings link to `web/privacy.html` and `web/support.html` (served at `/privacy` and
 `/support`); keep the privacy policy accurate when an app starts storing or sending anything new.
+
+Production web pages explicitly initialize `@a2f0/ct-client` with site `nc`, app
+`web-app`, and environment `production`. Tracking requires both the production build
+and the exact `https://nc.a2f0.net` origin. Native apps, local previews, imports, and
+automated browsers do not initialize it. The website overrides GPC while honoring
+Do Not Track and CT's extension and saved opt-outs. Its
+[privacy notice](https://nc.a2f0.net/privacy) describes click metadata, IP/geolocation,
+90-day retention, and opt-out instructions. No sound names, settings, history, or
+playback logs are sent. Browser integration tests intercept every CT request.
 
 ## Localization
 

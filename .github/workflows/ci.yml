@@ -52,6 +52,9 @@ jobs:
       - name: Check localization
         run: bun run l10n:check
 
+      - name: Install web integration test browser
+        run: bun x --no-install playwright install --with-deps chromium
+
       - name: Test fastlane helpers, web, and localization
         run: bun run test
 

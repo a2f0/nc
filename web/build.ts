@@ -10,18 +10,18 @@ export const DIST_DIR = join(WEB_DIR, "dist");
 const PACKAGE_JSON = join(REPO_ROOT, "package.json");
 const AGENT_TOOL = join(REPO_ROOT, "node_modules/.bin/agent-tool");
 
-export async function build(outDir: string = DIST_DIR): Promise<void> {
+export async function build(outDir: string = DIST_DIR, tracking = false): Promise<void> {
   await rm(outDir, { recursive: true, force: true });
 
   const result = await Bun.build({
-    entrypoints: [join(WEB_DIR, "src/main.ts"), join(WEB_DIR, "src/noiseProcessor.ts")],
+    entrypoints: [join(WEB_DIR, "src/main.ts"), join(WEB_DIR, "src/noiseProcessor.ts"), join(WEB_DIR, "src/clickTracking.ts")],
     outdir: outDir,
     naming: "[name].[ext]",
     target: "browser",
     format: "esm",
     minify: true,
     sourcemap: "linked",
-    define: { APP_VERSION: JSON.stringify(await appVersion()) },
+    define: { APP_VERSION: JSON.stringify(await appVersion()), CT_ENABLED: JSON.stringify(tracking) },
   });
   if (!result.success) {
     throw new AggregateError(result.logs, "Web build failed");
@@ -63,6 +63,6 @@ async function buildIcon(outDir: string): Promise<void> {
 }
 
 if (import.meta.main) {
-  await build();
+  await build(DIST_DIR, process.argv.includes("--tracking"));
   console.log(`Built ${DIST_DIR}`);
 }
