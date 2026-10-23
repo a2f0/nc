@@ -1,0 +1,115 @@
+{
+  "label": "check",
+  "steps": [
+    {
+      "label": "binary-files",
+      "command": [
+        "bun",
+        "run",
+        "lint:binary-files",
+        "--all"
+      ]
+    },
+    {
+      "label": "shellcheck",
+      "command": [
+        "bun",
+        "run",
+        "lint:scripts"
+      ]
+    },
+    {
+      "label": "rubocop",
+      "command": [
+        "bundle",
+        "exec",
+        "rubocop"
+      ]
+    },
+    {
+      "label": "skills",
+      "command": [
+        "bun",
+        "run",
+        "agents:check"
+      ]
+    },
+    {
+      "label": "localization",
+      "command": [
+        "bun",
+        "run",
+        "l10n:check"
+      ]
+    },
+    {
+      "label": "tests",
+      "command": [
+        "bun",
+        "run",
+        "test"
+      ]
+    },
+    {
+      "label": "web-types",
+      "command": [
+        "bun",
+        "run",
+        "web:check"
+      ]
+    },
+    {
+      "label": "web-build",
+      "command": [
+        "bun",
+        "run",
+        "web:build"
+      ]
+    },
+    {
+      "label": "web-deploy-preview",
+      "command": [
+        "bun",
+        "run",
+        "web:deploy:preview"
+      ]
+    },
+    {
+      "label": "android",
+      "command": [
+        "sh",
+        "-c",
+        "sh scripts/dev/ensureGradleWrapper.sh && (cd android && ./gradlew --quiet assembleDebug lintDebug testDebugUnitTest)"
+      ]
+    },
+    {
+      "label": "ios-build",
+      "command": [
+        "xcodebuild",
+        "-quiet",
+        "-project",
+        "ios/NoiseConnoisseur.xcodeproj",
+        "-scheme",
+        "NoiseConnoisseur",
+        "-destination",
+        "generic/platform=iOS Simulator",
+        "CODE_SIGNING_ALLOWED=NO",
+        "build"
+      ]
+    },
+    {
+      "label": "ios-audio",
+      "command": [
+        "sh",
+        "scripts/testing/testIosAudio.sh"
+      ]
+    },
+    {
+      "label": "ios-playback",
+      "command": [
+        "sh",
+        "scripts/testing/testIosPlayback.sh"
+      ]
+    }
+  ]
+}

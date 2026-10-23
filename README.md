@@ -31,7 +31,7 @@ bun install                         # agent-tool, TypeScript
 bun x --no-install playwright install --with-deps chromium   # web integration tests
 brew install imagemagick            # screenshots only
 curl -fsSL https://get.maestro.mobile.dev | bash   # screenshots only
-sh scripts/git/install-hooks.sh
+bun run hooks:install
 sh scripts/dev/ensureGradleWrapper.sh   # the wrapper jar is binary, so it isn't committed
 ```
 

@@ -1,52 +1,40 @@
 #!/bin/sh
 set -eu
 
-# Conventional Commits header check, equivalent to commitlint with
-# @commitlint/config-conventional (plus "cleanup" and a 50-character header).
-#
-# Usage: lintCommitMessage.sh <commit-message-file>
-
-SCRIPT_DIR="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
-# shellcheck source=scripts/checks/conventionalTypes.sh
-. "$SCRIPT_DIR/conventionalTypes.sh"
-
+# Keep nc's stricter header grammar around the shared commit policy.
 [ "$#" -eq 1 ] || {
   echo "Usage: $0 <commit-message-file>" >&2
   exit 2
 }
 
-# The header is the first line that isn't a git comment.
-header=$(grep -v '^#' "$1" | sed -n '/[^[:space:]]/{p;q;}')
-
-# Messages git writes itself, which commitlint ignores by default.
-case "$header" in
-  "Merge "* | "Revert \""* | "fixup! "* | "squash! "* | "amend! "* | "Initial commit")
-    exit 0
-    ;;
-esac
+normalized=$(mktemp)
+trap 'rm -f "$normalized"' EXIT
+trap 'exit 1' HUP INT TERM
+awk '!/^#/ { if (started || /[^[:space:]]/) { print; started = 1 } }' "$1" >"$normalized"
+header=$(sed -n '1p' "$normalized")
 
 fail() {
   echo "Error: $1" >&2
-  echo "  $header" >&2
-  echo "Expected '<type>(<optional scope>): <subject>', e.g. 'feat(ios): add sleep timer'." >&2
-  echo "Types: $CONVENTIONAL_TYPES" >&2
+  printf '  %s\n' "$header" >&2
   exit 1
 }
 
-[ -n "$header" ] || fail "commit message is empty."
-
-length=$(printf '%s' "$header" | wc -m | tr -d ' ')
-[ "$length" -le "$COMMIT_HEADER_MAX_LENGTH" ] ||
-  fail "header is $length characters; the limit is $COMMIT_HEADER_MAX_LENGTH."
-
-printf '%s\n' "$header" | grep -qE '^[a-z]+(\([a-z0-9._/-]+\))?!?: [^ ]' ||
-  fail "header is not a Conventional Commits header."
-
-type=${header%%[(!:]*}
-is_conventional_type "$type" || fail "'$type' is not an allowed type."
-
-subject=${header#*: }
-case "$subject" in
-  [[:upper:]]*) fail "subject must not start with an uppercase letter." ;;
-  *.) fail "subject must not end with a period." ;;
+case "$header" in
+  "Merge "* | "Revert \""* | "fixup! "* | "squash! "* | "amend! "* | "Initial commit") ;;
+  *)
+    # The shared checker permits broader scopes and strips a squash PR suffix.
+    # Check nc's whole header here, with the configured limit as the single source.
+    limit=$(bun -e 'const p = await Bun.file("agent-tool.json").json(); console.log(p.subject.maxLength)')
+    length=$(printf '%s' "$header" | wc -m | tr -d ' ')
+    [ "$length" -le "$limit" ] || fail "header is $length characters; the limit is $limit."
+    printf '%s\n' "$header" | grep -qE '^[a-z]+(\([a-z0-9._/-]+\))?!?: [^ ]' ||
+      fail "expected a Conventional Commits header with a lowercase scope."
+    subject=${header#*: }
+    case "$subject" in
+      [[:upper:]]*) fail "subject must not start with an uppercase letter." ;;
+      *.) fail "subject must not end with a period." ;;
+    esac
+    ;;
 esac
+
+bun run --silent agent-tool commits check --message-file "$normalized"
