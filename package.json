@@ -22,7 +22,7 @@
     "l10n": "bun l10n/build.ts",
     "l10n:report": "bun l10n/report.ts",
     "l10n:check": "tsc -p l10n && bun l10n/build.ts --check",
-    "test": "bun test fastlane web l10n",
+    "test": "bun test fastlane web l10n scripts/testing",
     "web:build": "bun web/build.ts --tracking",
     "web:check": "tsc -p web",
     "web:dev": "bun web/serve.ts",

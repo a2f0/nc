@@ -55,11 +55,12 @@ After confirming the installed files are the expected repository copies, run
 `bun run hooks:install --adopt` once. The shared installer backs them up and preserves
 unknown hooks; resolve local hook edits before adoption. Later installs omit `--adopt`.
 
-- **pre-commit:** branch name is `<type>/<name>` (or `main`); no binary files staged.
+- **pre-commit:** branch name is `<type>/<name>` (or `main`); detached commits during
+  a rebase skip the branch-name check; no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
   ShellCheck; RuboCop; shared agent skills are current; localization is current; fastlane
-  helper, web, and localization tests; web typecheck, build, and deploy dry run; Android
+  helper, web, localization, and workflow adapter tests; web typecheck, build, and deploy dry run; Android
   debug build, lint, and unit tests; iOS simulator build, audio rendering checks, and player lifecycle tests on an isolated simulator.
 
 Branch names use the configured Conventional Commits types, with `main` exempt and no

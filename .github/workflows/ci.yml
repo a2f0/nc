@@ -60,7 +60,7 @@ jobs:
       - name: Install web integration test browser
         run: bun x --no-install playwright install --with-deps chromium
 
-      - name: Test fastlane helpers, web, and localization
+      - name: Test fastlane, web, localization, and workflow adapters
         run: bun run test
 
   android:

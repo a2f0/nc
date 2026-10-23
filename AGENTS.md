@@ -24,7 +24,9 @@ hooks, then run `bun run hooks:install --adopt` once; see [development](docs/dev
 `bun run check` (`scripts/testing/check.json`) is the full local gate. Pre-push checks
 its actual pushed refs and managed hook installation, then runs the same gate as CI.
 The group records each command, source fingerprint, and private log; run it directly
-to keep its structured receipt visible. Do not wrap it in another capture command.
+to keep its structured receipt visible. Do not wrap a standalone group invocation
+in another capture command. A captured push includes its hook's group receipt in
+the push log; inspect it there or with `agent-tool runs list --head <commit>`.
 
 For agent sessions, use `bun run --silent agent:run --label <name> -- <command> [args...]`
 for finite noisy commands, including tests, builds, and pushes through the full
@@ -43,7 +45,7 @@ bundle exec rubocop                                   # Ruby: fastlane lanes and
 bun run lint:binary-files --all                       # no binary files
 bun run agents:check                                  # shared skills are current
 bun run l10n:check                                    # translations, generated strings, store listings
-bun run test                                          # fastlane helper, web, and localization tests
+bun run test                                          # fastlane, web, localization, and workflow tests
 bun run web:check && bun run web:build                # web typecheck and build
 bun run web:deploy:preview                            # web deploy config
 (cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest)

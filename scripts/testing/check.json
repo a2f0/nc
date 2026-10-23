@@ -2,15 +2,6 @@
   "label": "check",
   "steps": [
     {
-      "label": "binary-files",
-      "command": [
-        "bun",
-        "run",
-        "lint:binary-files",
-        "--all"
-      ]
-    },
-    {
       "label": "shellcheck",
       "command": [
         "bun",

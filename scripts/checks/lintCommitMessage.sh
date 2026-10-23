@@ -7,15 +7,23 @@ set -eu
   exit 2
 }
 
+case "$1" in
+  /*) message_file=$1 ;;
+  *) message_file=$PWD/$1 ;;
+esac
+REPO_ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/../.." && pwd -P)"
+cd "$REPO_ROOT"
+
 normalized=$(mktemp)
 trap 'rm -f "$normalized"' EXIT
 trap 'exit 1' HUP INT TERM
-awk '!/^#/ { if (started || /[^[:space:]]/) { print; started = 1 } }' "$1" >"$normalized"
+awk '!/^#/ { if (started || /[^[:space:]]/) { print; started = 1 } }' "$message_file" >"$normalized"
 header=$(sed -n '1p' "$normalized")
 
 fail() {
   echo "Error: $1" >&2
   printf '  %s\n' "$header" >&2
+  echo "Expected '<type>(<optional scope>): <subject>', e.g. 'feat(ios): add sleep timer'." >&2
   exit 1
 }
 

@@ -11,7 +11,7 @@ and [releasing](../docs/releasing.md) for store workflows.
 | `checks/` | Shell lint, nc's stricter commit-header adapter, and the CI aggregate policy; shared Git checks use agent-tool. |
 | `dev/` | `ensureGradleWrapper.sh` regenerates the gitignored Gradle wrapper jar. |
 | `git/hooks/` | Tracked hook bodies; agent-tool handles installation and drift checks. |
-| `testing/` | The full `check.json` validation group, `takeScreenshots.sh [ios\|android]`, platform screenshot drivers, native iOS test runners, and Android evidence recording. |
+| `testing/` | The full `check.json` validation group, workflow adapter tests, `takeScreenshots.sh [ios\|android]`, platform screenshot drivers, native iOS test runners, and Android evidence recording. |
 | `testing/lib/` | Helpers used only by screenshot test drivers. |
 
 The Android evidence recorder is invoked by its fastlane lane; use that lane rather
