@@ -14,6 +14,9 @@ when moving a script. Package scripts remain the normal entrypoints where availa
 
 Shared workflow commands and managed skills come from the exact-pinned agent-tool;
 keep nc-specific policy in `agent-tool.json` and the application gate in its hooks/CI.
+The managed skills in `.agents/skills` and `.claude/skills` are generated; don't edit them.
+Repository-owned skills, such as [app-store-readiness](../skills/app-store-readiness/SKILL.md),
+live in `skills/`.
 Detailed application behavior lives in [architecture](architecture.md), language
 maintenance in [localization](localization.md), and publishing in [releasing](releasing.md).
 

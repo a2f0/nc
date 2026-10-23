@@ -67,12 +67,15 @@ Dir.mktmpdir do |dir|
   end
 
   paths, store_calls = [], []
-  Readiness.define_singleton_method(:android_artifact) do |report, artifact, bundletool:|
+  expectations = []
+  Readiness.define_singleton_method(:android_artifact) do |report, artifact, expected, bundletool:|
+    expectations << expected
     paths << bundletool
     report.add('fixture.inspected', 'verified', 'Artifact inspection called.')
   end
   Readiness.define_singleton_method(:android_store) do |report, **options|
     store_calls << options[:track]
+    results[:store_options] = options.reject { |name, _| name == :key_path }
     report.add('fixture.store', 'verified', 'Store inspection called.')
   end
   artifact = File.join(dir, 'upload_release.aab')
@@ -99,6 +102,7 @@ Dir.mktmpdir do |dir|
     results[:track_error] = error.message
   end
   results[:inspection_count] = paths.size
+  results[:expectations] = expectations.uniq
 end
 puts JSON.generate(results)
 `;
@@ -162,7 +166,23 @@ describe("Android release and readiness lanes", () => {
   });
   test("forwards the requested track and rejects unsupported tracks before inspecting", () => {
     expect(result.store_calls).toEqual(["beta"]);
+    expect(result.store_options).toEqual({
+      package: "net.a2f0.nc", track: "beta",
+      listing: { locales: ["de-DE", "en-US", "es-419", "es-ES"], screenshot_locale: "en-US" },
+    });
     expect(result.track_error).toBe('Unsupported Play track "unknown"; use one of production, beta, alpha, internal');
     expect(result.inspection_count).toBe(4);
+  });
+  test("expects the offline app's permissions and a minified bundle", () => {
+    expect(result.expectations).toEqual([{
+      identifier: "net.a2f0.nc",
+      permissions: [
+        "android.permission.FOREGROUND_SERVICE", "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.WAKE_LOCK", "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED", "net.a2f0.nc.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+      ],
+      minified: true,
+    }]);
+    expect(result.expectations[0].permissions).not.toContain("android.permission.INTERNET");
   });
 });

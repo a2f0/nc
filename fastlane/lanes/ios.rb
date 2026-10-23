@@ -23,6 +23,16 @@ IOS_OUTPUT_DIR = File.join(REPO_ROOT, 'ios/build/release')
 IOS_IPA_NAME = 'NoiseConnoisseur.ipa'
 IOS_METADATA_DIR = File.join(REPO_ROOT, 'fastlane/metadata/ios')
 
+# What the readiness lane expects the IPA to hold: the app and its widget, both
+# in the App Group, and the declarations of their PrivacyInfo.xcprivacy files.
+IOS_READINESS_EXPECTATIONS = {
+  targets: { NATIVE_APP_IDENTIFIER => [APP_GROUP_IDENTIFIER], WIDGET_IDENTIFIER => [APP_GROUP_IDENTIFIER] },
+  privacy: {
+    tracking: false,
+    collected_data_types: {},
+    accessed_api_reasons: { 'NSPrivacyAccessedAPICategoryUserDefaults' => %w[CA92.1 1C8F.1] }
+  }
+}.freeze
 IOS_WAIT_TIMEOUT_ERROR = 'wait_timeout must be between 0 and 1800 seconds'
 IOS_PRECHECK_REJECTION = 'found one or more potential problems that must be addressed'
 
@@ -113,11 +123,13 @@ rescue ArgumentError
   UI.user_error!(IOS_WAIT_TIMEOUT_ERROR)
 end
 
+def ios_readiness_listing = readiness_listing(IOS_METADATA_DIR, 'description.txt')
+
 def ios_readiness_store(report, options, timeout)
   report.attempt('store.authentication') do
     load_store_secrets(IOS_SECRETS)
     api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
-    Readiness.ios_store(report, locales: listing_locales(IOS_METADATA_DIR, 'description.txt'), timeout: timeout)
+    Readiness.ios_store(report, app_identifier: NATIVE_APP_IDENTIFIER, listing: ios_readiness_listing, timeout: timeout)
     if options[:precheck].to_s == 'false'
       report.add('store.precheck', 'unverified', 'Metadata precheck explicitly skipped.')
     else
@@ -262,7 +274,7 @@ platform :ios do
     artifact, output = readiness_options(options, 'ios', File.join(IOS_OUTPUT_DIR, IOS_IPA_NAME))
     timeout = ios_readiness_timeout(options)
     report = Readiness::Report.new('ios', artifact, REPO_ROOT)
-    Readiness.ios_artifact(report, artifact)
+    Readiness.ios_artifact(report, artifact, IOS_READINESS_EXPECTATIONS)
     if options[:store].to_s == 'false'
       report.add('store.ios', 'unverified', 'Store inspection explicitly skipped.')
     else

@@ -8,6 +8,8 @@ require 'time'
 
 # Evidence is tied to artifact bytes, never inferred from whichever checkout happens
 # to be open during an audit. Reports intentionally omit store contacts and raw errors.
+# balebase and nc keep identical copies of the readiness libraries; each repository's
+# lanes pass in what its apps are expected to contain (see docs/readiness.md).
 module Readiness
   class CommandError < StandardError; end
 
@@ -122,8 +124,8 @@ module Readiness
 
   MANUAL_CHECKS = {
     'manual.accessibility_devices' =>
-      'Run VoiceOver/TalkBack and physical-device audio, interruptions, routes, widgets, and upgrade tests ' \
-      'against this candidate.',
+      'Run VoiceOver/TalkBack sessions and physical-device tests of the system integrations, interruptions, ' \
+      'and upgrade path against this candidate.',
     'console.declarations' =>
       'Confirm privacy/Data safety, ratings, agreements, pricing, availability, export/trader declarations, ' \
       'and Play production eligibility where applicable.',

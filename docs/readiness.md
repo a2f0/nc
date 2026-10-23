@@ -1,5 +1,10 @@
 # Release readiness lanes
 
+Use the [app-store-readiness skill](../skills/app-store-readiness/SKILL.md) for an iOS,
+Android, and web pre-release assessment, and record each candidate's findings and
+remaining prerequisites in its PR. The readiness lanes below supply its artifact and
+store-record evidence.
+
 Run `bun run ios:readiness` or `bun run android:readiness` to inspect an existing signed
 release artifact and the corresponding store records. These lanes **do not build, upload,
 select a build, submit, or publish**. Android creates a temporary
@@ -8,7 +13,8 @@ uploads out of the same run.
 
 The default artifacts are `ios/build/release/NoiseConnoisseur.ipa` and
 `android/app/build/outputs/bundle/release/app-release.aab`. Reports go to gitignored
-`.readiness/ios.json` and `.readiness/android.json` with private file permissions. They contain
+`.readiness/production/ios.json` and `.readiness/production/android.json` with private file
+permissions. They contain
 artifact SHA-256, version/build, SDK information, source provenance when available, and
 individual `verified`, `failed`, `unverified`, or `not_applicable` checks. Review contacts,
 credentials, and raw API errors are excluded. Don't commit private reports.
@@ -56,13 +62,19 @@ source edits during builds. Build numbering still follows the existing release l
 
 ## What is and isn't checked
 
-- iOS: packaged app/widget identifiers, version/SDK, signature integrity, distribution
-  profiles, app group entitlements and privacy declarations; exact processed build,
+- iOS: the packaged app identifier and that the widget is its only extension, version/SDK,
+  signature integrity, distribution profiles, app group entitlements and privacy
+  declarations; exact processed build,
   selected build, review-contact presence, notes, expected locales, and completed iPhone/iPad
   screenshot uploads. `precheck` scans the editable listing for common metadata problems.
-- Android: bundle manifest and structure, version/SDK/permissions, JAR signature, release
-  mapping, native-library inventory; exact version code on the requested track, matching
-  Play AAB hash, expected localized listings and phone screenshots.
+- Android: bundle manifest and structure, version/SDK, the complete merged permission list
+  (no `INTERNET`), JAR signature, release mapping, native-library inventory; exact version
+  code on the requested track, matching Play AAB hash, expected localized listings and phone
+  screenshots.
+- `IOS_READINESS_EXPECTATIONS` in `fastlane/lanes/ios.rb` and `ANDROID_READINESS_EXPECTATIONS`
+  in `fastlane/lanes/android.rb` hold what each artifact must contain. Change them with the
+  privacy manifests, the Android permissions, the App Privacy answers, and the Play
+  declarations they describe.
 - Screenshot presence is checked in `StoreListing::LOCALE` (`en-US`), matching the
   upload lanes; text is checked in every expected locale.
 - Missing tools, authentication/network problems and inaccessible data are unverified,
@@ -70,8 +82,15 @@ source edits during builds. Build numbering still follows the existing release l
   unknown requirement makes it `incomplete`.
 - Reports leave current policy floors, full console declarations, signer identity where
   not established, native library page-size compatibility, screenshot accuracy and real
-  assistive-input/device behavior for review. See the
-  [app-store-readiness skill](../.agents/skills/app-store-readiness/SKILL.md) for the full audit.
+  assistive-input/device behavior for review; the skill covers those.
+
+## Shared with balebase
+
+a2f0/balebase keeps byte-identical copies of `fastlane/lib/readiness.rb`,
+`readiness_artifacts.rb`, `readiness_stores.rb`, their library test
+`fastlane/test/readiness.test.ts`, and the `skills/app-store-readiness` skill. Change both
+repositories together; the lanes, expectations, Play evidence, and this guide are each
+repository's own. Install the skill in a personal skill directory for Codex or Claude Code.
 
 ## Device regression checks
 

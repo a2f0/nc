@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative 'readiness'
-require_relative 'store_listing'
 
 # Store inspection: what App Store Connect and Google Play hold for the candidate.
 module Readiness
@@ -20,9 +19,11 @@ module Readiness
     end
   end
 
-  def self.ios_store(report, locales:, timeout: 0)
+  # listing[:locales] are the listings the store must have; screenshots are
+  # checked in listing[:screenshot_locale], where they are uploaded.
+  def self.ios_store(report, app_identifier:, listing:, timeout: 0)
     report.attempt('store.ios') do
-      app = Spaceship::ConnectAPI::App.find('net.a2f0.nc')
+      app = Spaceship::ConnectAPI::App.find(app_identifier)
       raise 'App missing' unless app
 
       version, number = report.data[:artifact].values_at(:version, :build_number)
@@ -31,7 +32,7 @@ module Readiness
                         'Artifact version/build could not be inspected; no latest-build substitution was made.')
       end
 
-      IosStore.new(report, app, version, number).inspect_candidate(locales: locales, timeout: timeout)
+      IosStore.new(report, app, version, number).inspect_candidate(listing: listing, timeout: timeout)
     end
   end
 
@@ -44,14 +45,14 @@ module Readiness
     end
   end
 
-  def self.android_store(report, key_path:, locales:, track: 'internal')
+  def self.android_store(report, package:, key_path:, listing:, track: 'internal')
     unless report.data[:artifact][:build_number]
       report.add('store.candidate', 'unverified',
                  'Artifact version code could not be inspected; no latest-build substitution was made.')
       return
     end
     report.attempt('store.authentication') do
-      android_store_records(report, service: play_service(key_path), locales: locales, track: track)
+      android_store_records(report, service: play_service(key_path), package: package, listing: listing, track: track)
     end
   end
 
@@ -73,13 +74,13 @@ module Readiness
     end
   end
 
-  def self.android_store_records(report, service:, locales:, track:)
+  def self.android_store_records(report, service:, package:, listing:, track:)
     report.attempt('store.android') do
-      with_play_edit(service, PlayStore::PACKAGE) do |edit|
-        play = PlayStore.new(report, service, edit)
+      with_play_edit(service, package) do |edit|
+        play = PlayStore.new(report, service, package, edit)
         play.check_track(track)
         play.check_bundle
-        play.check_listings(locales)
+        play.check_listings(listing)
       end
     end
   end
@@ -87,6 +88,7 @@ module Readiness
   # Checks the App Store Connect records for the artifact's exact version and build.
   class IosStore
     REVIEW_CONTACT = %i[contact_first_name contact_last_name contact_phone contact_email].freeze
+    BUILD_STATES = 'PROCESSING,FAILED,INVALID,VALID'
 
     def initialize(report, app, version, number)
       @report = report
@@ -95,25 +97,26 @@ module Readiness
       @number = number
     end
 
-    def inspect_candidate(locales:, timeout:)
+    def inspect_candidate(listing:, timeout:)
       build = processed_build(timeout)
+      # The selected-build check needs the build relationship.
       store_version = @app.get_app_store_versions(
-        filter: { versionString: @version, platform: Spaceship::ConnectAPI::Platform::IOS }
+        filter: { versionString: @version, platform: Spaceship::ConnectAPI::Platform::IOS }, includes: 'build'
       ).first
       unless store_version
         return @report.check('store.version', false, 'No App Store version matches the artifact version.')
       end
 
-      check_version(store_version, build, locales)
+      check_version(store_version, build, listing)
     end
 
     private
 
-    def check_version(store_version, build, locales)
+    def check_version(store_version, build, listing)
       @report.check('store.selected_build', build && store_version.build&.id == build.id,
                     'The matching candidate must be selected on the App Store version.')
       check_review(store_version)
-      check_listings(store_version, locales)
+      check_listings(store_version, listing)
       @report.add('store.privacy_url', 'unverified',
                   'Verify the app-level privacy URL and App Privacy declarations in App Store Connect.')
     end
@@ -130,9 +133,11 @@ module Readiness
       build
     end
 
+    # Every processing state, so a rejected candidate fails rather than looking absent.
     def candidate_build
       Spaceship::ConnectAPI::Build.all(
-        app_id: @app.id, version: @version, build_number: @number, platform: Spaceship::ConnectAPI::Platform::IOS
+        app_id: @app.id, version: @version, build_number: @number, platform: Spaceship::ConnectAPI::Platform::IOS,
+        processing_states: BUILD_STATES
       ).find { |build| build.version == @number && build.app_version == @version }
     end
 
@@ -141,7 +146,7 @@ module Readiness
       complete = review && REVIEW_CONTACT.all? { |field| !review.public_send(field).to_s.strip.empty? }
       @report.check('store.review_contact', complete, 'Review contact fields must be populated; values are not logged.')
       @report.check('store.review_notes', review && !review.notes.to_s.strip.empty?,
-                    'Review notes should explain background audio, widgets, and local history.')
+                    'Review notes should explain non-obvious behavior and how the reviewer reaches it.')
     end
 
     def review_detail(store_version)
@@ -152,12 +157,12 @@ module Readiness
       nil
     end
 
-    def check_listings(store_version, locales)
+    def check_listings(store_version, listing)
       entries = store_version.get_app_store_version_localizations
-      locales.each do |locale|
+      listing.fetch(:locales).each do |locale|
         entry = entries.find { |candidate| candidate.locale == locale }
         @report.check("store.listing.#{locale}", listed?(entry), 'Expected localized description and support URL.')
-        check_screenshots(entry, locale) if entry && locale == StoreListing::LOCALE
+        check_screenshots(entry, locale) if entry && locale == listing.fetch(:screenshot_locale)
       end
     end
 
@@ -182,18 +187,18 @@ module Readiness
 
   # Checks a Google Play edit's track, bundle, and listings for the artifact's version code.
   class PlayStore
-    PACKAGE = 'net.a2f0.nc'
     LISTING_FIELDS = %i[title short_description full_description].freeze
 
-    def initialize(report, service, edit)
+    def initialize(report, service, package, edit)
       @report = report
       @service = service
+      @package = package
       @edit = edit
       @number = report.data[:artifact][:build_number]
     end
 
     def check_track(track)
-      releases = @service.get_edit_track(PACKAGE, @edit, track).releases.to_a
+      releases = @service.get_edit_track(@package, @edit, track).releases.to_a
       release = releases.find { |candidate| candidate.version_codes.to_a.map(&:to_s).include?(@number) } if @number
       @report.check('store.track_candidate', release && %w[completed inProgress].include?(release.status),
                     "Artifact version code must be active on #{track}; " \
@@ -201,23 +206,26 @@ module Readiness
     end
 
     def check_bundle
-      bundles = @service.list_edit_bundles(PACKAGE, @edit).bundles.to_a
+      bundles = @service.list_edit_bundles(@package, @edit).bundles.to_a
       bundle = bundles.find { |candidate| candidate.version_code.to_s == @number } if @number
       @report.check('store.bundle_hash', bundle && bundle.sha256.to_s.downcase == @report.data[:artifact][:sha256],
                     'Play bundle SHA-256 must match the inspected AAB.')
     end
 
-    def check_listings(locales)
-      listings = @service.list_edit_listings(PACKAGE, @edit).listings.to_a
-      locales.each do |locale|
+    def check_listings(expected)
+      listings = @service.list_edit_listings(@package, @edit).listings.to_a
+      expected.fetch(:locales).each do |locale|
         listing = listings.find { |candidate| candidate.language == locale }
-        complete = listing && LISTING_FIELDS.all? { |field| !listing.public_send(field).to_s.strip.empty? }
-        @report.check("store.listing.#{locale}", complete, 'Expected localized title and descriptions.')
-        check_screenshots(listing, locale) if locale == StoreListing::LOCALE
+        @report.check("store.listing.#{locale}", listed?(listing), 'Expected localized title and descriptions.')
+        check_screenshots(listing, locale) if locale == expected.fetch(:screenshot_locale)
       end
     end
 
     private
+
+    def listed?(listing)
+      listing && LISTING_FIELDS.all? { |field| !listing.public_send(field).to_s.strip.empty? }
+    end
 
     def check_screenshots(listing, locale)
       unless listing
@@ -225,7 +233,7 @@ module Readiness
                              'No listing exists for the expected screenshot locale.')
       end
 
-      images = @service.list_edit_images(PACKAGE, @edit, locale, 'phoneScreenshots').images.to_a
+      images = @service.list_edit_images(@package, @edit, locale, 'phoneScreenshots').images.to_a
       @report.check("store.screenshots.#{locale}", !images.empty?,
                     'Expected phone screenshots; visual accuracy still needs review.')
     end

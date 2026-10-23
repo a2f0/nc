@@ -4,6 +4,7 @@
 
 require_relative '../lib/native_release_target'
 require_relative '../lib/readiness'
+require_relative '../lib/store_listing'
 
 # Listing text is committed under fastlane/metadata; screenshots are generated
 # here (see StoreListing).
@@ -20,9 +21,18 @@ def listing_locales(metadata_dir, required_file)
   Dir.children(metadata_dir).select { |entry| File.file?(File.join(metadata_dir, entry, required_file)) }.sort
 end
 
+# The listings readiness expects: every locale with metadata, and screenshots
+# in the locale the listing lanes upload them to.
+def readiness_listing(metadata_dir, required_file)
+  { locales: listing_locales(metadata_dir, required_file), screenshot_locale: StoreListing::LOCALE }
+end
+
+# Relative paths resolve from the repository root. Reports default to the
+# gitignored .readiness/<tier>/<platform>.json.
 def readiness_options(options, platform, default_artifact)
   artifact = File.expand_path(options.fetch(:artifact, default_artifact), REPO_ROOT)
-  output = File.expand_path(options.fetch(:output, ".readiness/#{platform}.json"), REPO_ROOT)
+  default_output = File.join('.readiness', NATIVE_RELEASE_TIER, "#{platform}.json")
+  output = File.expand_path(options.fetch(:output, default_output), REPO_ROOT)
   if [artifact, "#{artifact}.build.json"].include?(output)
     UI.user_error!('Report output must not overwrite its artifact or build receipt')
   end
