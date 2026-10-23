@@ -28,6 +28,7 @@ about 50 ms so dragging doesn't crackle.
 mise install                        # Java, Gradle, Ruby, Bun, ShellCheck, jq (see .mise.toml)
 bundle install                      # fastlane, RuboCop
 bun install                         # agent-tool, TypeScript
+bun x --no-install playwright install --with-deps chromium   # web integration tests
 brew install imagemagick            # screenshots only
 curl -fsSL https://get.maestro.mobile.dev | bash   # screenshots only
 sh scripts/git/install-hooks.sh
@@ -48,12 +49,15 @@ when adding one.
 The application ID is in `android/app/build.gradle.kts`.
 
 **Web:** `bun run web:dev` serves the app at http://localhost:8080 (set `PORT` to change it)
-and rebuilds when `web/` changes; reload to pick up a rebuild. `bun run web:build` writes a
-static site to the gitignored `web/dist/` (`AudioWorklet` needs a secure context, so it must
-be served over HTTPS or from localhost, not `file://`). The page and the audio worklet are
+and rebuilds when `web/` changes; reload to pick up a rebuild. `bun run web:build` writes the production site to the gitignored `web/dist/` (`AudioWorklet` needs a secure context, so it must
+be served over HTTPS or from localhost, not `file://`). The page, audio worklet, and click tracker are
 separate bundles (`web/build.ts`); the favicon, also the logo beside the title, is the app icon, built from `assets/brand/*.svg`. The store
 listings link to `web/privacy.html` and `web/support.html` (served at `/privacy` and
 `/support`); keep the privacy policy accurate when an app starts storing or sending anything new.
+
+Production web pages use CT for clicks; native apps remain free of analytics.
+See [web click analytics](docs/architecture.md#web-click-analytics) for activation,
+privacy, and opt-outs.
 
 ## Development and releases
 

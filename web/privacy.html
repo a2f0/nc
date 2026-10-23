@@ -8,17 +8,19 @@
     <title>Privacy Policy · Noise Connoisseur</title>
     <link rel="icon" href="icon.svg" type="image/svg+xml" />
     <script src="appearance-init.js"></script>
+    <script type="module" src="clickTracking.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="prose">
       <h1>Privacy Policy</h1>
-      <p class="status">Effective October 22, 2026</p>
+      <p class="status">Effective October 23, 2026 (UTC)</p>
 
       <p>
         Noise Connoisseur is a noise player for iPhone, iPad, Android, and the web at
-        nc.a2f0.net. We don't receive your settings or listening history. There are no accounts, ads,
-        analytics, or tracking, and the apps contain no third-party code that collects data.
+        nc.a2f0.net. We don't receive your settings or listening history. There are no accounts or ads.
+        The native iPhone, iPad, and Android apps contain no analytics, tracking, or third-party code
+        that collects data. The production website uses the click analytics described below.
       </p>
 
       <h2>On your device</h2>
@@ -51,8 +53,29 @@
         nc.a2f0.net is hosted by Cloudflare. As with any website, Cloudflare receives the technical details your
         browser sends to load a page, such as your IP address and browser type, and uses them to deliver the page
         and protect the site, as described in
-        <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's privacy policy</a>. We don't add
-        cookies, analytics, or tracking to the site.
+        <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's privacy policy</a>.
+        We don't add analytics cookies or persistent visitor identifiers.
+      </p>
+
+      <h2>Website click analytics</h2>
+      <p>
+        The production website uses CT, operated by Tearleads, LLC, to record clicks with a random per-click identifier, time,
+        element type, site, application, and environment. Every page is recorded as <code>/</code>.
+        CT does not record text, form values, link destinations, query strings, fragments, listening
+        history, playback logs, volume, or the sound selected. Editable fields are excluded.
+      </p>
+      <p>
+        The collector records the request IP address and approximate country, region, and city
+        supplied by Cloudflare. Click records are retained for 90 days and accessible only through
+        an authenticated dashboard. They are not linked to an account or persistent visitor profile.
+      </p>
+      <p>
+        This website overrides Global Privacy Control. Do Not Track, saved CT opt-outs, and the
+        <a href="https://github.com/a2f0/ct/tree/main/packages/extension">CT browser extension</a>
+        still stop collection. Clearing site data also clears a saved CT opt-out; reapply it
+        afterward or use the extension or Do Not Track. Automated browsers and development previews are excluded.
+        See <a href="https://github.com/a2f0/ct/blob/main/docs/privacy.md">CT privacy and opt-out instructions</a>.
+        These analytics apply only to the website, not the native apps.
       </p>
 
       <h2>App stores</h2>
@@ -66,8 +89,8 @@
 
       <h2>Children</h2>
       <p>
-        Noise Connoisseur is suitable for all ages and collects no personal information from anyone, including
-        children.
+        The native apps collect no personal information from anyone, including children.
+        The production website collects the click, IP, and approximate location data described above.
       </p>
 
       <h2>Changes</h2>

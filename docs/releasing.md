@@ -5,8 +5,9 @@
 `bun run web:deploy` builds the site and publishes it as the `nc` Worker with
 static assets (`web/wrangler.jsonc`); run `bunx wrangler login` once first. The site's
 version, in its About sheet, is the root `package.json` version, which shipping bumps with
-each change (see [shipping policy](../AGENTS.md#shipping)). `bun run
-web:preview` serves the same build through Wrangler's local Workers runtime. Terraform in
+each change (see [shipping policy](../AGENTS.md#shipping)). `bun run web:build` and `web:deploy` enable the production click-tracking bootstrap.
+`web:preview` serves a tracking-disabled build through Wrangler's local Workers runtime,
+and `web:dev` also leaves tracking disabled. Terraform in
 [a2f0/a2f0.net](https://github.com/a2f0/a2f0.net) attaches `nc.a2f0.net` to the Worker, as
 it does for that zone's other hosts, so publish the Worker before applying it.
 

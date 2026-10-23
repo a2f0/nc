@@ -11,6 +11,7 @@ for app behavior, and [releasing](docs/releasing.md) for publishing.
 
 ```sh
 mise install && bundle install && bun install
+bun x --no-install playwright install --with-deps chromium
 sh scripts/git/install-hooks.sh
 sh scripts/dev/ensureGradleWrapper.sh
 ```

@@ -67,3 +67,14 @@ for page closes whose database writes may be discarded during navigation. Recove
 those receipts so ordinary tab closes retain their known cause. Clear app/site data to remove them.
 Google Play auto-updates can interrupt ongoing playback. This diagnostic feature does
 not restart playback after an update; reopen the app and press Play.
+
+## Web click analytics
+
+Production pages explicitly initialize `@a2f0/ct-client` with site `nc`, app
+`web-app`, and environment `production`. Tracking requires both the production
+build and the exact `https://nc.a2f0.net` origin. Native apps, local previews, and
+module imports do not initialize it; automated browsers are excluded from collection.
+The website overrides GPC while honoring DNT and CT's extension and saved opt-outs.
+The public [privacy notice](https://nc.a2f0.net/privacy) describes click metadata,
+IP/geolocation, 90-day retention, and opt-out instructions. No sound names, settings,
+history, or playback logs are sent. Browser integration tests intercept every CT request.
