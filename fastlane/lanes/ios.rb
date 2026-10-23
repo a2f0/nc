@@ -29,7 +29,7 @@ IOS_READINESS_EXPECTATIONS = {
   targets: { NATIVE_APP_IDENTIFIER => [APP_GROUP_IDENTIFIER], WIDGET_IDENTIFIER => [APP_GROUP_IDENTIFIER] },
   privacy: {
     tracking: false,
-    collected_data_types: [],
+    collected_data_types: {},
     accessed_api_reasons: { 'NSPrivacyAccessedAPICategoryUserDefaults' => %w[CA92.1 1C8F.1] }
   }
 }.freeze
