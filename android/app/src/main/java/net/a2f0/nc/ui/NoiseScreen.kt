@@ -84,8 +84,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
@@ -143,7 +143,9 @@ private fun NoiseScreen(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+                    )
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp, vertical = 32.dp)
                     // Readable on tablets and in landscape, as on iOS.
@@ -152,38 +154,7 @@ private fun NoiseScreen(
                     .widthIn(max = 600.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // The app icon's corners: 224 of its 1024 points. Its bottom edge sits on
-                    // the title's baseline.
-                    Image(
-                        painterResource(R.drawable.ic_logo),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .alignBy { it.measuredHeight }
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(9.dp)),
-                    )
-                    // One line, shrinking to fit narrow screens and large text sizes, as on iOS.
-                    val titleStyle = MaterialTheme.typography.headlineLarge
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        style = titleStyle,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        autoSize = TextAutoSize.StepBased(minFontSize = titleStyle.fontSize / 2, maxFontSize = titleStyle.fontSize),
-                        modifier = Modifier
-                            .weight(1f)
-                            .alignByBaseline()
-                            .semantics { heading() },
-                    )
-                    MoreMenu(
-                        onOpen = { sheet = it },
-                        // The icon lines up with the cards' trailing edge; its touch target reaches past it.
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                            .offset(x = 12.dp),
-                    )
-                }
+                TitleRow(onOpen = { sheet = it })
                 Spacer(Modifier.height(8.dp))
                 NoiseType.entries.forEach { type ->
                     NoiseCard(type = type, isPlaying = type == nowPlaying, onClick = { onToggle(type) })
@@ -202,10 +173,56 @@ private fun NoiseScreen(
         SheetContent(open, onDismiss = { sheet = null }) { scrollToTop ->
             when (open) {
                 Sheet.HISTORY -> HistoryContent(onNavigate = scrollToTop)
-                Sheet.SETTINGS -> SettingsContent(volume = volume, onVolumeChange = onVolumeChange, onNavigate = scrollToTop)
+
+                Sheet.SETTINGS -> SettingsContent(
+                    volume = volume,
+                    onVolumeChange = onVolumeChange,
+                    onNavigate = scrollToTop,
+                )
+
                 Sheet.ABOUT -> AboutContent()
             }
         }
+    }
+}
+
+/** The logo, the app's name, and the menu. */
+@Composable
+private fun TitleRow(onOpen: (Sheet) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // The app icon's corners: 224 of its 1024 points. Its bottom edge sits on
+        // the title's baseline.
+        Image(
+            painterResource(R.drawable.ic_logo),
+            contentDescription = null,
+            modifier = Modifier
+                .alignBy { it.measuredHeight }
+                .size(40.dp)
+                .clip(RoundedCornerShape(9.dp)),
+        )
+        // One line, shrinking to fit narrow screens and large text sizes, as on iOS.
+        val titleStyle = MaterialTheme.typography.headlineLarge
+        Text(
+            text = stringResource(R.string.app_name),
+            style = titleStyle,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = titleStyle.fontSize / 2,
+                maxFontSize = titleStyle.fontSize,
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .alignByBaseline()
+                .semantics { heading() },
+        )
+        MoreMenu(
+            onOpen = onOpen,
+            // The icon lines up with the cards' trailing edge; its touch target reaches past it.
+            modifier = Modifier
+                .align(Alignment.CenterVertically)
+                .offset(x = 12.dp),
+        )
     }
 }
 
@@ -232,7 +249,10 @@ private fun MoreMenu(onOpen: (Sheet) -> Unit, modifier: Modifier = Modifier) {
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.history)) },
-                onClick = { expanded = false; onOpen(Sheet.HISTORY) },
+                onClick = {
+                    expanded = false
+                    onOpen(Sheet.HISTORY)
+                },
             )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.settings)) },
@@ -272,6 +292,9 @@ private fun openStoreListing(context: Context) {
     }
 }
 
+/** The space between a sheet's sections. */
+internal val SheetSpacing = 16.dp
+
 /** A bottom sheet with a title. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -301,7 +324,7 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
             }
         }
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(SheetSpacing),
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(scroll)
@@ -327,66 +350,130 @@ private fun SheetContent(sheet: Sheet, onDismiss: () -> Unit, content: @Composab
 @Composable
 private fun SettingsContent(volume: Float, onVolumeChange: (Float) -> Unit, onNavigate: () -> Unit) {
     var showLog by rememberSaveable { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(SheetSpacing)) {
+        SettingsTabs(showLog = showLog, onSelect = {
+            showLog = it
+            onNavigate()
+        })
+        if (showLog) {
+            PlaybackLogContent()
+        } else {
+            GeneralSettingsContent(volume, onVolumeChange)
+        }
+    }
+}
+
+/** General settings or the playback log. */
+@Composable
+private fun SettingsTabs(showLog: Boolean, onSelect: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val colors = MaterialTheme.colorScheme
         listOf(false, true).forEach { log ->
             val selected = showLog == log
             Text(
                 stringResource(if (log) R.string.playback_log else R.string.settings_general),
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp))
-                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                    .background(if (selected) colors.primary else colors.surfaceVariant)
                     .testTag(if (log) "settings-log-tab" else "settings-general-tab")
-                    .selectable(selected = selected, role = Role.Tab, onClick = { showLog = log; onNavigate() })
+                    .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(log) })
                     .heightIn(min = 48.dp).padding(12.dp),
-                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (selected) colors.onPrimary else colors.onSurfaceVariant,
                 style = MaterialTheme.typography.labelLarge,
                 textAlign = TextAlign.Center,
             )
         }
     }
-    if (showLog) PlaybackLogContent()
-    else GeneralSettingsContent(volume, onVolumeChange)
 }
 
 @Composable
 private fun GeneralSettingsContent(volume: Float, onVolumeChange: (Float) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(SheetSpacing)) {
+        LanguageSetting()
+        AppearanceSetting()
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // The slider reads its own label.
+            Text(
+                stringResource(R.string.volume),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.clearAndSetSemantics {},
+            )
+            VolumeSlider(
+                volume = volume,
+                onVolumeChange = onVolumeChange,
+                modifier = Modifier.testTag("settings-volume"),
+            )
+        }
+    }
+}
+
+/** The app's language, or the device's, in a menu. */
+@Composable
+private fun LanguageSetting() {
     val languages = LocalLanguageControl.current
     var languageMenu by remember { mutableStateOf(false) }
     val languageTitle = stringResource(R.string.language)
-    val selectedLanguage = if (languages.selected == Language.DEVICE) stringResource(R.string.language_device) else languages.selected.nativeName
+    val selectedLanguage = languageName(languages.selected)
     Column {
-        Text(languageTitle, style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.semantics { heading() })
+        Text(
+            languageTitle,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
         Box {
-            TextButton(onClick = { languageMenu = true }, modifier = Modifier.testTag("language-picker").semantics {
-                contentDescription = languageTitle
-                stateDescription = selectedLanguage
-            }) {
+            TextButton(
+                onClick = { languageMenu = true },
+                modifier = Modifier.testTag("language-picker").semantics {
+                    contentDescription = languageTitle
+                    stateDescription = selectedLanguage
+                },
+            ) {
                 Text(selectedLanguage)
             }
-            DropdownMenu(expanded = languageMenu, onDismissRequest = { languageMenu = false },
-                modifier = Modifier.heightIn(max = 320.dp)) {
+            DropdownMenu(
+                expanded = languageMenu,
+                onDismissRequest = { languageMenu = false },
+                modifier = Modifier.heightIn(max = 320.dp),
+            ) {
                 Language.entries.forEach { language ->
                     DropdownMenuItem(
-                        text = { Text(if (language == Language.DEVICE) stringResource(R.string.language_device) else language.nativeName) },
+                        text = { Text(languageName(language)) },
                         leadingIcon = { RadioButton(selected = language == languages.selected, onClick = null) },
                         modifier = Modifier.testTag("language-${language.tag}").semantics {
                             selected = language == languages.selected
                         },
-                        onClick = { languageMenu = false; languages.select(language) },
+                        onClick = {
+                            languageMenu = false
+                            languages.select(language)
+                        },
                     )
                 }
             }
         }
     }
+}
+
+/** A language's name in that language, or "Device language". */
+@Composable
+private fun languageName(language: Language): String =
+    if (language == Language.DEVICE) stringResource(R.string.language_device) else language.nativeName
+
+/** System, light, or dark. */
+@Composable
+private fun AppearanceSetting() {
     val preferences = LocalAppearancePreferences.current
     Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.appearance), style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.semantics { heading() })
+        Text(
+            stringResource(R.string.appearance),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
+        )
         Appearance.entries.forEach { appearance ->
             val selected = preferences.appearance == appearance
             Row(
                 Modifier.fillMaxWidth().testTag("appearance-${appearance.id}")
-                    .selectable(selected = selected, role = Role.RadioButton, onClick = { preferences.select(appearance) })
+                    .selectable(selected = selected, role = Role.RadioButton, onClick = {
+                        preferences.select(appearance)
+                    })
                     .heightIn(min = 48.dp)
                     .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -396,15 +483,6 @@ private fun GeneralSettingsContent(volume: Float, onVolumeChange: (Float) -> Uni
                 Text(stringResource(appearance.title), style = MaterialTheme.typography.bodyLarge)
             }
         }
-    }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // The slider reads its own label.
-        Text(
-            stringResource(R.string.volume),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.clearAndSetSemantics {},
-        )
-        VolumeSlider(volume = volume, onVolumeChange = onVolumeChange, modifier = Modifier.testTag("settings-volume"))
     }
 }
 
@@ -432,7 +510,11 @@ private fun AboutContent() {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toString()),
+                    stringResource(
+                        R.string.about_version,
+                        BuildConfig.VERSION_NAME,
+                        BuildConfig.VERSION_CODE.toString(),
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -445,10 +527,16 @@ private fun AboutContent() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        TextButton(onClick = { openInfoPage("android/privacy") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
+        TextButton(
+            onClick = { openInfoPage("android/privacy") },
+            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
+        ) {
             Text(stringResource(R.string.privacy_policy), textDecoration = TextDecoration.Underline)
         }
-        TextButton(onClick = { openInfoPage("android/support") }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp)) {
+        TextButton(
+            onClick = { openInfoPage("android/support") },
+            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp),
+        ) {
             Text(stringResource(R.string.support), textDecoration = TextDecoration.Underline)
         }
     }
@@ -487,7 +575,9 @@ private fun PlayerBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal))
+                .windowInsetsPadding(
+                    WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
+                )
                 .padding(horizontal = 24.dp, vertical = 12.dp)
                 .fillMaxWidth()
                 .wrapContentWidth()

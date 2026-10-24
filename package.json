@@ -1,6 +1,6 @@
 {
   "name": "nc",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "private": true,
   "license": "UNLICENSED",
   "packageManager": "bun@1.4.3",
@@ -36,6 +36,10 @@
     "lint:commit-trust": "agent-tool commits check",
     "lint:binary-files": "agent-tool checks binaries",
     "lint:scripts": "sh scripts/checks/lintScripts.sh",
+    "lint:kotlin": "sh scripts/checks/lintKotlin.sh",
+    "lint:swift": "sh scripts/checks/lintSwift.sh",
+    "format:kotlin": "sh scripts/checks/lintKotlin.sh --format",
+    "format:swift": "sh scripts/checks/lintSwift.sh --format",
     "web:deploy:preview": "wrangler deploy --config web/wrangler.jsonc --dry-run"
   },
   "devDependencies": {

@@ -1,9 +1,9 @@
 import AVFoundation
 import MediaPlayer
 import Observation
-import WidgetKit
-import UIKit
 import os
+import UIKit
+import WidgetKit
 
 /// Owns the audio engine and session. Playback continues in the background (the app
 /// declares the `audio` background mode), responds to lock screen and headphone
@@ -33,7 +33,7 @@ final class NoisePlayer {
     @ObservationIgnored private var isConfigured = false
     @ObservationIgnored private var fadeOutTask: Task<Void, Never>?
     @ObservationIgnored private var interruptedNoise: NoiseType?
-    @ObservationIgnored private var observers: [NSObjectProtocol] = []
+    @ObservationIgnored private var observers: [any NSObjectProtocol] = []
 
     private static let log = Logger(subsystem: "net.a2f0.nc", category: "NoisePlayback")
     private static let volumeKey = "volume"
@@ -41,7 +41,8 @@ final class NoisePlayer {
 
     private init() {
         volume = UserDefaults.standard.object(forKey: Self.volumeKey) as? Double ?? 1
-        lastPlayed = UserDefaults.standard.string(forKey: Self.lastPlayedKey).flatMap(NoiseType.init(rawValue:)) ?? .white
+        lastPlayed = UserDefaults.standard.string(forKey: Self.lastPlayedKey)
+            .flatMap(NoiseType.init(rawValue:)) ?? .white
         renderer.setVolume(volume)
         // A fresh process isn't playing anything, whatever the widget last showed.
         publishState()
@@ -119,46 +120,69 @@ final class NoisePlayer {
         }
 
         let hardwareRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
-        let format = AVAudioFormat(standardFormatWithSampleRate: hardwareRate > 0 ? hardwareRate : 48_000, channels: 2)!
+        guard let format = AVAudioFormat(
+            standardFormatWithSampleRate: hardwareRate > 0 ? hardwareRate : 48_000,
+            channels: 2,
+        ) else { preconditionFailure("Stereo at a positive sample rate is always a valid format") }
         let source = renderer.makeSourceNode(format: format)
         engine.attach(source)
         engine.connect(source, to: engine.mainMixerNode, format: format)
         engine.prepare()
 
-        let center = NotificationCenter.default
-        observers.append(center.addObserver(forName: AVAudioSession.interruptionNotification, object: session, queue: .main) { [weak self] note in
+        observeSystemEvents(session: session)
+        Self.registerRemoteCommands(for: self)
+    }
+
+    private func observeSystemEvents(session: AVAudioSession) {
+        observe(AVAudioSession.interruptionNotification, object: session) { [weak self] note in
             guard let rawType = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
                   let type = AVAudioSession.InterruptionType(rawValue: rawType) else { return }
             let rawOptions = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
             let shouldResume = AVAudioSession.InterruptionOptions(rawValue: rawOptions).contains(.shouldResume)
             MainActor.assumeIsolated { self?.handleInterruption(type, shouldResume: shouldResume, options: rawOptions) }
-        })
-        observers.append(center.addObserver(forName: AVAudioSession.routeChangeNotification, object: session, queue: .main) { [weak self] note in
+        }
+        observe(AVAudioSession.routeChangeNotification, object: session) { [weak self] note in
             // Headphones unplugged or disconnected: stop rather than blast the speaker.
             let reason = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
             MainActor.assumeIsolated {
-                self?.playbackLog.record(.routeChanged, soundId: self?.nowPlaying?.rawValue,
-                                         detail: "reason=\(reason ?? 0)")
+                self?.playbackLog.record(
+                    .routeChanged,
+                    soundId: self?.nowPlaying?.rawValue,
+                    detail: "reason=\(reason ?? 0)",
+                )
                 if reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue {
                     self?.stop(source: "old_device_unavailable", requested: false)
                 }
             }
-        })
-        observers.append(center.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+        }
+        observe(.AVAudioEngineConfigurationChange, object: engine) { [weak self] _ in
             MainActor.assumeIsolated { self?.restartAfterConfigurationChange() }
-        })
+        }
 
-        observers.append(center.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+        observe(UIApplication.willTerminateNotification) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.playbackLog.record(.termination, soundId: self?.nowPlaying?.rawValue)
                 self?.stop(source: "termination", requested: false)
                 self?.playbackLog.flushOnTermination()
             }
-        })
-        observers.append(center.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { [weak self] _ in
+        }
+        observe(UIApplication.didEnterBackgroundNotification) { [weak self] _ in
             MainActor.assumeIsolated { self?.history.checkpoint() }
-        })
-        Self.registerRemoteCommands(for: self)
+        }
+    }
+
+    /// Calls `handler` on the main queue for each `name` notification for as long as the player lives.
+    private func observe(
+        _ name: Notification.Name,
+        object: Any? = nil,
+        using handler: @escaping @Sendable (Notification) -> Void,
+    ) {
+        observers.append(NotificationCenter.default.addObserver(
+            forName: name,
+            object: object,
+            queue: .main,
+            using: handler,
+        ))
     }
 
     /// Nonisolated so the handlers aren't inferred to be main-actor isolated; the system
@@ -186,8 +210,12 @@ final class NoisePlayer {
     // MARK: - System events
 
     private func handleInterruption(_ type: AVAudioSession.InterruptionType, shouldResume: Bool, options: UInt) {
-        playbackLog.record(.interruption, soundId: (nowPlaying ?? interruptedNoise)?.rawValue,
-                           detail: "type=\(type.rawValue) (\(type == .began ? "began" : "ended")); options=\(options); shouldResume=\(shouldResume)")
+        let phase = type == .began ? "began" : "ended"
+        playbackLog.record(
+            .interruption,
+            soundId: (nowPlaying ?? interruptedNoise)?.rawValue,
+            detail: "type=\(type.rawValue) (\(phase)); options=\(options); shouldResume=\(shouldResume)",
+        )
         switch type {
         case .began:
             // The system has already stopped the engine.
@@ -205,11 +233,21 @@ final class NoisePlayer {
     }
 
     private func restartAfterConfigurationChange() {
-        playbackLog.record(.configurationChanged, soundId: nowPlaying?.rawValue, detail: "isRunning=\(engine.isRunning)")
+        playbackLog.record(
+            .configurationChanged,
+            soundId: nowPlaying?.rawValue,
+            detail: "isRunning=\(engine.isRunning)",
+        )
         guard nowPlaying != nil, !engine.isRunning else { return }
         do {
             try engine.start()
-            playbackLog.record(.started, soundId: nowPlaying?.rawValue, detail: "configuration_change", updateActive: true, activeSound: nowPlaying?.rawValue)
+            playbackLog.record(
+                .started,
+                soundId: nowPlaying?.rawValue,
+                detail: "configuration_change",
+                updateActive: true,
+                activeSound: nowPlaying?.rawValue,
+            )
         } catch {
             Self.log.error("Couldn't restart after configuration change: \(error)")
             playbackLog.record(.engineFailed, soundId: nowPlaying?.rawValue, detail: String(describing: error))
@@ -220,7 +258,7 @@ final class NoisePlayer {
     // MARK: - State
 
     private func publishState() {
-        if nowPlaying != nil && historyTimer == nil {
+        if nowPlaying != nil, historyTimer == nil {
             let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.history.checkpoint() }
             }

@@ -1,7 +1,9 @@
 package net.a2f0.nc.diagnostics
 
 import net.a2f0.nc.NoiseType
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -31,8 +33,11 @@ class PlaybackLogTest {
         first.record(PlaybackEvent.STARTED, NoiseType.BROWN, activeSound = "brown", updateActive = true)
         first.flush()
         val exits = {
-            listOf(PlaybackExit(1500, 99, 3, 400, "different process"), PlaybackExit(900, 42, 3, 400, "old exit"),
-                PlaybackExit(2000, 42, 16, 125, "killDueToPackageUpdate"))
+            listOf(
+                PlaybackExit(1500, 99, 3, 400, "different process"),
+                PlaybackExit(900, 42, 3, 400, "old exit"),
+                PlaybackExit(2000, 42, 16, 125, "killDueToPackageUpdate"),
+            )
         }
         val recovered = PlaybackLog(file, exits, clock = { 3000 }, pid = 99)
         recovered.flush()

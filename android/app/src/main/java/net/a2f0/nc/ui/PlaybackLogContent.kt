@@ -9,6 +9,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
@@ -21,7 +22,7 @@ import net.a2f0.nc.diagnostics.PlaybackLog
 import java.time.Instant
 
 @Composable
-fun PlaybackLogContent() {
+fun PlaybackLogContent(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val log = remember { PlaybackLog.get(context) }
@@ -30,19 +31,28 @@ fun PlaybackLogContent() {
     val text = remember(entries, resources) {
         entries.asReversed().joinToString("\n\n") { row ->
             val sound = NoiseType.fromId(row.soundId)?.let { resources.getString(it.title) }.orEmpty()
-            "${Instant.ofEpochMilli(row.timestamp)}  $sound\n${resources.getString(row.event.title)} [${row.event.name}]\n${row.detail}".trim()
+            val time = Instant.ofEpochMilli(row.timestamp)
+            "$time  $sound\n${resources.getString(row.event.title)} [${row.event.name}]\n${row.detail}".trim()
         }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(SheetSpacing)) {
         Text(stringResource(R.string.playback_log_local))
         if (failed) Text(stringResource(R.string.playback_log_storage_failed))
         TextButton(enabled = entries.isNotEmpty(), onClick = {
-            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.playback_log) + "\n\n" + text)
-            }, resources.getString(R.string.playback_log_share)))
+            context.startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, resources.getString(R.string.playback_log) + "\n\n" + text)
+                    },
+                    resources.getString(R.string.playback_log_share),
+                ),
+            )
         }) { Text(stringResource(R.string.playback_log_share)) }
-        if (entries.isEmpty()) Text(stringResource(R.string.playback_log_empty))
-        else Text(text, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+        if (entries.isEmpty()) {
+            Text(stringResource(R.string.playback_log_empty))
+        } else {
+            Text(text, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

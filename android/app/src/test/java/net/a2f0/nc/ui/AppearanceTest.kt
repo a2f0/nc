@@ -1,7 +1,10 @@
 package net.a2f0.nc.ui
 
 import android.content.Context
-import org.junit.Assert.*
+import androidx.core.content.edit
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -12,7 +15,7 @@ class AppearanceTest {
     @Test fun newReadersRestoreEachStablePreference() {
         val context = RuntimeEnvironment.getApplication()
         val disk = context.getSharedPreferences("appearance-test", Context.MODE_PRIVATE)
-        disk.edit().clear().commit()
+        disk.edit(commit = true) { clear() }
         assertEquals(Appearance.SYSTEM, AppearancePreferences(disk).appearance)
         for (value in listOf(Appearance.DARK, Appearance.LIGHT, Appearance.SYSTEM)) {
             AppearancePreferences(disk).select(value)

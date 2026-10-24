@@ -13,7 +13,8 @@ import net.a2f0.nc.R
 enum class Appearance(val id: String, @StringRes val title: Int) {
     SYSTEM("system", R.string.appearance_system),
     LIGHT("light", R.string.appearance_light),
-    DARK("dark", R.string.appearance_dark);
+    DARK("dark", R.string.appearance_dark),
+    ;
 
     fun isDark(systemDark: Boolean): Boolean = when (this) {
         SYSTEM -> systemDark

@@ -18,6 +18,22 @@
       ]
     },
     {
+      "label": "ktlint",
+      "command": [
+        "bun",
+        "run",
+        "lint:kotlin"
+      ]
+    },
+    {
+      "label": "swift-lint",
+      "command": [
+        "bun",
+        "run",
+        "lint:swift"
+      ]
+    },
+    {
       "label": "skills",
       "command": [
         "bun",
@@ -70,7 +86,7 @@
       "command": [
         "sh",
         "-c",
-        "sh scripts/dev/ensureGradleWrapper.sh && (cd android && ./gradlew --quiet assembleDebug lintDebug testDebugUnitTest)"
+        "sh scripts/dev/ensureGradleWrapper.sh && (cd android && ./gradlew --quiet assembleDebug lintDebug testDebugUnitTest detektMain detektTest)"
       ]
     },
     {

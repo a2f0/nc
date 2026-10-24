@@ -10,6 +10,8 @@ glance = "1.2.0"
 work = "2.12.0"
 junit = "4.13.2"
 robolectric = "4.17"
+composeLints = "1.6.1"
+detekt = "2.0.0-alpha.6"
 
 [libraries]
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -26,7 +28,9 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { module = "androidx.glance:glance-material3", version.ref = "glance" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+compose-lint-checks = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "composeLints" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

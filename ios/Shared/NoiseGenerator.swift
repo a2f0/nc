@@ -16,7 +16,7 @@ struct NoiseGenerator {
     // throbbing slightly each time a blade passes, over a low hum at the blade rate.
     private static let fanRotationHz: Double = 20
     private static let fanBlades: Float = 5
-    private static let fanAirCutoffHz: Double = 1_200
+    private static let fanAirCutoffHz: Double = 1200
     private static let fanBladeThrob: Float = 0.12
     private static let fanRotationWobble: Float = 0.04
     private static let fanHumQ: Double = 16
@@ -30,9 +30,9 @@ struct NoiseGenerator {
     private static let waveFallSeconds: ClosedRange<Float> = 4...7
     private static let wavePeak: ClosedRange<Float> = 0.55...1
     private static let waveDarkHz: Double = 350
-    private static let waveBrightHz: Double = 2_200
+    private static let waveBrightHz: Double = 2200
     private static let waveFoamDarkHz: Double = 580
-    private static let waveFoamBrightHz: Double = 2_200
+    private static let waveFoamBrightHz: Double = 2200
     private static let waveWashHz: Double = 700
     private static let waveLowHz: Double = 120
     private static let wavePan: Float = 0.18
@@ -117,7 +117,7 @@ struct NoiseGenerator {
         let hum = Self.fanHum * fanHum.next(excitation) + Self.fanHumOvertone * fanHumOvertone.next(excitation)
         return (
             (leftChannel.air(fanAirCoefficient) * throb + hum) * Self.fanGain,
-            (rightChannel.air(fanAirCoefficient) * throb + hum) * Self.fanGain
+            (rightChannel.air(fanAirCoefficient) * throb + hum) * Self.fanGain,
         )
     }
 
@@ -131,10 +131,14 @@ struct NoiseGenerator {
         let breaking = rising ? smooth((progress - 0.65) / 0.35) : 1 - smooth(progress / 0.55)
         let foam = wavePeak * breaking * breaking
         // Water starts drawing back after the breaker, overlapping its soft tail.
-        let wash: Float = rising ? 0 : wavePeak * smooth((progress - 0.12) / 0.23) * (1 - smooth((progress - 0.35) / 0.65))
+        let wash: Float = rising ? 0 : wavePeak * smooth((progress - 0.12) / 0.23) *
+            (1 - smooth((progress - 0.35) / 0.65))
         if waveTextureFrames <= 0 {
             waveTextureTarget = 0.55 + 0.3 * (waveTextureRandom.white() + 1)
-            waveTextureFrames = max(1, Int((Double(0.07 + 0.085 * (waveTextureRandom.white() + 1)) * sampleRate).rounded()))
+            waveTextureFrames = max(
+                1,
+                Int((Double(0.07 + 0.085 * (waveTextureRandom.white() + 1)) * sampleRate).rounded()),
+            )
         }
         waveTextureFrames -= 1
         waveTexture += (waveTextureTarget - waveTexture) * waveTextureCoefficient
@@ -144,12 +148,18 @@ struct NoiseGenerator {
         let bodyLevel = body * (0.9 + 0.1 * waveTexture)
         let foamLevel = foam * (0.75 + 0.25 * waveTexture)
         let washLevel = 0.55 * wash * waveTexture
-        let left = leftChannel.surf(brightness: brightness, body: bodyLevel, foamCoefficient: foamCoefficient, foam: foamLevel,
-                                    bedCoefficient: waveDarkCoefficient, washCoefficient: waveWashCoefficient, lowCoefficient: waveLowCoefficient, wash: washLevel)
-            * (1 - wavePan) * Self.wavesGain
-        let right = rightChannel.surf(brightness: brightness, body: bodyLevel, foamCoefficient: foamCoefficient, foam: foamLevel,
-                                     bedCoefficient: waveDarkCoefficient, washCoefficient: waveWashCoefficient, lowCoefficient: waveLowCoefficient, wash: washLevel)
-            * (1 + wavePan) * Self.wavesGain
+        let mix = SurfMix(
+            brightness: brightness,
+            body: bodyLevel,
+            foamCoefficient: foamCoefficient,
+            foam: foamLevel,
+            bedCoefficient: waveDarkCoefficient,
+            washCoefficient: waveWashCoefficient,
+            lowCoefficient: waveLowCoefficient,
+            wash: washLevel,
+        )
+        let left = leftChannel.surf(mix) * (1 - wavePan) * Self.wavesGain
+        let right = rightChannel.surf(mix) * (1 + wavePan) * Self.wavesGain
         waveFrame += 1
         if waveFrame >= waveRiseFrames + waveFallFrames { startWave() }
         return (left, right)
@@ -187,6 +197,18 @@ private struct Random {
     mutating func between(_ range: ClosedRange<Float>) -> Float {
         range.lowerBound + (range.upperBound - range.lowerBound) * (white() + 1) * 0.5
     }
+}
+
+/// One frame of the waves, the same in both channels: their filters' coefficients and levels.
+private struct SurfMix {
+    let brightness: Float
+    let body: Float
+    let foamCoefficient: Float
+    let foam: Float
+    let bedCoefficient: Float
+    let washCoefficient: Float
+    let lowCoefficient: Float
+    let wash: Float
 }
 
 /// One channel's noise: its own random sequence, and the filters that shape it.
@@ -254,20 +276,19 @@ private struct Channel {
     }
 
     /// Separate distant surf, body, band-limited foam, and low-mid backwash.
-    mutating func surf(brightness: Float, body: Float, foamCoefficient: Float, foam: Float,
-                       bedCoefficient: Float, washCoefficient: Float, lowCoefficient: Float, wash: Float) -> Float {
-        let pink = self.pink()
-        bed1 += (pink - bed1) * bedCoefficient
-        bed2 += (bed1 - bed2) * bedCoefficient
-        surf1 += (pink - surf1) * brightness
-        surf2 += (surf1 - surf2) * brightness
-        foam1 += (white() - foam1) * foamCoefficient
-        foam2 += (foam1 - foam2) * foamCoefficient
-        foamLow += (foam2 - foamLow) * lowCoefficient
-        wash1 += (pink - wash1) * washCoefficient
-        wash2 += (wash1 - wash2) * washCoefficient
-        washLow += (wash2 - washLow) * lowCoefficient
-        return 0.2 * bed2 + surf2 * body + (foam2 - foamLow) * foam + (wash2 - washLow) * wash
+    mutating func surf(_ mix: SurfMix) -> Float {
+        let pink = pink()
+        bed1 += (pink - bed1) * mix.bedCoefficient
+        bed2 += (bed1 - bed2) * mix.bedCoefficient
+        surf1 += (pink - surf1) * mix.brightness
+        surf2 += (surf1 - surf2) * mix.brightness
+        foam1 += (white() - foam1) * mix.foamCoefficient
+        foam2 += (foam1 - foam2) * mix.foamCoefficient
+        foamLow += (foam2 - foamLow) * mix.lowCoefficient
+        wash1 += (pink - wash1) * mix.washCoefficient
+        wash2 += (wash1 - wash2) * mix.washCoefficient
+        washLow += (wash2 - washLow) * mix.lowCoefficient
+        return 0.2 * bed2 + surf2 * mix.body + (foam2 - foamLow) * mix.foam + (wash2 - washLow) * mix.wash
     }
 }
 

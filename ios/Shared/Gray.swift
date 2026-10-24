@@ -26,7 +26,7 @@ extension UIColor {
     var grayscale: UIColor {
         UIColor { traits in
             var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-            self.resolvedColor(with: traits).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            unsafe self.resolvedColor(with: traits).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
             return UIColor(white: 0.2126 * red + 0.7152 * green + 0.0722 * blue, alpha: alpha)
         }
     }

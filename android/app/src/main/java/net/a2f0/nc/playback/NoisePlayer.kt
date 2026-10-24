@@ -23,6 +23,8 @@ object NoisePlayer {
     /** The noise currently playing, or null when stopped. */
     val nowPlaying: StateFlow<NoiseType?> = _nowPlaying.asStateFlow()
 
+    // An app-wide object, so there's nothing to inject a dispatcher; tests run it under Robolectric.
+    @Suppress("InjectDispatcher")
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private const val PREFERENCES = "playback"
@@ -32,15 +34,15 @@ object NoisePlayer {
     /** What's saved across launches, loaded from preferences on first use, which needs a Context. */
     private class Saved(preferences: SharedPreferences) {
         val volume = MutableStateFlow(preferences.getFloat(VOLUME_KEY, 1f))
-        val lastPlayed = MutableStateFlow(NoiseType.fromId(preferences.getString(LAST_PLAYED_KEY, null)) ?: NoiseType.WHITE)
+        val lastPlayed =
+            MutableStateFlow(NoiseType.fromId(preferences.getString(LAST_PLAYED_KEY, null)) ?: NoiseType.WHITE)
     }
 
     @Volatile private var loaded: Saved? = null
 
-    private fun saved(context: Context): Saved =
-        loaded ?: synchronized(this) {
-            loaded ?: Saved(preferences(context)).also { loaded = it }
-        }
+    private fun saved(context: Context): Saved = loaded ?: synchronized(this) {
+        loaded ?: Saved(preferences(context)).also { loaded = it }
+    }
 
     private fun preferences(context: Context) =
         context.applicationContext.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)

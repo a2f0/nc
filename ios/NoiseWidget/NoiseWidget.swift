@@ -8,15 +8,15 @@ struct NoiseEntry: TimelineEntry {
 }
 
 struct NoiseTimelineProvider: TimelineProvider {
-    func placeholder(in context: Context) -> NoiseEntry {
+    func placeholder(in _: Context) -> NoiseEntry {
         NoiseEntry(date: .now, nowPlaying: nil)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (NoiseEntry) -> Void) {
+    func getSnapshot(in _: Context, completion: @escaping (NoiseEntry) -> Void) {
         completion(NoiseEntry(date: .now, nowPlaying: PlaybackStatus.nowPlaying))
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<NoiseEntry>) -> Void) {
+    func getTimeline(in _: Context, completion: @escaping (Timeline<NoiseEntry>) -> Void) {
         // The app reloads timelines whenever playback starts or stops.
         let entry = NoiseEntry(date: .now, nowPlaying: PlaybackStatus.nowPlaying)
         completion(Timeline(entries: [entry], policy: .never))
@@ -47,7 +47,8 @@ struct NoiseWidgetView: View {
         // last row's buttons widen to fill it.
         let columns = family == .systemMedium ? 3 : 2
         let types = NoiseType.allCases
-        let rows = stride(from: 0, to: types.count, by: columns).map { Array(types[$0..<min($0 + columns, types.count)]) }
+        let rows = stride(from: 0, to: types.count, by: columns)
+            .map { Array(types[$0..<min($0 + columns, types.count)]) }
 
         VStack(alignment: .leading, spacing: 8) {
             Text(verbatim: LanguageSettings.string(.appName))
@@ -82,12 +83,15 @@ private struct NoiseToggleButton: View {
             }
         }
         .buttonStyle(.plain)
+        // As in the app, rather than the symbol's name, which ignores the app's language.
+        .accessibilityLabel(localizedText(type.buttonLabel(isPlaying: isPlaying)))
     }
 
     private var label: some View {
         HStack(spacing: 4) {
             Image(systemName: isPlaying ? "stop.fill" : "play.fill")
                 .imageScale(.small)
+                .accessibilityHidden(true)
             Text(verbatim: LanguageSettings.string(type.shortTitle))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)

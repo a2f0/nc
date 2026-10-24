@@ -10,10 +10,14 @@ build_dir=$(mktemp -d "${TMPDIR:-/tmp}/audio-tests.XXXXXX")
 trap 'rm -rf "$build_dir"' EXIT
 trap 'exit 1' HUP INT TERM
 
+# The Xcode project's strict settings (ios/Config/Base.xcconfig) and Swift 6 language mode.
+set -- -swift-version 6 -warnings-as-errors -strict-memory-safety \
+  -enable-upcoming-feature ExistentialAny -enable-upcoming-feature MemberImportVisibility
+
 # NoiseType.swift uses the string symbols Xcode generates from the String Catalog.
 xcrun xcstringstool generate-symbols "$REPO_ROOT/ios/Shared/Localizable.xcstrings" \
   --output-directory "$build_dir" --language swift
-xcrun swiftc -O -o "$build_dir/audio-tests" \
+xcrun swiftc "$@" -O -o "$build_dir/audio-tests" \
   "$build_dir/GeneratedStringSymbols_Localizable.swift" \
   "$REPO_ROOT/ios/Shared/NoiseType.swift" \
   "$REPO_ROOT/ios/Shared/NoiseGenerator.swift" \
@@ -22,13 +26,13 @@ xcrun swiftc -O -o "$build_dir/audio-tests" \
 "$build_dir/audio-tests"
 
 # The local history model has no UIKit dependency and can also be checked on macOS.
-xcrun swiftc -parse-as-library -o "$build_dir/history-tests" \
+xcrun swiftc "$@" -parse-as-library -o "$build_dir/history-tests" \
   "$REPO_ROOT/ios/Shared/ListeningHistory.swift" \
   "$REPO_ROOT/ios/HistoryTests/main.swift"
 "$build_dir/history-tests"
 
 # Playback diagnostics persist bounded events and recover interrupted processes.
-xcrun swiftc -parse-as-library -o "$build_dir/playback-log-tests" \
+xcrun swiftc "$@" -parse-as-library -o "$build_dir/playback-log-tests" \
   "$build_dir/GeneratedStringSymbols_Localizable.swift" \
   "$REPO_ROOT/ios/Shared/PlaybackLog.swift" \
   "$REPO_ROOT/ios/PlaybackLogTests/main.swift"
@@ -48,7 +52,7 @@ cat > "$language_app/Info.plist" <<'PLIST'
 PLIST
 xcrun xcstringstool compile "$REPO_ROOT/ios/Shared/Localizable.xcstrings" \
   --output-directory "$language_app/Resources"
-xcrun swiftc -o "$language_app/MacOS/language-tests" \
+xcrun swiftc "$@" -o "$language_app/MacOS/language-tests" \
   "$build_dir/GeneratedStringSymbols_Localizable.swift" \
   "$REPO_ROOT/ios/Shared/AppLanguage.swift" \
   "$REPO_ROOT/ios/Shared/LanguageSettings.swift" \

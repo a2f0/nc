@@ -11,7 +11,7 @@ struct ListeningSession: Codable, Identifiable, Sendable {
 
     var isValid: Bool {
         startedAt.isFinite && updatedAt.isFinite && updatedAt >= startedAt
-            && (endedAt == nil || (endedAt!.isFinite && endedAt! >= startedAt && endedAt! <= updatedAt))
+            && (endedAt.map { $0.isFinite && $0 >= startedAt && $0 <= updatedAt } ?? true)
     }
 }
 
@@ -22,12 +22,22 @@ struct HistoryDay: Identifiable {
     let minutes: [String: Double]
 }
 
+extension Calendar {
+    /// `date` moved by whole days, which, unlike most date arithmetic, always has a result.
+    func date(addingDays days: Int, to date: Date) -> Date {
+        guard let result = self.date(byAdding: .day, value: days, to: date) else {
+            preconditionFailure("Couldn't add \(days) days to \(date)")
+        }
+        return result
+    }
+}
+
 /// Calendar boundaries split overnight sessions correctly, including daylight-saving changes.
 func historyDays(_ sessions: [ListeningSession], ending endDay: Date, calendar: Calendar = .current) -> [HistoryDay] {
-    let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDay))!
+    let end = calendar.date(addingDays: 1, to: calendar.startOfDay(for: endDay))
     return (0..<7).map { index in
-        let start = calendar.date(byAdding: .day, value: index - 7, to: end)!
-        let next = calendar.date(byAdding: .day, value: 1, to: start)!
+        let start = calendar.date(addingDays: index - 7, to: end)
+        let next = calendar.date(addingDays: 1, to: start)
         var minutes: [String: Double] = [:]
         for session in sessions {
             let overlap = min(session.endedAt ?? session.updatedAt, next.timeIntervalSince1970 * 1000)
@@ -42,7 +52,8 @@ func historyDays(_ sessions: [ListeningSession], ending endDay: Date, calendar: 
 func historyTotals(_ sessions: [ListeningSession]) -> [String: Double] {
     var minutes: [String: Double] = [:]
     for session in sessions {
-        minutes[session.soundId, default: 0] += max(0, (session.endedAt ?? session.updatedAt) - session.startedAt) / 60_000
+        let end = session.endedAt ?? session.updatedAt
+        minutes[session.soundId, default: 0] += max(0, end - session.startedAt) / 60_000
     }
     return minutes
 }
@@ -57,8 +68,10 @@ final class ListeningHistory {
     @ObservationIgnored private let queue = DispatchQueue(label: "listening-history", qos: .utility)
     @ObservationIgnored private let clock: () -> Double
 
-    init(directory: URL = URL.applicationSupportDirectory.appending(path: "listening-history-v1"),
-         clock: @escaping () -> Double = { Date().timeIntervalSince1970 * 1000 }) {
+    init(
+        directory: URL = URL.applicationSupportDirectory.appending(path: "listening-history-v1"),
+        clock: @escaping () -> Double = { Date().timeIntervalSince1970 * 1000 },
+    ) {
         self.directory = directory
         self.clock = clock
         queue.async { [weak self] in
@@ -77,8 +90,8 @@ final class ListeningHistory {
                 let loadFailed = failed
                 Task { @MainActor [weak self] in
                     guard let self else { return }
-                    for row in loaded where self.sessions[row.id] == nil { self.sessions[row.id] = row }
-                    self.storageFailed = self.storageFailed || loadFailed
+                    for row in loaded where sessions[row.id] == nil { sessions[row.id] = row }
+                    storageFailed = storageFailed || loadFailed
                 }
             } catch {
                 Task { @MainActor [weak self] in self?.storageFailed = true }
@@ -96,8 +109,13 @@ final class ListeningHistory {
             active = nil
         }
         if let soundId {
-            let row = ListeningSession(id: UUID().uuidString.lowercased(), soundId: soundId,
-                                       startedAt: now, endedAt: nil, updatedAt: now)
+            let row = ListeningSession(
+                id: UUID().uuidString.lowercased(),
+                soundId: soundId,
+                startedAt: now,
+                endedAt: nil,
+                updatedAt: now,
+            )
             active = row
             save(row)
         }

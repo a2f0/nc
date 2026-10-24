@@ -41,6 +41,8 @@ Run individual pieces while iterating:
 
 ```sh
 bun run lint:scripts                                  # ShellCheck
+bun run lint:kotlin                                   # ktlint (bun run format:kotlin fixes)
+bun run lint:swift                                    # SwiftFormat and SwiftLint (bun run format:swift fixes)
 bundle exec rubocop                                   # Ruby: fastlane lanes and helpers, scripts
 bun run lint:binary-files --all                       # no binary files
 bun run agents:check                                  # shared skills are current
@@ -48,7 +50,7 @@ bun run l10n:check                                    # translations, generated 
 bun run test                                          # fastlane, web, localization, and workflow tests
 bun run web:check && bun run web:build                # web typecheck and build
 bun run web:deploy:preview                            # web deploy config
-(cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest)
+(cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest detektMain detektTest)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 sh scripts/testing/testIosPlayback.sh                 # iOS player lifecycle on an isolated simulator
@@ -65,6 +67,13 @@ hide release-only crashes.
 - Branches: `<type>/<name>`, e.g. `feat/sleep-timer`. Commits and PR titles: Conventional
   Commits, at most 50 characters, lowercase subject. Commits are signed and carry no
   `Co-authored-by` trailers.
+- Native code quality is enforced, not advisory: compiler warnings are errors on both
+  platforms; Android Lint runs every check (`android/app/lint.xml`) with Slack's Compose
+  rules, plus detekt (`android/app/detekt.yml`) and ktlint (`.editorconfig`); Swift has
+  SwiftFormat (`.swiftformat`), SwiftLint (`.swiftlint.yml`), and strict memory safety. Fix a
+  finding rather than suppressing it. When a rule can't apply, suppress it as narrowly as
+  possible, at the line or in the config, with the reason beside it. See
+  [development](docs/development.md#native-code-quality).
 - No binary files in Git. Icons and launch images are generated from `assets/brand/*.svg`
   as the `images` section of `agent-tool.json` declares, and gitignored; edit the SVGs or
   that section, never the PNGs. The Gradle wrapper jar is regenerated.

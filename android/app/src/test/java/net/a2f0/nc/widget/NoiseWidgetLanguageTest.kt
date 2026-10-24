@@ -8,8 +8,8 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.ExperimentalGlanceApi
 import androidx.glance.appwidget.runComposition
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -21,14 +21,13 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
-import org.robolectric.annotation.LooperMode
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
-@LooperMode(LooperMode.Mode.LEGACY)
 class NoiseWidgetLanguageTest {
     @OptIn(ExperimentalGlanceApi::class)
-    @Test fun relabelsAnAlreadyRunningCompositionWithoutChangingPlayback() = runBlocking {
+    @Test
+    fun relabelsAnAlreadyRunningCompositionWithoutChangingPlayback() = runBlocking {
         val context = RuntimeEnvironment.getApplication() as Context
         LanguagePreferences.select(context, Language.EN)
         val views = Channel<RemoteViews>(Channel.UNLIMITED)
@@ -45,7 +44,9 @@ class NoiseWidgetLanguageTest {
                         val bytes = parcel.marshall()
                         // Android parcels use UTF-16; Robolectric's serializer also uses UTF-8.
                         String(bytes, Charsets.UTF_16LE) + String(bytes, Charsets.UTF_8)
-                    } finally { parcel.recycle() }
+                    } finally {
+                        parcel.recycle()
+                    }
                     if (text.contains(label)) break
                 }
                 true
