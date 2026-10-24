@@ -20,27 +20,39 @@ struct HistorySheet: View {
         let description: String
         let minutes: [String: Double]
     }
+
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 15)) { timeline in
-            let end = Calendar.current.date(byAdding: .day, value: activeOffset, to: timeline.date)!
+            let end = Calendar.current.date(addingDays: activeOffset, to: timeline.date)
             let sessions = history.snapshot().filter { selectedSound == nil || $0.soundId == selectedSound?.rawValue }
             let days = historyDays(sessions, ending: end)
-            let totals = showAllTime ? historyTotals(sessions) : Dictionary(uniqueKeysWithValues: NoiseType.allCases.map { type in
-                (type.rawValue, days.reduce(0) { $0 + ($1.minutes[type.rawValue] ?? 0) })
-            })
+            let totals = showAllTime ? historyTotals(sessions) :
+                Dictionary(uniqueKeysWithValues: NoiseType.allCases.map { type in
+                    (type.rawValue, days.reduce(0) { $0 + ($1.minutes[type.rawValue] ?? 0) })
+                })
             let bars = showAllTime ? NoiseType.allCases.map { type in
-                Bar(id: type.rawValue, label: LanguageSettings.string(type.shortTitle),
-                    accessibilityLabel: LanguageSettings.string(.historyValue(LanguageSettings.string(type.title), formatted(totals[type.rawValue] ?? 0))),
+                Bar(
+                    id: type.rawValue,
+                    label: LanguageSettings.string(type.shortTitle),
+                    accessibilityLabel: LanguageSettings.string(.historyValue(
+                        LanguageSettings.string(type.title),
+                        formatted(totals[type.rawValue] ?? 0),
+                    )),
                     description: "",
-                    minutes: [type.rawValue: totals[type.rawValue] ?? 0])
+                    minutes: [type.rawValue: totals[type.rawValue] ?? 0],
+                )
             } : days.map { day in
-                Bar(id: String(day.start.timeIntervalSince1970),
-                    label: day.start.formatted(.dateTime.month(.twoDigits).day(.twoDigits).locale(LanguageSettings.locale)),
-                    accessibilityLabel: day.start.formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(LanguageSettings.locale)),
+                Bar(
+                    id: String(day.start.timeIntervalSince1970),
+                    label: day.start
+                        .formatted(.dateTime.month(.twoDigits).day(.twoDigits).locale(LanguageSettings.locale)),
+                    accessibilityLabel: day.start
+                        .formatted(Date.FormatStyle(date: .complete, time: .omitted).locale(LanguageSettings.locale)),
                     description: dayDescription(day),
-                    minutes: day.minutes)
+                    minutes: day.minutes,
+                )
             }
             ScrollViewReader { scroll in
                 ScrollView {
@@ -86,14 +98,15 @@ struct HistorySheet: View {
                                 Spacer()
                                 Button { move(7) } label: {
                                     Image(systemName: "chevron.right").frame(minWidth: 44, minHeight: 44)
-                                }.disabled(activeOffset == 0).opacity(activeOffset == 0 ? 0.4 : 1).accessibilityLabel(localizedText(.historyNext))
+                                }.disabled(activeOffset == 0).opacity(activeOffset == 0 ? 0.4 : 1)
+                                    .accessibilityLabel(localizedText(.historyNext))
                             }
-                            Text("\(days[0].start.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(LanguageSettings.locale))) – \(days[6].start.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted).locale(LanguageSettings.locale)))")
-                                .font(.subheadline).frame(maxWidth: .infinity)
+                            Text(dateRange(days)).font(.subheadline).frame(maxWidth: .infinity)
                         }
                         chart(bars)
                         if NoiseType.allCases.allSatisfy({ (totals[$0.rawValue] ?? 0) == 0 }) {
-                            localizedText(showAllTime ? .historyAllTimeEmpty : .historyEmpty).foregroundStyle(Gray.secondaryLabel)
+                            localizedText(showAllTime ? .historyAllTimeEmpty : .historyEmpty)
+                                .foregroundStyle(Gray.secondaryLabel)
                         }
                         if selectedSound == nil {
                             ForEach(Array(NoiseType.allCases.enumerated()), id: \.element) { index, type in
@@ -104,9 +117,13 @@ struct HistorySheet: View {
                                 } label: {
                                     HStack {
                                         Rectangle().fill(Gray.historyShades[index]).frame(width: 12, height: 12)
-                                            .overlay(Rectangle().stroke(Gray.secondaryLabel, lineWidth: 0.5)).accessibilityHidden(true)
-                                        localizedText(.historyValue(LanguageSettings.string(type.title), formatted(totals[type.rawValue] ?? 0)))
-                                            .font(.subheadline)
+                                            .overlay(Rectangle().stroke(Gray.secondaryLabel, lineWidth: 0.5))
+                                            .accessibilityHidden(true)
+                                        localizedText(.historyValue(
+                                            LanguageSettings.string(type.title),
+                                            formatted(totals[type.rawValue] ?? 0),
+                                        ))
+                                        .font(.subheadline)
                                         Spacer()
                                         Image(systemName: "chevron.right").accessibilityHidden(true)
                                     }.frame(minHeight: 44).contentShape(.rect)
@@ -136,11 +153,18 @@ struct HistorySheet: View {
     }
 
     private func move(_ days: Int?) {
-        if selectedSound == nil { offset = days.map { min(0, offset + $0) } ?? 0 }
-        else { detailOffset = days.map { min(0, detailOffset + $0) } ?? 0 }
+        if selectedSound == nil {
+            offset = days.map { min(0, offset + $0) } ?? 0
+        } else {
+            detailOffset = days.map { min(0, detailOffset + $0) } ?? 0
+        }
     }
 
-    private func viewButton(_ title: LocalizedStringResource, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func viewButton(
+        _ title: LocalizedStringResource,
+        selected: Bool,
+        action: @escaping () -> Void,
+    ) -> some View {
         Button(action: action) {
             localizedText(title).font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 44)
@@ -152,7 +176,10 @@ struct HistorySheet: View {
     }
 
     private func chart(_ bars: [Bar]) -> some View {
-        let maximum = max(1, ceil(bars.map { bar in NoiseType.allCases.reduce(0) { $0 + (bar.minutes[$1.rawValue] ?? 0) } }.max() ?? 0))
+        let maximum = max(
+            1,
+            ceil(bars.map { bar in NoiseType.allCases.reduce(0) { $0 + (bar.minutes[$1.rawValue] ?? 0) } }.max() ?? 0),
+        )
         return VStack(alignment: .leading, spacing: 8) {
             localizedText(.historyMinutes).font(.caption)
             HStack(alignment: .top, spacing: 6) {
@@ -164,24 +191,7 @@ struct HistorySheet: View {
                 }.frame(height: 190).accessibilityHidden(true)
                 VStack(spacing: 8) {
                     HStack(alignment: .bottom, spacing: 10) {
-                        ForEach(bars) { bar in
-                            GeometryReader { geometry in
-                                VStack(spacing: 0) {
-                                    Spacer(minLength: 0)
-                                    ForEach(Array(NoiseType.allCases.enumerated().reversed()), id: \.element) { index, type in
-                                        let minutes = bar.minutes[type.rawValue] ?? 0
-                                        if minutes > 0 {
-                                            Rectangle().fill(Gray.historyShades[index])
-                                                .frame(height: geometry.size.height * minutes / maximum)
-                                                .overlay(Rectangle().stroke(Gray.secondaryLabel, lineWidth: 0.5))
-                                        }
-                                    }
-                                }
-                            }
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(bar.accessibilityLabel)
-                            .accessibilityValue(bar.description)
-                        }
+                        ForEach(bars) { bar in stack(bar, maximum: maximum) }
                     }
                     .frame(height: 180)
                     .background {
@@ -205,11 +215,41 @@ struct HistorySheet: View {
         }
     }
 
-    private func formatted(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0...1)).locale(LanguageSettings.locale)) }
+    /// One bar: each sound's minutes stacked, in the legend's shades, out of `maximum`.
+    private func stack(_ bar: Bar, maximum: Double) -> some View {
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                ForEach(Array(NoiseType.allCases.enumerated().reversed()), id: \.element) { index, type in
+                    let minutes = bar.minutes[type.rawValue] ?? 0
+                    if minutes > 0 {
+                        Rectangle().fill(Gray.historyShades[index])
+                            .frame(height: geometry.size.height * minutes / maximum)
+                            .overlay(Rectangle().stroke(Gray.secondaryLabel, lineWidth: 0.5))
+                    }
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(bar.accessibilityLabel)
+        .accessibilityValue(bar.description)
+    }
+
+    private func dateRange(_ days: [HistoryDay]) -> String {
+        let style = Date.FormatStyle(date: .abbreviated, time: .omitted).locale(LanguageSettings.locale)
+        return "\(days[0].start.formatted(style)) – \(days[6].start.formatted(style))"
+    }
+
+    private func formatted(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0...1)).locale(LanguageSettings.locale))
+    }
 
     private func dayDescription(_ day: HistoryDay) -> String {
         sounds.map { type in
-            LanguageSettings.string(.historyValue(LanguageSettings.string(type.title), formatted(day.minutes[type.rawValue] ?? 0)))
+            LanguageSettings.string(.historyValue(
+                LanguageSettings.string(type.title),
+                formatted(day.minutes[type.rawValue] ?? 0),
+            ))
         }.joined(separator: "; ")
     }
 }

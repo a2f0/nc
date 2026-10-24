@@ -6,7 +6,8 @@ struct PlaybackLogContent: View {
     private var text: String {
         log.entries.reversed().map { row in
             let sound = row.soundId.flatMap(NoiseType.init(rawValue:)).map { LanguageSettings.string($0.title) } ?? ""
-            return "\(row.timestamp.ISO8601Format())  \(sound)\n\(LanguageSettings.string(row.event.title)) [\(row.event.rawValue)]\n\(row.detail)"
+            let event = "\(LanguageSettings.string(row.event.title)) [\(row.event.rawValue)]"
+            return "\(row.timestamp.ISO8601Format())  \(sound)\n\(event)\n\(row.detail)"
         }.joined(separator: "\n\n")
     }
 
@@ -20,8 +21,9 @@ struct PlaybackLogContent: View {
             }
             .tint(Gray.label)
             .disabled(log.entries.isEmpty)
-            if log.entries.isEmpty { localizedText(.playbackLogEmpty) }
-            else {
+            if log.entries.isEmpty {
+                localizedText(.playbackLogEmpty)
+            } else {
                 Text(verbatim: text).font(.caption.monospaced()).foregroundStyle(Gray.label)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

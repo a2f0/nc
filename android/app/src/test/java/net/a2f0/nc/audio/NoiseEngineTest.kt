@@ -54,10 +54,11 @@ class NoiseEngineTest {
 
     @Test
     fun stoppingPlaysTheWholeFadeOutBeforeReleasing() {
-        lateinit var engine: NoiseEngine
+        // The sink stops the engine that's writing to it.
+        var engine: NoiseEngine? = null
         // A deep buffer: 200 ms, many writes' worth.
         val sink = FakeSink(bufferSizeInFrames = sampleRate / 5, stopAfterFrames = sampleRate) {
-            engine.stop()
+            engine?.stop()
         }
         engine = NoiseEngine { sink }
 
@@ -73,7 +74,10 @@ class NoiseEngineTest {
         val failed = CountDownLatch(1)
         var starts = 0
         var reason = ""
-        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { reason = it; failed.countDown() }) {
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = {
+            reason = it
+            failed.countDown()
+        }) {
             error("audio output unavailable")
         }
         engine.play(NoiseType.FAN)
@@ -88,11 +92,16 @@ class NoiseEngineTest {
         val released = CountDownLatch(1)
         var starts = 0
         var reason = ""
-        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { reason = it; failed.countDown() }) {
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = {
+            reason = it
+            failed.countDown()
+        }) {
             object : AudioSink {
                 override val bufferSizeInFrames = 1024
                 override fun write(buffer: FloatArray, size: Int) = -1
-                override fun release() { released.countDown() }
+                override fun release() {
+                    released.countDown()
+                }
             }
         }
         engine.play(NoiseType.WHITE)
@@ -106,22 +115,25 @@ class NoiseEngineTest {
     fun quickResumeReportsPlaybackAgain() {
         val resumed = CountDownLatch(1)
         val released = CountDownLatch(1)
-        lateinit var engine: NoiseEngine
+        // Its callback stops and restarts it.
+        var engine: NoiseEngine? = null
         var starts = 0
         engine = NoiseEngine(onStarted = {
             starts++
             if (starts == 1) {
-                engine.stop()
-                engine.play(NoiseType.WHITE)
+                engine?.stop()
+                engine?.play(NoiseType.WHITE)
             } else {
-                engine.stop()
+                engine?.stop()
                 resumed.countDown()
             }
         }) {
             object : AudioSink {
                 override val bufferSizeInFrames = 1024
                 override fun write(buffer: FloatArray, size: Int) = size
-                override fun release() { released.countDown() }
+                override fun release() {
+                    released.countDown()
+                }
             }
         }
         engine.play(NoiseType.WHITE)
@@ -129,5 +141,4 @@ class NoiseEngineTest {
         assertTrue(released.await(5, TimeUnit.SECONDS))
         assertEquals(2, starts)
     }
-
 }

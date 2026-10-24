@@ -11,6 +11,10 @@ import java.time.ZoneId
 import java.util.UUID
 import java.util.concurrent.Executors
 
+/** Each chart page shows a week, ending on its last day. */
+private const val HISTORY_DAYS = 7
+private const val MILLIS_PER_MINUTE = 60_000.0
+
 /** Version 1: UTC epoch milliseconds; soundId is immutable and independent of the display name. */
 data class ListeningSession(
     val id: String,
@@ -22,24 +26,27 @@ data class ListeningSession(
 
 data class HistoryDay(val date: LocalDate, val minutes: Map<String, Double>)
 
-fun historyDays(sessions: List<ListeningSession>, endDay: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<HistoryDay> =
-    (6 downTo 0).map { offset ->
-        val date = endDay.minusDays(offset.toLong())
-        val start = date.atStartOfDay(zone).toInstant().toEpochMilli()
-        val end = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        val minutes = mutableMapOf<String, Double>()
-        for (row in sessions) {
-            val overlap = (minOf(row.endedAt ?: row.updatedAt, end) - maxOf(row.startedAt, start)).coerceAtLeast(0)
-            minutes[row.soundId] = (minutes[row.soundId] ?: 0.0) + overlap / 60_000.0
-        }
-        HistoryDay(date, minutes)
+fun historyDays(
+    sessions: List<ListeningSession>,
+    endDay: LocalDate,
+    zone: ZoneId = ZoneId.systemDefault(),
+): List<HistoryDay> = (HISTORY_DAYS - 1 downTo 0).map { offset ->
+    val date = endDay.minusDays(offset.toLong())
+    val start = date.atStartOfDay(zone).toInstant().toEpochMilli()
+    val end = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+    val minutes = mutableMapOf<String, Double>()
+    for (row in sessions) {
+        val overlap = (minOf(row.endedAt ?: row.updatedAt, end) - maxOf(row.startedAt, start)).coerceAtLeast(0)
+        minutes[row.soundId] = (minutes[row.soundId] ?: 0.0) + overlap / MILLIS_PER_MINUTE
     }
+    HistoryDay(date, minutes)
+}
 
 /** All saved time; abandoned sessions end at their last durable checkpoint. */
 fun historyTotals(sessions: List<ListeningSession>): Map<String, Double> {
     val minutes = mutableMapOf<String, Double>()
     for (row in sessions) {
-        val duration = ((row.endedAt ?: row.updatedAt) - row.startedAt).coerceAtLeast(0) / 60_000.0
+        val duration = ((row.endedAt ?: row.updatedAt) - row.startedAt).coerceAtLeast(0) / MILLIS_PER_MINUTE
         minutes[row.soundId] = (minutes[row.soundId] ?: 0.0) + duration
     }
     return minutes
@@ -60,19 +67,21 @@ class ListeningHistory(private val directory: File, private val clock: () -> Lon
             try {
                 check(directory.isDirectory || directory.mkdirs())
                 // AtomicFile may leave a backup after a crash; openRead recovers it.
-                val names = directory.list()?.map { it.removeSuffix(".bak") }?.filter { it.endsWith(".json") }?.distinct()
-                    ?: error("Cannot read listening history")
+                val names =
+                    directory.list()?.map { it.removeSuffix(".bak") }?.filter { it.endsWith(".json") }?.distinct()
+                        ?: error("Cannot read listening history")
                 for (name in names) {
                     try {
-                        val json = JSONObject(AtomicFile(File(directory, name)).openRead().bufferedReader().use { it.readText() })
-                        val row = ListeningSession(json.getString("id"), json.getString("soundId"), json.getLong("startedAt"),
-                            if (json.isNull("endedAt")) null else json.getLong("endedAt"), json.getLong("updatedAt"))
-                        require(row.updatedAt >= row.startedAt && (row.endedAt == null || row.endedAt in row.startedAt..row.updatedAt))
+                        val row = read(File(directory, name))
                         synchronized(this) { if (row.id !in sessions) sessions[row.id] = row }
-                    } catch (_: Exception) { _storageFailed.value = true }
+                    } catch (_: Exception) {
+                        _storageFailed.value = true
+                    }
                 }
                 synchronized(this) { _revision.value++ }
-            } catch (_: Exception) { _storageFailed.value = true }
+            } catch (_: Exception) {
+                _storageFailed.value = true
+            }
         }
     }
 
@@ -123,10 +132,25 @@ class ListeningHistory(private val directory: File, private val clock: () -> Lon
         }
     }
 
+    /** A saved session; throws if [file] can't be read or isn't a valid session. */
+    private fun read(file: File): ListeningSession {
+        val json = JSONObject(AtomicFile(file).openRead().bufferedReader().use { it.readText() })
+        val row = ListeningSession(
+            json.getString("id"),
+            json.getString("soundId"),
+            json.getLong("startedAt"),
+            if (json.isNull("endedAt")) null else json.getLong("endedAt"),
+            json.getLong("updatedAt"),
+        )
+        require(row.updatedAt >= row.startedAt && (row.endedAt == null || row.endedAt in row.startedAt..row.updatedAt))
+        return row
+    }
+
     companion object {
         @Volatile private var instance: ListeningHistory? = null
         fun get(context: Context): ListeningHistory = instance ?: synchronized(this) {
-            instance ?: ListeningHistory(File(context.applicationContext.filesDir, "listening-history-v1")).also { instance = it }
+            instance ?: ListeningHistory(File(context.applicationContext.filesDir, "listening-history-v1"))
+                .also { instance = it }
         }
     }
 }

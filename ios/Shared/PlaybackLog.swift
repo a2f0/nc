@@ -44,24 +44,39 @@ private final class PlaybackLogFile: @unchecked Sendable {
 
     func load() {
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true,
+            )
             if FileManager.default.fileExists(atPath: url.path) {
                 contents = try JSONDecoder().decode(Contents.self, from: Data(contentsOf: url))
                 contents.events = Array(contents.events.suffix(300))
             }
             if let active = contents.active {
                 // iOS does not provide Android's historical process-exit API.
-                record(.uncleanExit, soundId: active.soundId,
-                       detail: "startedAt=\(active.startedAt.ISO8601Format())", timestamp: Date(), updateActive: true)
+                record(
+                    .uncleanExit,
+                    soundId: active.soundId,
+                    detail: "startedAt=\(active.startedAt.ISO8601Format())",
+                    timestamp: Date(),
+                    updateActive: true,
+                )
             }
         } catch { failed = true }
     }
 
-    func record(_ event: PlaybackEvent, soundId: String?, detail: String, timestamp: Date,
-                updateActive: Bool = false, activeSound: String? = nil) {
+    func record(
+        _ event: PlaybackEvent,
+        soundId: String?,
+        detail: String,
+        timestamp: Date,
+        updateActive: Bool = false,
+        activeSound: String? = nil,
+    ) {
         let detail = String(detail.prefix(512))
         let row = PlaybackLogEntry(id: UUID(), timestamp: timestamp, event: event, soundId: soundId, detail: detail)
-        Self.logger.info("\(timestamp.ISO8601Format(), privacy: .public) \(event.rawValue, privacy: .public) \(soundId ?? "-", privacy: .public) \(detail, privacy: .public)")
+        let message = "\(timestamp.ISO8601Format()) \(event.rawValue) \(soundId ?? "-") \(detail)"
+        Self.logger.info("\(message, privacy: .public)")
         contents.events.append(row)
         contents.events = Array(contents.events.suffix(300))
         if updateActive { contents.active = activeSound.map { Active(startedAt: timestamp, soundId: $0) } }
@@ -90,11 +105,22 @@ final class PlaybackLog {
         enqueue { $0.load() }
     }
 
-    func record(_ event: PlaybackEvent, soundId: String? = nil, detail: String = "",
-                updateActive: Bool = false, activeSound: String? = nil) {
+    func record(
+        _ event: PlaybackEvent,
+        soundId: String? = nil,
+        detail: String = "",
+        updateActive: Bool = false,
+        activeSound: String? = nil,
+    ) {
         let timestamp = Date()
-        enqueue { $0.record(event, soundId: soundId, detail: detail, timestamp: timestamp,
-                            updateActive: updateActive, activeSound: activeSound) }
+        enqueue { $0.record(
+            event,
+            soundId: soundId,
+            detail: detail,
+            timestamp: timestamp,
+            updateActive: updateActive,
+            activeSound: activeSound,
+        ) }
     }
 
     private func enqueue(_ action: @escaping @Sendable (PlaybackLogFile) -> Void) {
@@ -109,13 +135,17 @@ final class PlaybackLog {
                 guard let self, revision > self.revision else { return }
                 self.revision = revision
                 self.entries = entries
-                self.storageFailed = failed
+                storageFailed = failed
             }
         }
     }
 
     // Only the termination callback needs a synchronous durability barrier.
-    func flushOnTermination() { queue.sync {} }
+    func flushOnTermination() {
+        queue.sync {
+            // Returns once every write queued before it has finished.
+        }
+    }
 
     func flush() async {
         await withCheckedContinuation { continuation in

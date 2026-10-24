@@ -72,21 +72,24 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The Gradle build renders its images with agent-tool (scripts/build/buildImages.sh).
-      - name: Set up Bun, Java, and Gradle
+      - name: Set up Bun, Java, Gradle, and ktlint
         uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
           version: 2026.10.17
-          install_args: bun java gradle
+          install_args: bun java gradle ktlint
           cache: true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build and lint
+      - name: Lint Kotlin
+        run: bun run lint:kotlin
+
+      - name: Build, lint, test, and analyze
         run: |
           sh scripts/dev/ensureGradleWrapper.sh
           cd android
-          ./gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest
+          ./gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest detektMain detektTest
 
   ios:
     name: iOS
@@ -97,15 +100,18 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # The Xcode build renders its images with agent-tool (scripts/build/buildImages.sh).
-      - name: Set up Bun
+      - name: Set up Bun, SwiftFormat, and SwiftLint
         uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
           version: 2026.10.17
-          install_args: bun
+          install_args: bun swiftformat swiftlint
           cache: true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Lint Swift
+        run: bun run lint:swift
 
       - name: Build for the simulator
         run: |

@@ -1,5 +1,6 @@
 package net.a2f0.nc.playback
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -31,9 +32,9 @@ import net.a2f0.nc.NoiseType
 import net.a2f0.nc.R
 import net.a2f0.nc.audio.NoiseEngine
 import net.a2f0.nc.audio.PlaybackEngine
-import net.a2f0.nc.history.ListeningHistory
-import net.a2f0.nc.diagnostics.PlaybackLog
 import net.a2f0.nc.diagnostics.PlaybackEvent
+import net.a2f0.nc.diagnostics.PlaybackLog
+import net.a2f0.nc.history.ListeningHistory
 
 /**
  * Foreground media service that keeps noise playing while the app is in the background.
@@ -52,10 +53,12 @@ open class PlaybackService : Service() {
                     }
                 }
             },
-            onFailed = { failure -> scope.launch {
-                log.record(PlaybackEvent.ENGINE_FAILED, nowPlaying, failure)
-                stop("engine_failed")
-            } },
+            onFailed = { failure ->
+                scope.launch {
+                    log.record(PlaybackEvent.ENGINE_FAILED, nowPlaying, failure)
+                    stop("engine_failed")
+                }
+            },
         )
     }
     private val scope = MainScope()
@@ -89,7 +92,7 @@ open class PlaybackService : Service() {
         val history = ListeningHistory.get(this)
         scope.launch {
             while (true) {
-                delay(15_000)
+                delay(CHECKPOINT_INTERVAL_MILLIS)
                 if (nowPlaying != null && !pausedForFocusLoss) history.checkpoint()
             }
         }
@@ -103,7 +106,8 @@ open class PlaybackService : Service() {
             .build()
         session = MediaSession(this, "NoiseConnoisseur").apply {
             setCallback(object : MediaSession.Callback() {
-                override fun onPlay() = play(nowPlaying ?: NoisePlayer.lastPlayed(this@PlaybackService).value, "media_play")
+                override fun onPlay() =
+                    play(nowPlaying ?: NoisePlayer.lastPlayed(this@PlaybackService).value, "media_play")
                 override fun onPause() = stop("media_pause", requested = true)
                 override fun onStop() = stop("media_stop", requested = true)
             })
@@ -129,7 +133,11 @@ open class PlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY -> play(NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed(this).value, intent.getStringExtra(EXTRA_SOURCE) ?: "unknown")
+            ACTION_PLAY -> play(
+                NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed(this).value,
+                intent.getStringExtra(EXTRA_SOURCE) ?: "unknown",
+            )
+
             else -> stop(intent?.getStringExtra(EXTRA_SOURCE) ?: "unknown", requested = true)
         }
         return START_NOT_STICKY
@@ -207,6 +215,7 @@ open class PlaybackService : Service() {
         log.record(PlaybackEvent.FOCUS_CHANGED, nowPlaying, reason)
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS -> stop("audiofocus_loss")
+
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> if (nowPlaying != null) {
                 log.record(PlaybackEvent.STOPPED, nowPlaying, "audiofocus_loss_transient", updateActive = true)
                 pausedForFocusLoss = true
@@ -214,6 +223,7 @@ open class PlaybackService : Service() {
                 ListeningHistory.get(this).transition(null)
                 session.setPlaybackState(playbackState(PlaybackState.STATE_PAUSED))
             }
+
             AudioManager.AUDIOFOCUS_GAIN -> if (pausedForFocusLoss) {
                 pausedForFocusLoss = false
                 nowPlaying?.let {
@@ -234,6 +244,7 @@ open class PlaybackService : Service() {
         .build()
 
     /** Puts the service in the foreground with the playback notification, or updates the notification. */
+    @SuppressLint("InlinedApi") // ServiceCompat ignores the type before Android 10, which introduced it.
     private fun showNotification(type: NoiseType) {
         ServiceCompat.startForeground(
             this,
@@ -317,6 +328,9 @@ open class PlaybackService : Service() {
         private const val EXTRA_NOISE = "noise"
         private const val CHANNEL_ID = "playback"
         private const val NOTIFICATION_ID = 1
+
+        /** How often a playing session is saved, so a crash loses at most this much history. */
+        private const val CHECKPOINT_INTERVAL_MILLIS = 15_000L
 
         fun playIntent(context: Context, type: NoiseType, source: String = "ui"): Intent =
             Intent(context, PlaybackService::class.java)

@@ -108,7 +108,8 @@ private struct SettingsSheet: View {
     @State private var showLog = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @AppStorage("appearance") private var appearance = Appearance.system.rawValue
-    @AppStorage(LanguageSettings.key, store: LanguageSettings.defaults) private var language = AppLanguage.device.rawValue
+    @AppStorage(LanguageSettings.key, store: LanguageSettings.defaults)
+    private var language = AppLanguage.device.rawValue
 
     var body: some View {
         SheetContent(title: .settings) {
@@ -118,8 +119,11 @@ private struct SettingsSheet: View {
                 tab(.settingsGeneral, log: false)
                 tab(.playbackLog, log: true)
             }
-            if showLog { PlaybackLogContent(log: player.playbackLog) }
-            else { generalSettings }
+            if showLog {
+                PlaybackLogContent(log: player.playbackLog)
+            } else {
+                generalSettings
+            }
         }
     }
 
@@ -144,16 +148,19 @@ private struct SettingsSheet: View {
             Picker(selection: $language) {
                 ForEach(AppLanguage.allCases) { option in
                     Group {
-                        if option == .device { localizedText(.languageDevice) }
-                        else { Text(verbatim: option.nativeName) }
+                        if option == .device {
+                            localizedText(.languageDevice)
+                        } else {
+                            Text(verbatim: option.nativeName)
+                        }
                     }.tag(option.rawValue)
                 }
             } label: { localizedText(.language) }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .tint(Gray.label)
-            .accessibilityLabel(localizedText(.language))
-            .accessibilityIdentifier("language-picker")
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .tint(Gray.label)
+                .accessibilityLabel(localizedText(.language))
+                .accessibilityIdentifier("language-picker")
         }
         VStack(alignment: .leading, spacing: 4) {
             localizedText(.appearance).font(.headline).accessibilityAddTraits(.isHeader)
@@ -247,49 +254,6 @@ private struct AboutSheet: View {
     }
 }
 
-/// A sheet with a title and a close button, as tall as its contents.
-struct SheetContent<Content: View>: View {
-    let title: LocalizedStringResource
-    @ViewBuilder let content: Content
-    @State private var height: CGFloat = 0
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    localizedText(title)
-                        .font(.title2.bold())
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: 16)
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(Gray.secondaryLabel)
-                            .frame(width: 32, height: 32)
-                            .background(Gray.secondaryFill, in: .circle)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    // Lines up with the contents' trailing edge, as in the title.
-                    .padding(.trailing, -6)
-                    .accessibilityLabel(localizedText(.close))
-                }
-                content
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            .padding(.bottom, 24)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
-        }
-        .scrollBounceBehavior(.basedOnSize)
-        .presentationDetents(height > 0 ? [.height(height)] : [.medium])
-        .presentationBackground(Gray.background)
-    }
-}
-
 private struct NoiseCard: View {
     let type: NoiseType
     let isPlaying: Bool
@@ -337,7 +301,7 @@ private struct PlayerBar: View {
     var body: some View {
         let isPlaying = player.nowPlaying != nil
         HStack(spacing: 16) {
-            Button(action: { player.togglePlayback() }) {
+            Button { player.togglePlayback() } label: {
                 PlaybackSymbol(isPlaying: isPlaying)
             }
             .buttonStyle(.plain)
@@ -368,14 +332,8 @@ private struct PlaybackSymbol: View {
             .foregroundStyle(isPlaying ? Color(.systemBackground) : .primary)
             .frame(width: size, height: size)
             .background(isPlaying ? Color.primary : Gray.secondaryFill, in: .circle)
-    }
-}
-
-private extension NoiseType {
-    /// A screen reader label for a button that stops this noise while it plays, or plays it.
-    func buttonLabel(isPlaying: Bool) -> LocalizedStringResource {
-        let title = LanguageSettings.string(title)
-        return isPlaying ? .stopNoise(title) : .playNoise(title)
+            // The buttons it's in have labels naming the noise.
+            .accessibilityHidden(true)
     }
 }
 
@@ -388,9 +346,11 @@ private struct VolumeSlider: View {
         } minimumValueLabel: {
             Image(systemName: "speaker.fill")
                 .foregroundStyle(Gray.secondaryLabel)
+                .accessibilityHidden(true)
         } maximumValueLabel: {
             Image(systemName: "speaker.wave.3.fill")
                 .foregroundStyle(Gray.secondaryLabel)
+                .accessibilityHidden(true)
         }
         .tint(.primary)
         .padding(.horizontal, 4)

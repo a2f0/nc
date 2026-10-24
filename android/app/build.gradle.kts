@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.detekt)
 }
 
 // Release builds are signed with the Google Play upload key: the one in the secrets folder
@@ -77,6 +78,30 @@ android {
         unitTests.isIncludeAndroidResources = true
         unitTests.all { it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED") }
     }
+
+    // Every check, including the ones off by default and the tests', and any warning fails
+    // the build. lint.xml turns off the few that can't apply here, each with its reason.
+    lint {
+        checkAllWarnings = true
+        warningsAsErrors = true
+        checkTestSources = true
+        lintConfig = file("lint.xml")
+    }
+}
+
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors = true
+        // The compiler's additional checks, such as redundant casts and unused variables.
+        extraWarnings = true
+    }
+}
+
+// Static analysis beyond Android Lint and the compiler: complexity, likely bugs, and style
+// that ktlint doesn't cover. Every finding fails `detekt`.
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(file("detekt.yml"))
 }
 
 dependencies {
@@ -102,6 +127,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+
+    lintChecks(libs.compose.lint.checks)
 }
 
 // Launcher, notification, and splash images are generated from the SVGs in

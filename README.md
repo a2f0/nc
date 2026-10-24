@@ -25,7 +25,7 @@ about 50 ms so dragging doesn't crackle.
 ## Setup
 
 ```sh
-mise install                        # Java, Gradle, Ruby, Bun, ShellCheck, jq (see .mise.toml)
+mise install                        # Java, Gradle, Ruby, Bun, linters and formatters (see .mise.toml)
 bundle install                      # fastlane, RuboCop
 bun install                         # agent-tool, TypeScript
 bun x --no-install playwright install --with-deps chromium   # web integration tests

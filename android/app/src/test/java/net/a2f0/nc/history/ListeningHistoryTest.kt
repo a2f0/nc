@@ -1,6 +1,9 @@
 package net.a2f0.nc.history
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -34,8 +37,8 @@ class ListeningHistoryTest {
         val restored = ListeningHistory(directory) { now }
         restored.flush().get(5, TimeUnit.SECONDS)
         assertEquals(151_000L, restored.snapshot().first { it.soundId == "fan" }.updatedAt)
-        assertEquals(0.5, historyTotals(restored.snapshot())["fan"]!!, 0.001)
-        assertEquals(1440.5, historyTotals(history.snapshot())["fan"]!!, 0.001)
+        assertEquals(0.5, historyTotals(restored.snapshot()).getValue("fan"), 0.001)
+        assertEquals(1440.5, historyTotals(history.snapshot()).getValue("fan"), 0.001)
         restored.transition("pink")
         restored.transition(null)
         restored.transition(null)
@@ -66,9 +69,9 @@ class ListeningHistoryTest {
             val end = day.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
             val row = ListeningSession("test", "fan", start - 30 * 60_000, end + 45 * 60_000, end + 45 * 60_000)
             val days = historyDays(listOf(row), day.plusDays(1), zone)
-            assertEquals(30.0, days[4].minutes["fan"]!!, 0.001)
-            assertEquals(minutes, days[5].minutes["fan"]!!, 0.001)
-            assertEquals(45.0, days[6].minutes["fan"]!!, 0.001)
+            assertEquals(30.0, days[4].minutes.getValue("fan"), 0.001)
+            assertEquals(minutes, days[5].minutes.getValue("fan"), 0.001)
+            assertEquals(45.0, days[6].minutes.getValue("fan"), 0.001)
         }
     }
 

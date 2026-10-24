@@ -42,8 +42,11 @@ internal class NoiseEngine(
     private var thread: Thread? = null
 
     @Volatile private var type = NoiseType.WHITE
+
     @Volatile private var playVersion = 0
+
     @Volatile private var fadingOut = false
+
     @Volatile private var targetVolumeGain = 1f
 
     override fun play(type: NoiseType) = synchronized(lock) {
@@ -65,11 +68,12 @@ internal class NoiseEngine(
         targetVolumeGain = volumeGain(volume)
     }
 
+    // Any failure on the audio thread is reported to the service rather than crashing the app.
+    @Suppress("TooGenericExceptionCaught")
     private fun run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
         var sink: AudioSink? = null
         var failure: String? = null
-        var reportedVersion: Int? = null
 
         val mixer = NoiseMixer(
             SAMPLE_RATE,
@@ -77,53 +81,70 @@ internal class NoiseEngine(
             rightSeed = System.nanoTime().toInt() xor 0x5bd1e995,
             volumeGain = targetVolumeGain,
         )
-        val buffer = FloatArray(FRAMES_PER_WRITE * 2)
 
         try {
             sink = openSink()
-            while (true) {
-                val version = playVersion
-                val renderedType = type
-                mixer.render(buffer, renderedType, fadingOut, targetVolumeGain)
-                val written = sink.write(buffer, buffer.size)
-                if (written < 0) {
-                    failure = "AudioTrack.write=$written"
-                    break
-                }
-                if (written > 0 && !fadingOut && version != reportedVersion) {
-                    reportedVersion = version
-                    onStarted(renderedType)
-                }
-
-                if (mixer.fade == 0f && fadingOut) {
-                    val exit = synchronized(lock) {
-                        fadingOut.also { if (it) thread = null }
-                    }
-                    if (exit) {
-                        // Releasing the sink discards what's queued, so push the
-                        // fade-out through with a buffer's worth of silence first.
-                        buffer.fill(0f)
-                        var silentFrames = sink.bufferSizeInFrames
-                        while (silentFrames > 0) {
-                            val frames = min(silentFrames, FRAMES_PER_WRITE)
-                            if (sink.write(buffer, frames * 2) < 0) break
-                            silentFrames -= frames
-                        }
-                        break
-                    }
-                }
-            }
+            failure = stream(sink, mixer)
         } catch (error: Exception) {
             failure = "${error.javaClass.simpleName}: ${error.message}"
         } finally {
-            val current = synchronized(lock) {
-                (thread == Thread.currentThread()).also { if (it) thread = null }
+            release(sink, failure)
+        }
+    }
+
+    /** Writes noise to [sink] until a fade-out finishes. Returns why writing failed, if it did. */
+    private fun stream(sink: AudioSink, mixer: NoiseMixer): String? {
+        val buffer = FloatArray(FRAMES_PER_WRITE * 2)
+        var reportedVersion: Int? = null
+        while (true) {
+            val version = playVersion
+            val renderedType = type
+            mixer.render(buffer, renderedType, fadingOut, targetVolumeGain)
+            val written = sink.write(buffer, buffer.size)
+            if (written < 0) return "AudioTrack.write=$written"
+            if (written > 0 && !fadingOut && version != reportedVersion) {
+                reportedVersion = version
+                onStarted(renderedType)
             }
-            try { sink?.release() } catch (error: Exception) {
-                if (failure == null) failure = "release: ${error.javaClass.simpleName}: ${error.message}"
-            } finally {
-                if (current) failure?.let(onFailed)
+            if (mixer.fade == 0f && fadingOut && exitAfterFadeOut()) {
+                writeSilence(sink, buffer)
+                return null
             }
+        }
+    }
+
+    /** Whether a finished fade-out still stands, in which case this thread gives up being the engine's. */
+    private fun exitAfterFadeOut(): Boolean = synchronized(lock) {
+        fadingOut.also { if (it) thread = null }
+    }
+
+    /**
+     * Releasing the sink discards what's queued, so this pushes the fade-out through with a
+     * buffer's worth of silence first.
+     */
+    private fun writeSilence(sink: AudioSink, buffer: FloatArray) {
+        buffer.fill(0f)
+        var silentFrames = sink.bufferSizeInFrames
+        while (silentFrames > 0) {
+            val frames = min(silentFrames, FRAMES_PER_WRITE)
+            if (sink.write(buffer, frames * 2) < 0) return
+            silentFrames -= frames
+        }
+    }
+
+    /** Releases [sink], then reports [failure], or a failure to release, unless a newer thread has taken over. */
+    @Suppress("TooGenericExceptionCaught")
+    private fun release(sink: AudioSink?, failure: String?) {
+        val current = synchronized(lock) {
+            (thread == Thread.currentThread()).also { if (it) thread = null }
+        }
+        var reported = failure
+        try {
+            sink?.release()
+        } catch (error: Exception) {
+            if (reported == null) reported = "release: ${error.javaClass.simpleName}: ${error.message}"
+        } finally {
+            if (current) reported?.let(onFailed)
         }
     }
 
@@ -150,8 +171,7 @@ internal class NoiseEngine(
 
         override val bufferSizeInFrames: Int get() = track.bufferSizeInFrames
 
-        override fun write(buffer: FloatArray, size: Int): Int =
-            track.write(buffer, 0, size, AudioTrack.WRITE_BLOCKING)
+        override fun write(buffer: FloatArray, size: Int): Int = track.write(buffer, 0, size, AudioTrack.WRITE_BLOCKING)
 
         override fun release() {
             track.stop()

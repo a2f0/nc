@@ -2,6 +2,7 @@ package net.a2f0.nc
 
 import android.app.LocaleManager
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
@@ -27,10 +28,12 @@ object LanguagePreferences {
         effectiveLocales.value = resolvedLocales(context).toLanguageTags()
     }
 
-    fun preferences(context: Context) = context.getSharedPreferences(KEY, Context.MODE_PRIVATE)
+    fun preferences(context: Context): SharedPreferences = context.getSharedPreferences(KEY, Context.MODE_PRIVATE)
 
     fun selected(context: Context): Language {
-        if (Build.VERSION.SDK_INT < 33) return Language.fromTag(preferences(context).getString(KEY, null))
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return Language.fromTag(preferences(context).getString(KEY, null))
+        }
         val locale = context.getSystemService(LocaleManager::class.java).applicationLocales[0] ?: return Language.DEVICE
         val exact = Language.fromTag(locale.toLanguageTag())
         if (exact != Language.DEVICE) return exact
@@ -43,7 +46,7 @@ object LanguagePreferences {
 
     /** Preserve an older installation's preference on its first launch after an OS upgrade. */
     fun migrate(context: Context) {
-        if (Build.VERSION.SDK_INT < 33) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         val saved = preferences(context)
         if (!saved.contains(KEY)) return
         val language = Language.fromTag(saved.getString(KEY, null))
@@ -55,10 +58,13 @@ object LanguagePreferences {
     }
 
     fun select(context: Context, language: Language) {
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.getSystemService(LocaleManager::class.java).applicationLocales =
-                if (language == Language.DEVICE) LocaleList.getEmptyLocaleList()
-                else LocaleList.forLanguageTags(language.tag)
+                if (language == Language.DEVICE) {
+                    LocaleList.getEmptyLocaleList()
+                } else {
+                    LocaleList.forLanguageTags(language.tag)
+                }
         } else {
             preferences(context).edit { putString(KEY, language.tag) }
         }
@@ -66,14 +72,17 @@ object LanguagePreferences {
     }
 
     private fun resolvedLocales(context: Context): LocaleList {
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val manager = context.getSystemService(LocaleManager::class.java)
             val locales = manager.applicationLocales
             return if (locales.isEmpty) manager.systemLocales else locales
         }
         val language = selected(context)
-        return if (language == Language.DEVICE) context.resources.configuration.locales
-            else LocaleList.forLanguageTags(language.tag)
+        return if (language == Language.DEVICE) {
+            context.resources.configuration.locales
+        } else {
+            LocaleList.forLanguageTags(language.tag)
+        }
     }
 
     /** Also used by notifications and widgets, whose contexts aren't the activity's. */

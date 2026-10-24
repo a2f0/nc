@@ -33,15 +33,15 @@ final class NoiseRenderer: Sendable {
     func makeSourceNode(format: AVAudioFormat) -> AVAudioSourceNode {
         let state = RenderState(
             sampleRate: format.sampleRate,
-            volume: Float(bitPattern: volumeGain.load(ordering: .relaxed))
+            volume: Float(bitPattern: volumeGain.load(ordering: .relaxed)),
         )
-        return AVAudioSourceNode(format: format) { [self] _, _, frameCount, audioBufferList in
-            let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
+        return unsafe AVAudioSourceNode(format: format) { [self] _, _, frameCount, audioBufferList in
+            let buffers = unsafe UnsafeMutableAudioBufferListPointer(audioBufferList)
             let type = NoiseType(index: noise.load(ordering: .relaxed))
             let target: Float = fadingOut.load(ordering: .relaxed) ? 0 : 1
             let targetVolume = Float(bitPattern: volumeGain.load(ordering: .relaxed))
-            guard let left = buffers[0].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
-            let right = buffers.count > 1 ? buffers[1].mData?.assumingMemoryBound(to: Float.self) : nil
+            guard let left = unsafe buffers[0].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
+            let right = unsafe buffers.count > 1 ? buffers[1].mData?.assumingMemoryBound(to: Float.self) : nil
 
             for frame in 0..<Int(frameCount) {
                 state.gain = state.gain < target
@@ -52,8 +52,8 @@ final class NoiseRenderer: Sendable {
                     : max(state.volume - state.volumeStep, targetVolume)
                 let gain = state.gain * state.volume
                 let (leftSample, rightSample) = state.noise.next(type)
-                left[frame] = leftSample * gain
-                right?[frame] = rightSample * gain
+                unsafe left[frame] = leftSample * gain
+                unsafe right?[frame] = rightSample * gain
             }
             return noErr
         }
@@ -72,7 +72,7 @@ private final class RenderState: @unchecked Sendable {
         noise = NoiseGenerator(
             sampleRate: sampleRate,
             leftSeed: .random(in: 1...UInt32.max),
-            rightSeed: .random(in: 1...UInt32.max)
+            rightSeed: .random(in: 1...UInt32.max),
         )
         self.volume = volume
         gainStep = Float(1 / (sampleRate * NoiseRenderer.fadeDuration))

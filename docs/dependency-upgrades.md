@@ -38,6 +38,14 @@ release; Java source/bytecode compatibility remains 17 and the minimum Android
 version remains API 26. Regenerate both wrapper scripts with the selected Gradle
 and verify the distribution SHA-256; the wrapper jar stays gitignored.
 
+Android Lint's version follows AGP, and Slack's compose-lints is built against a specific
+Lint version, so move them together; detekt is also built against particular Kotlin, AGP,
+and Gradle versions. Detekt stays on its 2.0 prereleases, built for Kotlin 2.4 and AGP 9,
+because its stable 1.23 line predates both; take 2.0.0 once it's released. ktlint,
+SwiftFormat, and SwiftLint are pinned in `.mise.toml`. A new release, or a new Xcode with
+its warnings now errors, can add findings: run `bun run format:kotlin`, `bun run format:swift`,
+and the Gradle analysis, and fix them in the upgrade.
+
 Preserve the explicit WorkManager constraint: Glance's older transitive request
 can select Room keep rules that let R8 strip a required database constructor.
 Revisit only when Glance itself selects a safe WorkManager/Room graph. Validate

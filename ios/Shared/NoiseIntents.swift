@@ -13,14 +13,17 @@ struct PlayNoiseIntent: AudioPlaybackIntent {
     @Parameter(title: LocalizedStringResource("intent_noise"))
     var noise: NoiseType
 
-    init() {}
+    init() {
+        // App Intents creates the intent with this, then sets its parameters.
+    }
 
     init(noise: NoiseType) {
         self.noise = noise
     }
 
-    @MainActor
-    func perform() async throws -> some IntentResult {
+    // AppIntent declares perform() async; these have nothing to await.
+    // swiftlint:disable:next async_without_await
+    @MainActor func perform() async throws -> some IntentResult {
         NoisePlayer.shared.play(noise, source: "widget_or_shortcut")
         return .result()
     }
@@ -30,8 +33,8 @@ struct StopNoiseIntent: AudioPlaybackIntent {
     static let title = LocalizedStringResource("intent_stop_title")
     static let description = IntentDescription(LocalizedStringResource("intent_stop_description"))
 
-    @MainActor
-    func perform() async throws -> some IntentResult {
+    // swiftlint:disable:next async_without_await
+    @MainActor func perform() async throws -> some IntentResult {
         NoisePlayer.shared.stop(source: "widget_or_shortcut")
         return .result()
     }

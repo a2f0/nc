@@ -9,6 +9,9 @@ import kotlinx.coroutines.launch
 import net.a2f0.nc.history.ListeningHistory
 import net.a2f0.nc.history.ListeningSession
 
+/** How often an open chart catches up with a session that's still playing. */
+private const val REFRESH_INTERVAL_MILLIS = 15_000L
+
 internal data class HistoryUpdate(
     val sessions: List<ListeningSession>,
     // Also refresh the calendar date when playback is stopped or history is empty.
@@ -24,15 +27,14 @@ internal fun historyUpdates(
     history: ListeningHistory,
     lifecycle: Lifecycle,
     clock: () -> Long = System::currentTimeMillis,
-): Flow<HistoryUpdate> =
-    channelFlow {
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            launch { history.revision.collect { send(HistoryUpdate(history.snapshot(), clock())) } }
-            launch {
-                while (true) {
-                    delay(15_000)
-                    send(HistoryUpdate(history.snapshot(), clock()))
-                }
+): Flow<HistoryUpdate> = channelFlow {
+    lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+        launch { history.revision.collect { send(HistoryUpdate(history.snapshot(), clock())) } }
+        launch {
+            while (true) {
+                delay(REFRESH_INTERVAL_MILLIS)
+                send(HistoryUpdate(history.snapshot(), clock()))
             }
         }
     }
+}

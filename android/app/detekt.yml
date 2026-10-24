@@ -1,0 +1,42 @@
+# detekt's defaults (buildUponDefaultConfig in build.gradle.kts), adjusted for Compose and the
+# noise generator. Every finding fails the build.
+
+complexity:
+  CyclomaticComplexMethod:
+    # A `when` that maps each value to another is a table, not branching logic.
+    ignoreSimpleWhenEntries: true
+  LongParameterList:
+    # Composables take their state and its event callbacks as parameters (state hoisting).
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    ignoreOverridden: true
+    ignorePrivate: true
+
+coroutines:
+  InjectDispatcher:
+    # Tests choose real dispatchers on purpose.
+    excludes: ['**/test/**']
+
+naming:
+  FunctionNaming:
+    # Composables that emit UI are named like types.
+    ignoreAnnotated: ['Composable']
+
+style:
+  MagicNumber:
+    # A named property is what the rule asks for.
+    ignorePropertyDeclaration: true
+    excludes:
+      - '**/test/**'
+      - '**/*.kts'
+      # Filter coefficients and the waves' shape: published or tuned values that the iOS and
+      # web generators repeat literally, and that their tests compare.
+      - '**/audio/NoiseGenerator.kt'
+  ProtectedMemberInFinalClass:
+    # Robolectric's convention for shadow methods.
+    ignoreAnnotated: ['Implementation']
+  ReturnCount:
+    excludeGuardClauses: true
+  UnusedPrivateFunction:
+    # Android Studio renders previews.
+    ignoreAnnotated: ['Preview']

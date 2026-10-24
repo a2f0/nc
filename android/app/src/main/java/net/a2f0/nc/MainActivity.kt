@@ -21,7 +21,9 @@ import net.a2f0.nc.ui.NoiseScreen
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(base: Context) {
         LanguagePreferences.migrate(base)
-        super.attachBaseContext(if (Build.VERSION.SDK_INT < 33) LanguagePreferences.localized(base) else base)
+        // From Android 13 the system applies the app's language (see LanguagePreferences).
+        val systemLocalizes = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        super.attachBaseContext(if (systemLocalizes) base else LanguagePreferences.localized(base))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,10 +50,13 @@ class MainActivity : ComponentActivity() {
                 LanguageControl(LanguagePreferences.selected(this)) { language ->
                     LanguagePreferences.select(this, language)
                     NoisePlayer.refreshWidgets(applicationContext)
-                    if (Build.VERSION.SDK_INT < 33) recreate()
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) recreate()
                 }
             }
-            CompositionLocalProvider(LocalAppearancePreferences provides preferences, LocalLanguageControl provides languages) {
+            CompositionLocalProvider(
+                LocalAppearancePreferences provides preferences,
+                LocalLanguageControl provides languages,
+            ) {
                 NoiseConnoisseurTheme(darkTheme = dark) { NoiseScreen() }
             }
         }

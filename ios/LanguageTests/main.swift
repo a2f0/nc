@@ -4,8 +4,11 @@ import Foundation
 let defaults = LanguageSettings.defaults
 let previous = defaults.object(forKey: LanguageSettings.key)
 defer {
-    if let previous { defaults.set(previous, forKey: LanguageSettings.key) }
-    else { defaults.removeObject(forKey: LanguageSettings.key) }
+    if let previous {
+        defaults.set(previous, forKey: LanguageSettings.key)
+    } else {
+        defaults.removeObject(forKey: LanguageSettings.key)
+    }
 }
 
 for (language, expected) in [(AppLanguage.en, "Volume"), (.de, "Lautstärke"), (.es, "Volumen")] {
@@ -13,6 +16,7 @@ for (language, expected) in [(AppLanguage.en, "Volume"), (.de, "Lautstärke"), (
     precondition(LanguageSettings.selected == language)
     precondition(LanguageSettings.string(.volume) == expected, "Catalog lookup failed for \(language)")
 }
+
 defaults.set("removed-language", forKey: LanguageSettings.key)
 precondition(LanguageSettings.selected == .device)
 precondition(LanguageSettings.locale == .current)

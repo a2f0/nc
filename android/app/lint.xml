@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- app/build.gradle.kts turns on every check and fails on any warning. These are the
+     exceptions, each with its reason. -->
+<lint>
+    <!-- Newer releases are adopted deliberately (see docs/dependency-upgrades.md), so these
+         would fail the build whenever one comes out, not when the code changes. -->
+    <issue id="AndroidGradlePluginVersion" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="OldTargetApi" severity="ignore" />
+
+    <!-- Images are rendered as PNGs from assets/brand/*.svg (see agent-tool.json). The
+         monochrome launcher layer is adaptive, so it has the other layers' 108dp size. -->
+    <issue id="ConvertToWebp" severity="ignore" />
+    <issue id="IconExpectedSize">
+        <ignore regexp="ic_launcher_monochrome\.png" />
+    </issue>
+
+    <!-- A noise's short title can be the same as its title; they're separate strings for
+         translators, written from l10n/strings.ts. -->
+    <issue id="DuplicateStrings" severity="ignore" />
+
+    <!-- A Java concern: R8 inlines the accessors in release builds, and there's no Java here. -->
+    <issue id="SyntheticAccessor" severity="ignore" />
+
+    <!-- Robolectric runs each test on the Android version its @Config names. -->
+    <issue id="NewApi">
+        <ignore path="src/test/**" />
+    </issue>
+
+    <!-- Compose's strong skipping, on by default, compares unstable parameters by instance. -->
+    <issue id="ComposeUnstableCollections" severity="ignore" />
+
+    <!-- App-wide settings provided once, at the root, like the theme. -->
+    <issue id="ComposeCompositionLocalUsage">
+        <option name="allowed-composition-locals" value="LocalAppearancePreferences,LocalLanguageControl" />
+    </issue>
+</lint>

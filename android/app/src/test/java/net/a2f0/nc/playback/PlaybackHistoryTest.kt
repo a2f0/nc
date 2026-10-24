@@ -6,13 +6,15 @@ import android.media.session.PlaybackState
 import android.os.Looper
 import net.a2f0.nc.NoiseType
 import net.a2f0.nc.audio.PlaybackEngine
-import net.a2f0.nc.history.ListeningHistory
-import net.a2f0.nc.diagnostics.PlaybackLog
 import net.a2f0.nc.diagnostics.PlaybackEvent
+import net.a2f0.nc.diagnostics.PlaybackLog
+import net.a2f0.nc.history.ListeningHistory
 import org.json.JSONObject
-import java.io.File
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,11 +24,12 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
-import org.robolectric.annotation.Implements
 import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.annotation.LooperMode
 import org.robolectric.shadow.api.Shadow
 import org.robolectric.shadows.ShadowMediaSession
-import org.robolectric.annotation.LooperMode
+import java.io.File
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -38,24 +41,31 @@ class PlaybackHistoryTest {
     @Implements(MediaSession::class)
     class RecordingSession : ShadowMediaSession() {
         var playback: PlaybackState? = null
+
         @Implementation
-        protected fun setPlaybackState(value: PlaybackState?) { playback = value }
+        protected fun setPlaybackState(value: PlaybackState?) {
+            playback = value
+        }
     }
 
     class TestService : PlaybackService() {
         val diagnostics by lazy { PlaybackLog(File(noBackupFilesDir, "playback-log-v1.json")) }
-        internal override fun createLog(): PlaybackLog = diagnostics
+        override fun createLog(): PlaybackLog = diagnostics
         lateinit var started: (NoiseType) -> Unit
         lateinit var failed: (String) -> Unit
         var stops = 0
         val plays = mutableListOf<NoiseType>()
-        internal override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine {
+        override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine {
             started = onStarted
             failed = onFailed
             return object : PlaybackEngine {
-                override fun play(type: NoiseType) { plays.add(type) }
-                override fun stop() { stops++ }
-                override fun setVolume(volume: Float) {}
+                override fun play(type: NoiseType) {
+                    plays.add(type)
+                }
+                override fun stop() {
+                    stops++
+                }
+                override fun setVolume(volume: Float) = Unit
             }
         }
     }
@@ -73,23 +83,31 @@ class PlaybackHistoryTest {
         history = ListeningHistory.get(context)
         history.flush().get(5, TimeUnit.SECONDS)
         initialIds = history.snapshot().map { it.id }.toSet()
-        controller = Robolectric.buildService(TestService::class.java, PlaybackService.playIntent(context, NoiseType.PINK))
-            .create().startCommand(0, 1)
+        controller =
+            Robolectric.buildService(TestService::class.java, PlaybackService.playIntent(context, NoiseType.PINK))
+                .create().startCommand(0, 1)
         service = controller.get()
         main.idle()
     }
 
-    @After fun tearDown() { if (!destroyed) controller.destroy(); main.idle() }
+    @After fun tearDown() {
+        if (!destroyed) controller.destroy()
+        main.idle()
+    }
 
     private fun rows() = history.snapshot().filter { it.id !in initialIds }
-    private fun field(name: String): Any = PlaybackService::class.java.getDeclaredField(name).apply { isAccessible = true }.get(service)!!
+    private fun field(name: String): Any =
+        PlaybackService::class.java.getDeclaredField(name).apply { isAccessible = true }.get(service)!!
     private fun focus(change: Int) {
         PlaybackService::class.java.getDeclaredMethod("onAudioFocusChange", Int::class.javaPrimitiveType)
             .apply { isAccessible = true }.invoke(service, change)
         main.idle()
     }
     private fun state() = Shadow.extract<RecordingSession>(field("session")).playback!!.state
-    private fun started() { service.started(NoiseType.PINK); main.idle() }
+    private fun started() {
+        service.started(NoiseType.PINK)
+        main.idle()
+    }
 
     @Test fun failedStartCreatesNoSessionAndStopsTheService() {
         assertTrue(rows().isEmpty())
@@ -174,5 +192,4 @@ class PlaybackHistoryTest {
         assertTrue(events.any { it.event == PlaybackEvent.PLAY_REQUESTED && it.detail == "widget" })
         assertEquals(PlaybackEvent.SERVICE_DESTROYED, events.last().event)
     }
-
 }

@@ -8,10 +8,15 @@ import org.junit.Test
 
 class ColorsTest {
     // Every color role, found by reflection so roles added to Material later are checked too.
-    private fun roles(scheme: ColorScheme): Map<String, Color> =
-        ColorScheme::class.java.methods
-            .filter { it.name.startsWith("get") && it.returnType == Long::class.javaPrimitiveType && it.parameterCount == 0 }
-            .associate { it.name.removePrefix("get").substringBefore('-') to Color((it.invoke(scheme) as Long).toULong()) }
+    private fun roles(scheme: ColorScheme): Map<String, Color> = ColorScheme::class.java.methods
+        .filter {
+            it.name.startsWith("get") && it.returnType == Long::class.javaPrimitiveType &&
+                it.parameterCount == 0
+        }
+        .associate {
+            it.name.removePrefix("get").substringBefore('-') to
+                Color((it.invoke(scheme) as Long).toULong())
+        }
 
     @Test
     fun everyRoleIsGray() {

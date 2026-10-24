@@ -9,3 +9,12 @@ CURRENT_PROJECT_VERSION = 1
 // The String Catalog (Shared/Localizable.xcstrings) is generated from l10n/ by `bun run
 // l10n`, so Xcode shouldn't add the strings it finds in the code to it.
 SWIFT_EMIT_LOC_STRINGS = NO
+
+// Strict compilation, matched by scripts/testing/testIosAudio.sh: warnings are errors, two
+// Swift 7 checks are on early (explicit `any`, and only using members of imported modules),
+// and unsafe code, such as the render callback's audio buffers, must be marked `unsafe`.
+SWIFT_TREAT_WARNINGS_AS_ERRORS = YES
+GCC_TREAT_WARNINGS_AS_ERRORS = YES
+SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY = YES
+SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES
+SWIFT_STRICT_MEMORY_SAFETY = YES

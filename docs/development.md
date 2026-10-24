@@ -62,9 +62,10 @@ unknown hooks; resolve local hook edits before adoption. Later installs omit `--
   a rebase skip the branch-name check; no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
 - **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
-  ShellCheck; RuboCop; shared agent skills are current; localization is current; fastlane
-  helper, web, localization, and workflow adapter tests; web typecheck, build, and deploy dry run; Android
-  debug build, lint, and unit tests; iOS simulator build, audio rendering checks, and player lifecycle tests on an isolated simulator.
+  ShellCheck; RuboCop; ktlint; SwiftFormat and SwiftLint; shared agent skills are current;
+  localization is current; fastlane helper, web, localization, and workflow adapter tests; web
+  typecheck, build, and deploy dry run; Android debug build, lint, unit tests, and detekt; iOS
+  simulator build, audio rendering checks, and player lifecycle tests on an isolated simulator.
 
 Branch names use the configured Conventional Commits types, with `main` exempt and no
 additional length cap. Native Git ref rules also apply. Commit headers keep the existing
@@ -86,6 +87,27 @@ per-step logs and source fingerprints. A failed command or changed source fails 
 Use `bun run agent-tool runs list --head <commit>` to find stored receipts. CI passes the actual
 PR branch explicitly and runs the same checks; `CI gate` remains the single required check,
 with every lint, Android, iOS, and web job required to succeed.
+
+## Native code quality
+
+Every tool below fails the gate on any finding, warnings included, both in pre-push and in CI.
+
+| | Kotlin (`android/`) | Swift (`ios/`) |
+|---|---|---|
+| Compiler | `allWarningsAsErrors` and `extraWarnings` (`app/build.gradle.kts`) | Swift 6 language mode; warnings as errors, `ExistentialAny`, `MemberImportVisibility`, and strict memory safety (`ios/Config/Base.xcconfig`; `testIosAudio.sh` compiles its harnesses the same way) |
+| Formatting | ktlint, `intellij_idea` style at 120 columns, as Android Studio formats with `kotlin.code.style=official` (`.editorconfig`) | SwiftFormat at 120 columns (`.swiftformat`) |
+| Linting | Android Lint with every check on and tests included, plus Slack's [Compose rules](https://slackhq.github.io/compose-lints/) (`app/lint.xml`); detekt with type resolution (`app/detekt.yml`) | SwiftLint `--strict` with a curated set of opt-in rules, including accessibility and force unwrapping (`.swiftlint.yml`) |
+
+`bun run lint:kotlin` and `bun run lint:swift` check formatting and style;
+`bun run format:kotlin` and `bun run format:swift` fix what the tools can. Detekt and Android
+Lint run in Gradle: `(cd android && ./gradlew lintDebug detektMain detektTest)`, with reports in
+`android/app/build/reports/`. The tools are pinned in `.mise.toml` and the version catalog.
+
+The configs record each exception with its reason: version checks that would fail whenever a
+newer release appears, generated images, and rules that don't apply to Compose, Robolectric, or
+the noise generators' published coefficients. Files that `bun run l10n` generates
+(`AppLanguage.swift`, `Language.kt`) are excluded from formatting. In code, suppress a single
+finding at its site with the reason beside it, rather than adding a baseline.
 
 ## Screenshots
 

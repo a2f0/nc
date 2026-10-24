@@ -12,6 +12,7 @@ enum Appearance: String, CaseIterable, Identifiable {
         case .dark: .dark
         }
     }
+
     var title: LocalizedStringResource {
         switch self {
         case .system: .appearanceSystem

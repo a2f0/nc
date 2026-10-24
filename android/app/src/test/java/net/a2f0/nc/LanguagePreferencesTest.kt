@@ -1,6 +1,7 @@
 package net.a2f0.nc
 
 import android.content.Context
+import androidx.core.content.edit
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,7 +13,8 @@ import java.util.Locale
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class LanguagePreferencesTest {
-    @Test @Config(sdk = [33])
+    @Test
+    @Config(sdk = [33])
     fun matchesRegionalSystemChoicesAndResolvesDeviceBeforeContextUpdates() {
         val context = RuntimeEnvironment.getApplication() as Context
         val manager = context.getSystemService(android.app.LocaleManager::class.java)
@@ -25,15 +27,19 @@ class LanguagePreferencesTest {
             setLocale(Locale.GERMAN)
         }
         LanguagePreferences.select(context, Language.DEVICE)
-        assertEquals(manager.systemLocales, LanguagePreferences.localized(context.createConfigurationContext(stale)).resources.configuration.locales)
+        assertEquals(
+            manager.systemLocales,
+            LanguagePreferences.localized(context.createConfigurationContext(stale)).resources.configuration.locales,
+        )
     }
 
-    @Test @Config(sdk = [33])
+    @Test
+    @Config(sdk = [33])
     fun migratesAnOlderPreferenceOnceAndRespectsAnExistingSystemChoice() {
         val context = RuntimeEnvironment.getApplication() as Context
         val manager = context.getSystemService(android.app.LocaleManager::class.java)
         val preferences = LanguagePreferences.preferences(context)
-        preferences.edit().putString(LanguagePreferences.KEY, "de").commit()
+        preferences.edit(commit = true) { putString(LanguagePreferences.KEY, "de") }
         LanguagePreferences.migrate(context)
         assertEquals(Language.DE, LanguagePreferences.selected(context))
         assertEquals(false, preferences.contains(LanguagePreferences.KEY))
@@ -41,16 +47,20 @@ class LanguagePreferencesTest {
         LanguagePreferences.migrate(context)
         assertEquals(Language.DEVICE, LanguagePreferences.selected(context))
         manager.applicationLocales = android.os.LocaleList.forLanguageTags("es-MX")
-        preferences.edit().putString(LanguagePreferences.KEY, "de").commit()
+        preferences.edit(commit = true) { putString(LanguagePreferences.KEY, "de") }
         LanguagePreferences.migrate(context)
         assertEquals(Language.ES, LanguagePreferences.selected(context))
     }
 
-    @Test @Config(sdk = [33])
+    @Test
+    @Config(sdk = [33])
     fun usesTheSystemPerAppSettingOnAndroid13() {
         val context = RuntimeEnvironment.getApplication() as Context
         LanguagePreferences.select(context, Language.DE)
-        assertEquals("de", context.getSystemService(android.app.LocaleManager::class.java).applicationLocales[0]?.toLanguageTag())
+        assertEquals(
+            "de",
+            context.getSystemService(android.app.LocaleManager::class.java).applicationLocales[0]?.toLanguageTag(),
+        )
         assertEquals(Language.DE, LanguagePreferences.selected(context))
         LanguagePreferences.select(context, Language.DEVICE)
         assertEquals(true, context.getSystemService(android.app.LocaleManager::class.java).applicationLocales.isEmpty)
@@ -59,7 +69,7 @@ class LanguagePreferencesTest {
 
     @Test fun persistsAndRestoresTheDeviceDefaultOnOlderAndroid() {
         val context = RuntimeEnvironment.getApplication() as Context
-        LanguagePreferences.preferences(context).edit().clear().commit()
+        LanguagePreferences.preferences(context).edit(commit = true) { clear() }
         val original = context.resources.configuration.locales[0]
         assertEquals(Language.DEVICE, LanguagePreferences.selected(context))
         LanguagePreferences.select(context, Language.DE)
@@ -72,12 +82,17 @@ class LanguagePreferencesTest {
         val spanish = android.content.res.Configuration(context.resources.configuration).apply {
             setLocale(Locale.forLanguageTag("es-ES"))
         }
-        assertEquals("Ajustes", LanguagePreferences.localized(context.createConfigurationContext(spanish)).getString(R.string.settings))
+        assertEquals(
+            "Ajustes",
+            LanguagePreferences.localized(context.createConfigurationContext(spanish)).getString(R.string.settings),
+        )
     }
 
     @Test fun invalidStoredTagsFallBackToDevice() {
         val context = RuntimeEnvironment.getApplication() as Context
-        LanguagePreferences.preferences(context).edit().putString(LanguagePreferences.KEY, "removed-language").commit()
+        LanguagePreferences.preferences(context).edit(commit = true) {
+            putString(LanguagePreferences.KEY, "removed-language")
+        }
         assertEquals(Language.DEVICE, LanguagePreferences.selected(context))
     }
 }
