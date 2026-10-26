@@ -66,6 +66,14 @@ Dir.mktmpdir do |dir|
     results["promote_release_#{index}"] = { uploads: lanes.calls_to(:upload_to_play_store), gradle: lanes.calls_to(:gradle) }
   end
 
+  # listing attaches to the newest internal release; the stub keeps it from
+  # staging real screenshots.
+  StoreListing.define_singleton_method(:stage_play_listing) { |_metadata, _screenshots, dir| File.join(dir, 'images') }
+  lanes = FakeFastfile.new(File.join(ARGV[0], 'fastlane/Fastfile'),
+    sh: ->(*) {}, google_play_track_version_codes: ->(**) { [12, 13] }, upload_to_play_store: ->(**) {})
+  lanes.run_lane(:android, :listing)
+  results[:listing] = { uploads: lanes.calls_to(:upload_to_play_store) }
+
   paths, store_calls = [], []
   expectations = []
   Readiness.define_singleton_method(:android_artifact) do |report, artifact, expected, bundletool:|
@@ -131,10 +139,10 @@ describe("Android release and readiness lanes", () => {
     expect(result.upload_release.events).toEqual([secrets, "wrapper", "build", "upload"]);
     expect(result.upload_release.lookups.map((call: { track: string }) => call.track)).toEqual(["production", "beta", "alpha", "internal"]);
     expect(result.upload_release.gradle[0].properties.ncVersionCode).toBe(14);
-    expect(result.upload_release.uploads).toEqual([expect.objectContaining({ package_name: "net.a2f0.nc", track: "internal", release_status: "draft", skip_upload_metadata: true, aab: expect.stringContaining("upload_release.aab") })]);
+    expect(result.upload_release.uploads).toEqual([expect.objectContaining({ package_name: "net.a2f0.nc", track: "internal", release_status: "draft", changes_not_sent_for_review: true, skip_upload_metadata: true, aab: expect.stringContaining("upload_release.aab") })]);
     expect(result.upload_release_beta.events).toEqual([secrets, "wrapper", "build", "upload"]);
     expect(result.upload_release_beta.gradle[0].properties.ncVersionCode).toBe(14);
-    expect(result.upload_release_beta.uploads).toEqual([expect.objectContaining({ track: "beta", release_status: "completed", skip_upload_metadata: true, aab: expect.stringContaining("upload_release_beta.aab") })]);
+    expect(result.upload_release_beta.uploads).toEqual([expect.objectContaining({ track: "beta", release_status: "completed", changes_not_sent_for_review: false, skip_upload_metadata: true, aab: expect.stringContaining("upload_release_beta.aab") })]);
   });
   test("rejects an unknown track or the old version_code: option before building", () => {
     expect(result.bad_track).toBe('Unsupported Play track "qa"; use one of production, beta, alpha, internal');
@@ -150,7 +158,14 @@ describe("Android release and readiness lanes", () => {
     expect(result.promote_release_0.uploads).toEqual([expect.objectContaining(promotion)]);
     expect(result.promote_release_0.uploads[0]).not.toHaveProperty("version_code");
     expect(result.promote_release_0.uploads[0]).not.toHaveProperty("rollout");
+    expect(result.promote_release_0.uploads[0]).not.toHaveProperty("changes_not_sent_for_review");
     expect(result.promote_release_1.uploads).toEqual([expect.objectContaining({ ...promotion, version_code: "18", rollout: "0.1" })]);
+  });
+  test("listing attaches to the newest internal release without sending it for review", () => {
+    expect(result.listing.uploads).toEqual([expect.objectContaining({
+      package_name: "net.a2f0.nc", track: "internal", version_code: 13, changes_not_sent_for_review: true,
+      skip_upload_apk: true, skip_upload_aab: true, skip_upload_changelogs: true,
+    })]);
   });
   test("offline and strict modes inspect without store calls, resolving explicit and environment tool paths", () => {
     expect(status(result.offline, "fixture.inspected")).toBe("verified");
