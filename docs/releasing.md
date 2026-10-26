@@ -50,6 +50,20 @@ one past the latest TestFlight build, and Android one past the highest version c
 Play track. `track:beta` is open testing, which Google reviews before testers get each
 release; `release_status:draft` uploads a release without rolling it out.
 
+Google Play reviews every change to the app in one submission. Committing a change that is
+sent for review cancels any review in progress and resubmits it with the new change, which
+restarts the wait. So internal releases and `android listing` aren't sent for review: they
+wait in Play Console's **Publishing overview** and go with the next change that is. An
+Android release goes:
+
+1. Upload internal releases while iterating (`bun run android:upload-release`).
+2. Upload the candidate to open testing (`bun run android:upload-release track:beta`),
+   which sends it, with any waiting changes, for review.
+3. Leave open testing and production alone until Google approves it: another `track:beta`
+   upload or a promotion restarts the review.
+4. Promote it (`bun run android:promote-release`), which is reviewed again, then wait for
+   that review the same way.
+
 The readiness lanes inspect artifacts and store state without submitting or publishing.
 See [readiness lanes](readiness.md) for tools, options, report interpretation, and
 device regression checks. The

@@ -116,8 +116,10 @@ platform :android do
   # without rolling it out. track:beta is open testing: Google reviews each
   # release before testers get it, and the track only takes releases once open
   # testing is set up in Play Console (its countries, and for a personal account
-  # created since November 2023, production access). Listing text and images go
-  # up separately, through the listing lane.
+  # created since November 2023, production access). Internal releases aren't sent
+  # for review: committing an edit that is sent cancels any review in progress and
+  # restarts it, so they wait for the next release that is. Listing text and images
+  # go up separately, through the listing lane.
   desc 'Run build_release, then upload to a Google Play track ' \
        '(build_number:, track:internal, release_status:completed)'
   lane :upload_release do |options|
@@ -127,6 +129,7 @@ platform :android do
       package_name: NATIVE_APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH,
       aab: aab, mapping: ANDROID_RELEASE_MAPPING,
       track: track, release_status: options.fetch(:release_status, 'completed'),
+      changes_not_sent_for_review: track == 'internal',
       skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
       skip_upload_images: true, skip_upload_screenshots: true
     )
@@ -171,7 +174,8 @@ platform :android do
   # supply only uploads a listing along with a release, so this attaches it to
   # the newest internal one. With no binaries, rollout, promotion, or changelogs,
   # supply only reads that release (it never calls update_track or
-  # upload_changelogs), so its status and notes stay as they are.
+  # upload_changelogs), so its status and notes stay as they are. Like internal
+  # releases, the listing isn't sent for review, so it can't restart one.
   desc 'Upload the Google Play listing: fastlane/metadata/android text, .screenshots/android screenshots, and graphics'
   lane :listing do
     version_code = google_play_track_version_codes(
@@ -186,7 +190,7 @@ platform :android do
       sh('sh', File.join(REPO_ROOT, 'scripts/build/buildImages.sh'), 'store', '--out', images)
       upload_to_play_store(
         package_name: NATIVE_APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH, metadata_path: dir,
-        track: 'internal', version_code: version_code,
+        track: 'internal', version_code: version_code, changes_not_sent_for_review: true,
         skip_upload_apk: true, skip_upload_aab: true, skip_upload_changelogs: true, sync_image_upload: true
       )
     end
