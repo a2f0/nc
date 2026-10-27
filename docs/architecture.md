@@ -1,8 +1,19 @@
 # Application behavior and architecture
 
-The [README](../README.md) compares the three native/web implementations and describes
-the audio generators. Keep behavior consistent across platforms; strings are shared through
-the [localization catalog](localization.md).
+The [README](../README.md#platforms) compares the three native/web implementations. Keep
+behavior consistent across platforms; strings are shared through the
+[localization catalog](localization.md).
+
+## Noise generation and volume
+
+Noise is generated in real time (xorshift PRNG for white; Paul Kellet's filter for pink; a
+leaky integrator for brown; filtered pink noise for the fan, throbbing with its blades over a
+hum, and for the waves, swelling and breaking at random), level-matched at about -17 dBFS
+(waves average about -23, so their crests don't clip), in stereo, with fade in/out. The
+generator is written three times, once per platform; the web and Android tests compare
+theirs with samples from the iOS one. Each app has its own volume slider on top of the
+system volume: saved between launches, squared so halfway is about -12 dB, and ramped over
+about 50 ms so dragging doesn't crackle.
 
 ## Appearance
 

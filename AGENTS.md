@@ -114,6 +114,8 @@ other than the one that wrote the change. The required check is `CI gate`. `bun 
 updates the shared skills after an `@a2f0/agent-tool` upgrade; don't edit them in `.agents/skills`
 or `.claude/skills`. Repository-owned skills live in `skills/`; `app-store-readiness` and the
 readiness libraries are shared with balebase (see [readiness](docs/readiness.md#shared-with-balebase)).
+Use `app-store-readiness` for an iOS, Android, and web pre-release assessment, and record
+candidate findings and prerequisites in the release PR.
 
 Versions: the root `package.json` version is the website's version, shown in its About sheet.
 Every shipped change moves it one patch past the base. After each base integration or repair
