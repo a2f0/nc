@@ -1,8 +1,22 @@
 # Development
 
-Start with the [setup and build commands](../README.md#setup).
+Start with the [quick start](../README.md#quick-start), then each platform's README for
+building it ([iOS](../ios/README.md), [Android](../android/README.md), [web](../web/README.md)).
 [AGENTS.md](../AGENTS.md) defines the full validation and shipping requirements;
 [dependency maintenance](dependency-upgrades.md) covers upgrades.
+
+## Setup
+
+The quick start installs the pinned tools, dependencies, and Git hooks. The full local gate
+(`bun run check`) also builds both native apps, so it needs Xcode and the Android SDK. The web
+integration tests need Playwright's Chromium, and the [screenshots](#screenshots) need
+ImageMagick and Maestro:
+
+```sh
+bun x --no-install playwright install --with-deps chromium   # web integration tests
+brew install imagemagick                                      # screenshots only
+curl -fsSL https://get.maestro.mobile.dev | bash              # screenshots only
+```
 
 ## Repository layout
 
