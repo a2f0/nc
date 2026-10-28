@@ -7,6 +7,7 @@
   "scripts": {
     "agent-tool": "agent-tool",
     "agent:run": "agent-tool run",
+    "agent:logs": "agent-tool logs",
     "agents:check": "agent-tool skills check",
     "agents:sync": "agent-tool skills install --apply",
     "android:build-release": "NATIVE_RELEASE_TIER=production bundle exec fastlane android build_release",

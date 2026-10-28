@@ -24,18 +24,7 @@ hooks, then run `bun run hooks:install --adopt` once; see [development](docs/dev
 `bun run check` (`scripts/testing/check.json`) is the full local gate. Pre-push checks
 its actual pushed refs and managed hook installation, then runs the same gate as CI.
 The group records each command, source fingerprint, and private log; run it directly
-to keep its structured receipt visible. Do not wrap a standalone group invocation
-in another capture command. A captured push includes its hook's group receipt in
-the push log; inspect it there or with `agent-tool runs list --head <commit>`.
-
-For agent sessions, use `bun run --silent agent:run --label <name> -- <command> [args...]`
-for finite noisy commands, including tests, builds, and pushes through the full
-pre-push hook. The harness preserves the exit status, stores complete output in a private
-temporary log, and prints a compact receipt plus a bounded tail on failure. Inspect a
-needed excerpt with `bun run --silent agent-tool logs <log-path>`; success alone does not
-establish that warnings are absent. Keep review findings, version preparation, audit
-reports, and infrastructure decisions visible by running those commands directly. Run
-interactive commands and development servers directly too.
+to keep its structured receipt visible.
 
 Run individual pieces while iterating:
 
@@ -61,6 +50,25 @@ Changes to app behavior should also be checked in a simulator, emulator, or brow
 (`bun run web:dev`); `sh scripts/testing/takeScreenshots.sh` drives the mobile apps end to end. On
 Android it runs the minified (R8) release build: debug builds aren't minified, so they can
 hide release-only crashes.
+
+## Output capture
+
+Run finite, noisy commands, such as installs, builds, tests, linters, and Git commands
+that run hooks, including pushes through the full pre-push gate, through
+`bun run --silent agent:run --label <name> -- <command> [args...]`, for example
+`bun run --silent agent:run --label web-build -- bun run web:build`. It keeps complete
+output in a private log, preserves the exit status, and prints a compact receipt, with a
+bounded excerpt of the log on failure. Read more with
+`bun run --silent agent:logs <log-path>`, raising `--tail-lines` or `--max-bytes` as
+needed, or with a targeted search of the log. A zero exit does not rule out warnings:
+inspect required warnings, timings, and artifacts before accepting a check. Run reviews,
+version preparation, audits, infrastructure previews, and run-group checks directly so
+their results stay visible, and run interactive tools and servers directly too. Never
+narrow a suite or silence warnings to reduce output.
+
+`bun run check` is a run group: do not wrap it, or any other standalone group invocation,
+in another capture command. A captured push includes its hook's group receipt in the push
+log; inspect it there or with `agent-tool runs list --head <commit>`.
 
 ## Conventions
 
