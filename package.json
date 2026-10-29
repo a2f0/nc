@@ -36,6 +36,7 @@
     "lint:commit-message": "sh scripts/checks/lintCommitMessage.sh",
     "lint:commit-trust": "agent-tool commits check",
     "lint:binary-files": "agent-tool checks binaries",
+    "lint:module-graph": "agent-tool graph check",
     "lint:scripts": "sh scripts/checks/lintScripts.sh",
     "lint:kotlin": "sh scripts/checks/lintKotlin.sh",
     "lint:swift": "sh scripts/checks/lintSwift.sh",

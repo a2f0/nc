@@ -34,6 +34,7 @@ bun run lint:kotlin                                   # ktlint (bun run format:k
 bun run lint:swift                                    # SwiftFormat and SwiftLint (bun run format:swift fixes)
 bundle exec rubocop                                   # Ruby: fastlane lanes and helpers, scripts
 bun run lint:binary-files --all                       # no binary files
+bun run lint:module-graph                             # import cycles and layers (docs/development.md)
 bun run agents:check                                  # shared skills and permission rules are current
 bun run l10n:check                                    # translations, generated strings, store listings
 bun run test                                          # fastlane, web, localization, and workflow tests

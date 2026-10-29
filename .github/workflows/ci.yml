@@ -57,6 +57,9 @@ jobs:
       - name: Check localization
         run: bun run l10n:check
 
+      - name: Check module graph
+        run: bun run lint:module-graph
+
       - name: Install web integration test browser
         run: bun x --no-install playwright install --with-deps chromium
 

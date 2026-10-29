@@ -50,6 +50,14 @@
       ]
     },
     {
+      "label": "module-graph",
+      "command": [
+        "bun",
+        "run",
+        "lint:module-graph"
+      ]
+    },
+    {
       "label": "tests",
       "command": [
         "bun",

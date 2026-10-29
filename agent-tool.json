@@ -330,5 +330,49 @@
         "executable": true
       }
     ]
+  },
+  "graph": {
+    "include": [
+      "fastlane/**",
+      "l10n/**",
+      "scripts/**",
+      "web/**"
+    ],
+    "exclude": [
+      "**/dist/**",
+      "**/metadata/**"
+    ],
+    "tests": [
+      "**/test/**",
+      "**/*.test.ts"
+    ],
+    "layers": [
+      {
+        "name": "l10n",
+        "include": [
+          "l10n/**"
+        ]
+      },
+      {
+        "name": "web-app",
+        "include": [
+          "web/src/**"
+        ]
+      },
+      {
+        "name": "web-tooling",
+        "include": [
+          "web/*.ts"
+        ]
+      },
+      {
+        "name": "tooling",
+        "include": [
+          "fastlane/**",
+          "scripts/**",
+          "web/**"
+        ]
+      }
+    ]
   }
 }
