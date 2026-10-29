@@ -5,7 +5,6 @@ import { dirname, join } from "node:path";
 import {
   androidQualifier,
   androidText,
-  type Catalog,
   iosText,
   listingErrors,
   outOfDate,
@@ -13,6 +12,7 @@ import {
   swiftKeyErrors,
   validate,
 } from "../build";
+import type { Catalog } from "../catalog";
 import { LOCALES } from "../locales";
 import { STRINGS } from "../strings";
 
