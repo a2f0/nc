@@ -34,7 +34,7 @@ bun run lint:kotlin                                   # ktlint (bun run format:k
 bun run lint:swift                                    # SwiftFormat and SwiftLint (bun run format:swift fixes)
 bundle exec rubocop                                   # Ruby: fastlane lanes and helpers, scripts
 bun run lint:binary-files --all                       # no binary files
-bun run agents:check                                  # shared skills are current
+bun run agents:check                                  # shared skills and permission rules are current
 bun run l10n:check                                    # translations, generated strings, store listings
 bun run test                                          # fastlane, web, localization, and workflow tests
 bun run web:check && bun run web:build                # web typecheck and build
@@ -53,10 +53,12 @@ hide release-only crashes.
 
 ## Output capture
 
-Run finite, noisy commands, such as installs, builds, tests, linters, and Git commands
-that run hooks, including pushes through the full pre-push gate, through
+Run Bun tests through `bun run agent-tool bun test --log [-- args...]`, for example
+`bun run agent-tool bun test --log -- fastlane web l10n scripts/testing`, and other finite,
+noisy commands, such as installs, builds, linters, package scripts, and Git commands that
+run hooks, including pushes through the full pre-push gate, through
 `bun run --silent agent:run --label <name> -- <command> [args...]`, for example
-`bun run --silent agent:run --label web-build -- bun run web:build`. It keeps complete
+`bun run --silent agent:run --label web-build -- bun run web:build`. Each keeps complete
 output in a private log, preserves the exit status, and prints a compact receipt, with a
 bounded excerpt of the log on failure. Read more with
 `bun run --silent agent:logs <log-path>`, raising `--tail-lines` or `--max-bytes` as
@@ -119,8 +121,10 @@ instructions.
 
 Use the `ship-pr` skill with `agent-tool` (`bun run agent-tool ...`). Review with an agent
 other than the one that wrote the change. The required check is `CI gate`. `bun run agents:sync`
-updates the shared skills after an `@a2f0/agent-tool` upgrade; don't edit them in `.agents/skills`
-or `.claude/skills`. Repository-owned skills live in `skills/`; `app-store-readiness` and the
+updates the shared skills and the generated harness permission rules (`.claude/settings.json`,
+`.codex/rules/agent-tool.rules`, `.agent-tool-permissions.json`) after an `@a2f0/agent-tool`
+upgrade or a change to `permissions.executables` in `agent-tool.json`; don't edit them by hand.
+Repository-owned skills live in `skills/`; `app-store-readiness` and the
 readiness libraries are shared with balebase (see [readiness](docs/readiness.md#shared-with-balebase)).
 Use `app-store-readiness` for an iOS, Android, and web pre-release assessment, and record
 candidate findings and prerequisites in the release PR.

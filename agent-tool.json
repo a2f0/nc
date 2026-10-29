@@ -306,6 +306,12 @@
   "binaries": {
     "allow": []
   },
+  "permissions": {
+    "executables": {
+      "playwright": "local",
+      "wrangler": "release"
+    }
+  },
   "hooks": {
     "files": [
       {

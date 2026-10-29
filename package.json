@@ -1,6 +1,6 @@
 {
   "name": "nc",
-  "version": "1.0.42",
+  "version": "1.0.43",
   "private": true,
   "license": "UNLICENSED",
   "packageManager": "bun@1.4.3",
@@ -8,8 +8,8 @@
     "agent-tool": "agent-tool",
     "agent:run": "agent-tool run",
     "agent:logs": "agent-tool logs",
-    "agents:check": "agent-tool skills check",
-    "agents:sync": "agent-tool skills install --apply",
+    "agents:check": "agent-tool skills check && agent-tool permissions check",
+    "agents:sync": "agent-tool skills install --apply && agent-tool permissions install --apply",
     "android:build-release": "NATIVE_RELEASE_TIER=production bundle exec fastlane android build_release",
     "android:listing": "NATIVE_RELEASE_TIER=production bundle exec fastlane android listing",
     "android:promote-release": "NATIVE_RELEASE_TIER=production bundle exec fastlane android promote_release",
@@ -44,7 +44,7 @@
     "web:deploy:preview": "wrangler deploy --config web/wrangler.jsonc --dry-run"
   },
   "devDependencies": {
-    "@a2f0/agent-tool": "0.1.23",
+    "@a2f0/agent-tool": "0.1.28",
     "@a2f0/ct-client": "0.1.5",
     "@types/bun": "1.4.3",
     "fake-indexeddb": "6.2.6",
