@@ -88,13 +88,28 @@ async function openSite(
   return { context, page, batches };
 }
 
+type Site = Awaited<ReturnType<typeof openSite>>;
+
+/** Ends the visit and waits for the batch its clicks send. */
+async function flush(page: Site["page"]) {
+  const sent = page.waitForResponse(endpoint);
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await sent;
+}
+
+/** Ends the visit, outlasts every flush timer, and checks that nothing was sent. */
+async function expectNothingSent(page: Site["page"], batches: Site["batches"]) {
+  await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
+  await page.clock.runFor(6_000);
+  await page.waitForTimeout(200);
+  expect(batches).toEqual([]);
+}
+
 test("trusted clicks flush with website attribution and GPC override", async () => {
   const { context, page, batches } = await openSite("gpc");
   try {
     await page.locator("#more").click();
-    const sent = page.waitForResponse(endpoint);
-    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-    await sent;
+    await flush(page);
     expect(batches).toHaveLength(1);
     expect(Object.keys(batches[0] ?? {}).sort()).toEqual(["environment", "events", "site"]);
     expect(await context.cookies()).toEqual([]);
@@ -127,9 +142,7 @@ test("links and controls omit sound names, text, values, and destinations", asyn
     await page.locator("#support").click();
     await page.locator("#more").click();
     await page.locator("#volume").click();
-    const sent = page.waitForResponse(endpoint);
-    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-    await sent;
+    await flush(page);
     expect(batches).toHaveLength(1);
     expect(batches[0]?.events).toHaveLength(2);
     expect(batches[0]?.events.map((event) => event.target)).toEqual(["a", "button"]);
@@ -151,9 +164,7 @@ test("sound cards, playback controls, and history omit sound identity", async ()
     await page.locator("#more").click();
     await page.locator("#open-history").click();
     await page.locator(".history-legend button").first().click();
-    const sent = page.waitForResponse(endpoint);
-    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-    await sent;
+    await flush(page);
     expect(batches).toHaveLength(1);
     expect(Object.keys(batches[0] ?? {}).sort()).toEqual(["environment", "events", "site"]);
     expect(batches[0]?.events).toHaveLength(5);
@@ -172,10 +183,7 @@ for (const privacy of ["dnt", "extension", "saved", "automation"] as const) {
     const { context, page, batches } = await openSite(privacy);
     try {
       await page.locator("#more").click();
-      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-      await page.clock.runFor(6_000);
-      await page.waitForTimeout(200);
-      expect(batches).toEqual([]);
+      await expectNothingSent(page, batches);
     } finally {
       await context.close();
     }
@@ -204,10 +212,7 @@ for (const site of ["http://localhost:8787", "https://preview.example.com"]) {
     const { context, page, batches } = await openSite("none", site);
     try {
       await page.locator("#more").click();
-      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-      await page.clock.runFor(6_000);
-      await page.waitForTimeout(200);
-      expect(batches).toEqual([]);
+      await expectNothingSent(page, batches);
     } finally {
       await context.close();
     }
@@ -218,10 +223,7 @@ test("default preview builds are inert even on the production host", async () =>
   const { context, page, batches } = await openSite("none", origin, preview);
   try {
     await page.locator("#more").click();
-    await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-    await page.clock.runFor(6_000);
-    await page.waitForTimeout(200);
-    expect(batches).toEqual([]);
+    await expectNothingSent(page, batches);
   } finally {
     await context.close();
   }
@@ -234,9 +236,7 @@ for (const path of ["/privacy", "/support"]) {
       await page.goto(origin + path + "?private=secret#sensitive", { waitUntil: "load" });
       await page.evaluate(() => document.addEventListener("click", (event) => event.preventDefault()));
       await page.locator("footer a").first().click();
-      const sent = page.waitForResponse(endpoint);
-      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-      await sent;
+      await flush(page);
       expect(batches).toHaveLength(1);
       expect(batches[0]?.events).toMatchObject([{ app: "web-app", page: "/", target: "a", label: null }]);
     } finally { await context.close(); }
@@ -254,10 +254,7 @@ for (const path of ["/ios/privacy", "/ios/support", "/android/privacy", "/androi
       expect(Object.keys(loaded)).not.toContain("/clickTracking.js");
       await page.evaluate(() => document.addEventListener("click", (event) => event.preventDefault()));
       await page.locator("footer a").first().click();
-      await page.evaluate(() => window.dispatchEvent(new Event("pagehide")));
-      await page.clock.runFor(6_000);
-      await page.waitForTimeout(200);
-      expect(batches).toEqual([]);
+      await expectNothingSent(page, batches);
     } finally { await context.close(); }
   }, 15_000);
 }
