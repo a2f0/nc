@@ -30,12 +30,17 @@ function resolveSpecifier(from: string, specifier: string): string | undefined {
 // A module's static relative imports and re-exports, `import type` included. Comments go first,
 // so prose naming a module is no edge; a dynamic `import()` loads lazily and is none either.
 // (TypeScript 7 has no compiler API, and Bun's import scanner drops type-only imports.)
-function importsOf(file: string): string[] {
-  const text = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  const specifiers = [
-    ...text.matchAll(/^\s*(?:import|export)\b[^;]*?\bfrom\s*["'](\.{1,2}\/[^"']+)["']/gm),
-    ...text.matchAll(/^\s*import\s*["'](\.{1,2}\/[^"']+)["']/gm),
+// A declaration starts a line or follows another's semicolon.
+function relativeSpecifiers(source: string): string[] {
+  const text = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  return [
+    ...text.matchAll(/(?:^|;)\s*(?:import|export)\b[^;]*?\bfrom\s*["'](\.{1,2}\/[^"']+)["']/gm),
+    ...text.matchAll(/(?:^|;)\s*import\s*["'](\.{1,2}\/[^"']+)["']/gm),
   ].map((match) => match[1]!);
+}
+
+function importsOf(file: string): string[] {
+  const specifiers = relativeSpecifiers(readFileSync(file, "utf8"));
   return [...new Set(specifiers.flatMap((specifier) => resolveSpecifier(file, specifier) ?? []))];
 }
 
@@ -103,4 +108,19 @@ test("cycle detection finds direct, indirect, and self cycles", () => {
 test("layers rank localization, then the web app, then its tooling, then tests and tools", () => {
   expect(["l10n/build.ts", "web/src/main.ts", "web/build.ts", "web/test/l10n.test.ts", "l10n/test/types.ts", "fastlane/test/lanes.test.ts"].map(layerOf))
     .toEqual(["l10n", "web-app", "web-tooling", "tooling", "tooling", "tooling"]);
+});
+
+test("import scanning finds every declaration form and skips comments and dynamic imports", () => {
+  const source = [
+    'import "./a"; import "./b";',
+    'import type { C } from "./c"; export { d } from "./d";',
+    "import {",
+    "  e,",
+    '} from "../e";',
+    '// import "./comment";',
+    '/* import "./block"; */',
+    'const lazy = import("./lazy");',
+    'import { f } from "node:fs";',
+  ].join("\n");
+  expect(relativeSpecifiers(source)).toEqual(["./c", "./d", "../e", "./a", "./b"]);
 });
