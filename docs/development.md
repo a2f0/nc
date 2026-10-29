@@ -44,11 +44,13 @@ below it, and no module imports itself around a cycle, type-only imports include
 1. `l10n/` (outside its `test/`): the string catalog, translations, and generators.
 2. `web/src/`: the web app, which imports `l10n/` directly.
 3. `web/*.ts`: the web build, development server, and Worker.
-4. Tests (`*/test/`, `*.test.ts`), `fastlane/`, and `scripts/`.
+4. `fastlane/`, `scripts/`, and the rest of `web/`: tools.
 
-`scripts/testing/moduleGraph.test.ts` enforces both rules in `bun run test`. Put a type or
-constant two modules share in a lower module both import, as `l10n/catalog.ts` does for
-`l10n/build.ts` and `l10n/languages.ts`.
+Tests (`*/test/`, `*.test.ts`) may import any layer, but no other module may import them.
+`bun run lint:module-graph` runs `agent-tool graph check` over the `graph` section of
+`agent-tool.json`, which holds these layers; `bun run check` and CI run it. A new production
+file outside every layer fails it too. Put a type or constant two modules share in a lower
+module both import, as `l10n/catalog.ts` does for `l10n/build.ts` and `l10n/languages.ts`.
 
 ## No binary files
 

@@ -70,7 +70,7 @@ test.each([true, false])("pre-commit validates attached branches (detached=%p)",
   }
 });
 
-test("pre-push checks unpublished commits for named and URL pushes", () => {
+test("pre-push checks unpublished commits for named and URL pushes", async () => {
   const directory = mkdtempSync(join(tmpdir(), "nc-push-hook-"));
   const run = (command: string, args: string[], input?: string) => spawnSync(command, args, {
     cwd: directory, encoding: "utf8", env: fixtureEnv, input,
@@ -114,25 +114,35 @@ test("pre-push checks unpublished commits for named and URL pushes", () => {
     const coauthored = git("commit-tree", "-S", tree, "-p", published, "-m", "chore: coauthored local change\n\nCo-authored-by: Example <example@example.com>");
     const zero = "0".repeat(40);
     const hook = join(directory, ".git/hooks/pre-push");
-    const push = (local: string, tip: string, name = "origin", destination = "refs/heads/chore/example") =>
-      run(hook, [name, remote], `refs/heads/chore/example ${local} ${destination} ${tip}\n`);
+    // Each push only reads the fixture repository, so the hook runs concurrently.
+    const push = async (local: string, tip: string, name = "origin", destination = "refs/heads/chore/example") => {
+      const child = Bun.spawn([hook, name, remote], {
+        cwd: directory, env: fixtureEnv, stdout: "pipe", stderr: "pipe",
+        stdin: new TextEncoder().encode(`refs/heads/chore/example ${local} ${destination} ${tip}\n`),
+      });
+      const [stdout] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text()]);
+      return { status: await child.exited, stdout };
+    };
+    const rejected = [[unsigned, "Signature does not meet"], [coauthored, "Co-authored-by trailer is forbidden"]] as const;
+    const cases: { push: ReturnType<typeof push>, error?: string }[] = [];
     for (const tip of [zero, base]) {
-      expect(push(published, tip).status).toBe(0);
-      expect(push(signed, tip).status).toBe(0);
-      for (const [local, error] of [[unsigned, "Signature does not meet"], [coauthored, "Co-authored-by trailer is forbidden"]]) {
-        const result = push(local!, tip);
-        expect(result.status).not.toBe(0);
-        expect(result.stdout).toContain(error!);
-      }
+      cases.push({ push: push(published, tip) }, { push: push(signed, tip) });
+      for (const [local, error] of rejected) cases.push({ push: push(local, tip), error });
     }
     for (const tip of [zero, published]) {
-      for (const [local, error] of [[unsigned, "Signature does not meet"], [coauthored, "Co-authored-by trailer is forbidden"]]) {
-        const result = push(local!, tip, remote);
+      for (const [local, error] of rejected) cases.push({ push: push(local, tip, remote), error });
+    }
+    cases.push({ push: push(published, base, "origin", "refs/heads/invalid-name"), error: "" });
+    const results = await Promise.all(cases.map(({ push: pending }) => pending));
+    for (const [index, { error }] of cases.entries()) {
+      const result = results[index]!;
+      if (error === undefined) {
+        expect(result.status).toBe(0);
+      } else {
         expect(result.status).not.toBe(0);
-        expect(result.stdout).toContain(error!);
+        expect(result.stdout).toContain(error);
       }
     }
-    expect(push(published, base, "origin", "refs/heads/invalid-name").status).not.toBe(0);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
