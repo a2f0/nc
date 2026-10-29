@@ -37,7 +37,7 @@ test.each([
   }
 });
 
-test.each([true, false])("pre-commit validates attached branches (detached=%s)", (detached) => {
+test.each([true, false])("pre-commit validates attached branches (detached=%p)", (detached) => {
   const directory = mkdtempSync(join(tmpdir(), "nc-detached-hook-"));
   const git = (...args: string[]) => {
     const result = spawnSync("git", args, { cwd: directory, encoding: "utf8", env: fixtureEnv });

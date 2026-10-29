@@ -1,4 +1,4 @@
-import type { Catalog } from "./build";
+import type { Catalog } from "./catalog";
 
 /** Native pickers use this same registry as web; no separately maintained language lists. */
 export function languageFiles({ locales }: Catalog): Map<string, string> {

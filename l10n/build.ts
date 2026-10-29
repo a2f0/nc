@@ -5,6 +5,7 @@
 
 import { mkdir, readdir, rm, rmdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import type { Catalog, CatalogLocale } from "./catalog";
 import { LOCALES } from "./locales";
 import { languageFiles } from "./languages";
 import { PLACEHOLDER, type Platform, type SourceString, STRINGS } from "./strings";
@@ -13,21 +14,6 @@ const REPO_ROOT = join(import.meta.dir, "..");
 const ANDROID_RES = "android/app/src/main/res";
 const IOS_CATALOG = "ios/Shared/Localizable.xcstrings";
 const NOTICE = "Generated from l10n/ by `bun run l10n`; edit those files instead.";
-
-/** Strings and languages to build: strings.ts and locales.ts, or a test's own. */
-export interface Catalog {
-  readonly strings: Readonly<Record<string, SourceString>>;
-  readonly locales: readonly [CatalogLocale, ...CatalogLocale[]];
-}
-
-interface CatalogLocale {
-  readonly tag: string;
-  readonly nativeName?: string;
-  readonly direction?: "ltr" | "rtl";
-  readonly appStore: readonly string[];
-  readonly play: readonly string[];
-  readonly translation?: Readonly<Record<string, string>>;
-}
 
 // MARK: - Checking
 
@@ -335,6 +321,7 @@ if (import.meta.main) {
     }
     for (const path of removed) {
       await rm(join(REPO_ROOT, path));
+      // Removes the directory only once it is empty; one still holding other files stays.
       await rmdir(dirname(join(REPO_ROOT, path))).catch(() => {});
       console.log(`Removed ${path}`);
     }

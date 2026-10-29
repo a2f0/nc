@@ -36,6 +36,20 @@ live in `skills/`.
 Detailed application behavior lives in [architecture](architecture.md), language
 maintenance in [localization](localization.md), and publishing in [releasing](releasing.md).
 
+### Module layers
+
+The TypeScript modules form layers, lowest first; each imports only its own layer and those
+below it, and no module imports itself around a cycle, type-only imports included:
+
+1. `l10n/` (outside its `test/`): the string catalog, translations, and generators.
+2. `web/src/`: the web app, which imports `l10n/` directly.
+3. `web/*.ts`: the web build, development server, and Worker.
+4. Tests (`*/test/`, `*.test.ts`), `fastlane/`, and `scripts/`.
+
+`scripts/testing/moduleGraph.test.ts` enforces both rules in `bun run test`. Put a type or
+constant two modules share in a lower module both import, as `l10n/catalog.ts` does for
+`l10n/build.ts` and `l10n/languages.ts`.
+
 ## No binary files
 
 Nothing binary is committed; the hooks reject it (`bun run lint:binary-files`).
