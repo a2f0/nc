@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 
@@ -118,10 +118,23 @@ const complete = {
   finishedAt: "2026-10-30T12:00:00.000Z",
 };
 
-async function guard(record?: object | string, rewrite?: object, platform = "ios"): Promise<{ result?: string; error?: string; messages: string[]; copied: boolean }> {
+async function guard(
+  record?: object | string,
+  rewrite?: object,
+  platform = "ios",
+  linked = false,
+): Promise<{ result?: string; error?: string; messages: string[]; copied: boolean }> {
   await rm(join(root, "shots"), { recursive: true, force: true });
+  await rm(join(root, "store"), { recursive: true, force: true });
   await rm(join(root, "out"), { recursive: true, force: true });
-  await mkdir(join(root, "shots"), { recursive: true });
+  if (linked) {
+    // Like a clone whose .screenshots links to the shared store.
+    await mkdir(join(root, "store/ios/iphone"), { recursive: true });
+    await writeFile(join(root, "store/ios/iphone/01-home.png"), "");
+    await symlink(join(root, "store"), join(root, "shots"));
+  } else {
+    await mkdir(join(root, "shots"), { recursive: true });
+  }
   await mkdir(join(root, "out"), { recursive: true });
   if (record !== undefined) {
     await writeFile(join(root, "shots/capture.json"), typeof record === "string" ? record : JSON.stringify(record));
@@ -162,11 +175,20 @@ test("a capture of only the other platform is refused before copying", async () 
   );
 });
 
-test("without a capture record the screenshots are copied as they are", async () => {
+test("without a capture record a plain folder is copied as it is", async () => {
   expect(await guard()).toEqual({ result: "copied", messages: [], copied: true });
 });
 
-test.each(["running", "failed"])("a %s shared capture is refused before copying", async (status) => {
+test("without a capture record a linked store is refused before copying", async () => {
+  expect(await guard(undefined, undefined, "ios", true)).toEqual({
+    error: "The shared screenshots have no capture record; capture once through the take-screenshots skill.",
+    messages: [],
+    copied: false,
+  });
+  expect((await guard(complete, undefined, "ios", true)).result).toBe("copied");
+});
+
+test.each(["running", "failed", "incomplete"])("a %s shared capture is refused before copying", async (status) => {
   const { finishedAt: _finishedAt, ...started } = complete;
   expect(await guard({ ...started, status })).toEqual({
     error: `The shared screenshot capture is ${status}; wait for it or recapture.`,

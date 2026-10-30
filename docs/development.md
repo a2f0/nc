@@ -176,7 +176,7 @@ matrix workspace's `matrix-artifacts` store, so a capture taken in any clone is 
 clone uploads, and no clone recaptures to release. A capture through the store records its
 commit and status in `.screenshots/capture.json`; the capture scripts replace files inside
 `.screenshots` and never remove the folder or that record, and refuse to write over a recorded
-capture unless the store is running them (its record says `running`). In a linked clone, capture
+capture, or into a linked store, unless the store is running them (its record says `running`). In a linked clone, capture
 from a commit through the store, which runs `bun run screenshots` and records it:
 
 ```sh
@@ -184,5 +184,7 @@ bun ~/.agents/skills/take-screenshots/scripts/artifacts.ts capture --apply [-- i
 ```
 
 The `listing` lanes upload the screenshots (see [releasing](releasing.md)) and refuse a capture
-that is still running, failed, taken from uncommitted changes, or limited to the other platform,
-or one that starts while they copy.
+that isn't `complete`, was taken from uncommitted changes, or is limited to the other platform,
+or one that starts while they copy. Without a record they upload a plain `.screenshots` folder
+(CI, or a clone not yet linked) as it is, but refuse a linked, non-empty store, whose images have
+no known commit until one capture through the store records them.

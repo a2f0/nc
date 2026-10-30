@@ -7,13 +7,14 @@ SCREENSHOT_FLOWS_DIR="$SCREENSHOTS_REPO_ROOT/maestro/screenshots"
 # shellcheck disable=SC2034
 SCREENSHOT_OUTPUT_ROOT="${SCREENSHOT_OUTPUT_DIR:-$SCREENSHOTS_REPO_ROOT/.screenshots}"
 
-# A capture.json there means the folder holds a shared capture, which the
-# take-screenshots skill records: it writes a running record before it runs this
-# capture. Writing over a finished capture without it would leave that record
-# vouching for images it didn't take, so refuse; this capture never edits it.
+# A capture.json there, or a link (the shared store), means the folder holds a
+# shared capture, which the take-screenshots skill records: it writes a running
+# record before it runs this capture. Writing there without it would leave images
+# no record vouches for, so refuse; this capture never edits the record.
 capture_record="$SCREENSHOT_OUTPUT_ROOT/capture.json"
-if [ -e "$capture_record" ] && ! grep -Eq '"status": *"running"' "$capture_record"; then
-  echo "Error: $SCREENSHOT_OUTPUT_ROOT holds a recorded shared capture; capture through the" >&2
+if { [ -e "$capture_record" ] || [ -L "$SCREENSHOT_OUTPUT_ROOT" ]; } &&
+  ! grep -Eqs '"status": *"running"' "$capture_record"; then
+  echo "Error: $SCREENSHOT_OUTPUT_ROOT holds shared screenshots; capture them through the" >&2
   echo "take-screenshots skill, or set SCREENSHOT_OUTPUT_DIR to another folder for a local look." >&2
   exit 1
 fi

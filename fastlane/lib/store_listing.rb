@@ -18,9 +18,14 @@ module StoreListing
   # a commit that took that platform and that no capture overlapped, and returns its
   # value. A shared capture writes a `running` capture.json before it touches an image,
   # so an unchanged record on both sides of the copy proves none started meanwhile.
-  # Without a record (a direct capture, or no store) it copies whatever is there.
+  # Without a record, a plain folder (CI, or a clone not yet linked) copies as it is, but
+  # a linked, non-empty store doesn't: its images have no known commit.
   def self.with_shared_capture(screenshots_dir, platform:, announce: ->(line) { puts line })
     before = read_capture(screenshots_dir)
+    if before.nil? && File.symlink?(screenshots_dir) && !Dir.empty?(screenshots_dir)
+      raise 'The shared screenshots have no capture record; capture once through the take-screenshots skill.'
+    end
+
     announce.call(capture_provenance(before, platform)) if before
     result = yield
     unless read_capture(screenshots_dir) == before

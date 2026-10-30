@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -17,10 +17,10 @@ afterEach(() => {
 
 // Runs the capture with no Maestro on PATH, so a capture that gets past the
 // shared-capture check stops at its first prerequisite instead of capturing.
-function capture(platform: string): { status: number | null; stderr: string } {
+function capture(platform: string, target = output): { status: number | null; stderr: string } {
   const result = spawnSync("sh", [join(root, "scripts/testing/takeScreenshots.sh"), platform], {
     encoding: "utf8",
-    env: { HOME: output, PATH: "/usr/bin:/bin", SCREENSHOT_OUTPUT_DIR: output },
+    env: { HOME: output, PATH: "/usr/bin:/bin", SCREENSHOT_OUTPUT_DIR: target },
   });
   return { status: result.status, stderr: result.stderr };
 }
@@ -41,7 +41,7 @@ test.each(["ios", "android"])("%s capture refuses to overwrite a recorded shared
     record(status);
     const result = capture(platform);
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain(`${output} holds a recorded shared capture`);
+    expect(result.stderr).toContain(`${output} holds shared screenshots`);
     expect(result.stderr).not.toContain("maestro is required");
   }
 });
@@ -53,4 +53,16 @@ test.each(["ios", "android"])("%s capture runs under a running record or without
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Error: maestro is required.");
   }
+});
+
+test.each(["ios", "android"])("%s capture refuses a linked store without a running record", (platform) => {
+  const store = join(output, "store");
+  const link = join(output, "link");
+  mkdirSync(store);
+  symlinkSync(store, link);
+  const refused = capture(platform, link);
+  expect(refused.status).toBe(1);
+  expect(refused.stderr).toContain(`${link} holds shared screenshots`);
+  writeFileSync(join(store, "capture.json"), '{\n  "status": "running"\n}\n');
+  expect(capture(platform, link).stderr).toContain("Error: maestro is required.");
 });
