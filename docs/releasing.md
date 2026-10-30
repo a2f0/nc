@@ -72,7 +72,10 @@ keeps binary recordings outside Git and checks that the public video matches the
 
 The listing text is committed under `fastlane/metadata/` (one file per field, in deliver's and
 supply's layouts); edit it there and rerun the lanes. Screenshots and graphics aren't committed,
-so take screenshots first. `ios listing` can't upload the text until the version has App Review
+so take screenshots first ([screenshots](development.md#screenshots)). The `listing` lanes print
+the commit the shared capture was taken from, and fail when it is still running, failed, taken
+from uncommitted changes, or replaced while they copy it; with no `.screenshots/capture.json`
+they upload the screenshots as they are. `ios listing` can't upload the text until the version has App Review
 contact details, which stay out of the repository: until they're added in App Store Connect, it
 uploads only the screenshots and fails. `android listing` attaches the listing to the newest
 internal release, as Google Play requires one.

@@ -37,6 +37,7 @@
     "lint:commit-trust": "agent-tool commits check",
     "lint:binary-files": "agent-tool checks binaries",
     "lint:module-graph": "agent-tool graph check",
+    "screenshots": "sh scripts/testing/takeScreenshots.sh",
     "lint:scripts": "sh scripts/checks/lintScripts.sh",
     "lint:kotlin": "sh scripts/checks/lintKotlin.sh",
     "lint:swift": "sh scripts/checks/lintSwift.sh",

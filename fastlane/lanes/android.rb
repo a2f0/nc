@@ -189,7 +189,9 @@ platform :android do
     end
 
     Dir.mktmpdir('nc-listing') do |dir|
-      images = StoreListing.stage_play_listing(ANDROID_METADATA_DIR, SCREENSHOTS_DIR, dir)
+      images = StoreListing.with_shared_capture(SCREENSHOTS_DIR, announce: UI.method(:message)) do
+        StoreListing.stage_play_listing(ANDROID_METADATA_DIR, SCREENSHOTS_DIR, dir)
+      end
       sh('sh', File.join(REPO_ROOT, 'scripts/build/buildImages.sh'), 'store', '--out', images)
       upload_to_play_store(
         package_name: NATIVE_APP_IDENTIFIER, json_key: GOOGLE_PLAY_JSON_KEY_PATH, metadata_path: dir,
