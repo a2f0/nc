@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 
@@ -87,5 +87,143 @@ test("missing screenshots point at the screenshot script", async () => {
 
   const staged = await stage("stage_ios_screenshots", join(root, "shots"), join(root, "out"));
 
-  expect(staged.error).toBe(`No screenshots in ${join(root, "shots/ios/ipad")}. Run scripts/testing/takeScreenshots.sh first.`);
+  expect(staged.error).toBe(`No screenshots in ${join(root, "shots/ios/ipad")}. Run bun run screenshots first.`);
+});
+
+// Runs the capture guard around a copy that stages a marker file and, when
+// given, rewrites capture.json the way an overlapping capture would.
+const guardScript = `
+require "json"
+require ARGV.fetch(0)
+
+platform, shots, output, rewrite = ARGV.drop(1)
+messages = []
+begin
+  result = StoreListing.with_shared_capture(shots, platform: platform, announce: ->(line) { messages << line }) do
+    File.write(File.join(output, "copied"), "")
+    File.write(File.join(shots, "capture.json"), rewrite) if rewrite
+    :copied
+  end
+  puts JSON.generate(result: result, messages: messages)
+rescue StandardError => e
+  puts JSON.generate(error: e.message, messages: messages)
+end
+`;
+
+const complete = {
+  status: "complete",
+  commit: "0123456789abcdef0123456789abcdef01234567",
+  dirty: false,
+  args: [],
+  finishedAt: "2026-10-30T12:00:00.000Z",
+};
+
+async function guard(
+  record?: object | string,
+  rewrite?: object,
+  platform = "ios",
+  linked = false,
+): Promise<{ result?: string; error?: string; messages: string[]; copied: boolean }> {
+  await rm(join(root, "shots"), { recursive: true, force: true });
+  await rm(join(root, "store"), { recursive: true, force: true });
+  await rm(join(root, "out"), { recursive: true, force: true });
+  if (linked) {
+    // Like a clone whose .screenshots links to the shared store.
+    await mkdir(join(root, "store/ios/iphone"), { recursive: true });
+    await writeFile(join(root, "store/ios/iphone/01-home.png"), "");
+    await symlink(join(root, "store"), join(root, "shots"));
+  } else {
+    await mkdir(join(root, "shots"), { recursive: true });
+  }
+  await mkdir(join(root, "out"), { recursive: true });
+  if (record !== undefined) {
+    await writeFile(join(root, "shots/capture.json"), typeof record === "string" ? record : JSON.stringify(record));
+  }
+  const args = [helperPath, platform, join(root, "shots"), join(root, "out"), ...(rewrite ? [JSON.stringify(rewrite)] : [])];
+  const child = Bun.spawn(["ruby", "-e", guardScript, ...args], { stderr: "pipe", stdout: "pipe" });
+  const [exitCode, stderr, stdout] = await Promise.all([
+    child.exited,
+    new Response(child.stderr).text(),
+    new Response(child.stdout).text(),
+  ]);
+  expect(exitCode, stderr).toBe(0);
+  const copied = (await readdir(join(root, "out"))).includes("copied");
+  return { ...JSON.parse(stdout), copied };
+}
+
+test("a complete shared capture is copied and named by its commit", async () => {
+  expect(await guard(complete)).toEqual({
+    result: "copied",
+    messages: ["Screenshots from 0123456789, captured 2026-10-30T12:00:00.000Z."],
+    copied: true,
+  });
+  expect((await guard({ ...complete, args: ["ios"] })).messages).toEqual([
+    "Screenshots from 0123456789, captured 2026-10-30T12:00:00.000Z (partial: ios).",
+  ]);
+});
+
+test("a capture of only the other platform is refused before copying", async () => {
+  expect(await guard({ ...complete, args: ["ios"] }, undefined, "android")).toEqual({
+    error: "The shared capture took only ios; capture android before uploading its screenshots.",
+    messages: [],
+    copied: false,
+  });
+  expect((await guard({ ...complete, args: ["android"] }, undefined, "android")).result).toBe("copied");
+  expect((await guard({ ...complete, args: ["all"] }, undefined, "android")).result).toBe("copied");
+  expect((await guard({ ...complete, args: ["ios", "android"] }, undefined, "android")).error).toBe(
+    "The shared capture took only ios; capture android before uploading its screenshots.",
+  );
+});
+
+test("without a capture record a plain folder is copied as it is", async () => {
+  expect(await guard()).toEqual({ result: "copied", messages: [], copied: true });
+});
+
+test("without a capture record a linked store is refused before copying", async () => {
+  expect(await guard(undefined, undefined, "ios", true)).toEqual({
+    error: "The shared screenshots have no capture record; capture once through the take-screenshots skill.",
+    messages: [],
+    copied: false,
+  });
+  expect((await guard(complete, undefined, "ios", true)).result).toBe("copied");
+});
+
+test.each(["running", "failed", "incomplete"])("a %s shared capture is refused before copying", async (status) => {
+  const { finishedAt: _finishedAt, ...started } = complete;
+  expect(await guard({ ...started, status })).toEqual({
+    error: `The shared screenshot capture is ${status}; wait for it or recapture.`,
+    messages: [],
+    copied: false,
+  });
+});
+
+test("a capture of uncommitted changes is refused before copying", async () => {
+  const { dirty: _dirty, ...unknown } = complete;
+  for (const record of [{ ...complete, dirty: true }, unknown]) {
+    expect(await guard(record)).toEqual({
+      error: "The shared screenshots were captured from uncommitted changes; recapture from a commit.",
+      messages: [],
+      copied: false,
+    });
+  }
+});
+
+test("a capture record without a full commit is refused before copying", async () => {
+  const { commit: _commit, ...missing } = complete;
+  for (const record of [missing, { ...complete, commit: "0123456789" }, { ...complete, commit: "HEAD" }]) {
+    expect(await guard(record)).toEqual({
+      error: "The shared screenshot capture record names no commit; recapture.",
+      messages: [],
+      copied: false,
+    });
+  }
+});
+
+test("a capture that starts while copying fails the upload", async () => {
+  const { finishedAt: _finishedAt, ...started } = complete;
+  const changed = await guard(complete, { ...started, status: "running" });
+  expect(changed.error).toBe("A screenshot capture started while copying the screenshots; upload again once it finishes.");
+  expect(changed.copied).toBe(true);
+  // A capture into a clone that had no record also counts.
+  expect((await guard(undefined, { ...started, status: "running" })).error).toBe(changed.error);
 });

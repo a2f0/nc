@@ -3,11 +3,17 @@ set -eu
 
 # Capture store screenshots for iOS (iPhone 6.9" and iPad 13") and Android
 # (phone) in light and dark appearance. Writes PNGs below the gitignored
-# .screenshots/ at the repo root.
+# .screenshots at the repo root, replacing files inside it but never the
+# directory itself, which may be a link to the shared matrix-artifacts store.
 #
-# Usage: takeScreenshots.sh [ios|android]   (default: both)
+# Usage: bun run screenshots [ios|android]   (default: both)
 # Requires: Maestro (https://maestro.mobile.dev), Xcode, the Android SDK, jq,
 # and ImageMagick.
+
+if [ "$#" -gt 1 ]; then
+  echo "Usage: $0 [ios|android]" >&2
+  exit 2
+fi
 
 SCRIPT_DIR="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
 

@@ -48,9 +48,10 @@ sh scripts/testing/testIosAudio.sh                    # iOS renderer, rendered o
 ```
 
 Changes to app behavior should also be checked in a simulator, emulator, or browser
-(`bun run web:dev`); `sh scripts/testing/takeScreenshots.sh` drives the mobile apps end to end. On
+(`bun run web:dev`); `bun run screenshots` drives the mobile apps end to end. On
 Android it runs the minified (R8) release build: debug builds aren't minified, so they can
-hide release-only crashes.
+hide release-only crashes. Take and check screenshots with the `take-screenshots` skill, which
+captures into the store every clone shares, and check its `status` before a listing upload.
 
 ## Output capture
 

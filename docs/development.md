@@ -69,8 +69,9 @@ destination, and `agent-tool images` renders them
 tools to install. Builds regenerate them when the sources change (an Xcode build phase and a
 Gradle task before `preBuild`), or run `sh scripts/build/buildImages.sh`; `web/build.ts` writes the
 favicon and social preview image, and the `android listing` lane the Play Store graphics. To look at those, run
-`sh scripts/build/buildImages.sh store --out .screenshots/android` (`--out` is relative to the
-repository root). Android 12+ splash screens only take a solid color, so Android uses the
+`sh scripts/build/buildImages.sh store --out .store-graphics/android` (`--out` is relative to the
+repository root; `.store-graphics` is gitignored). Store graphics render in each clone and never
+go in `.screenshots`, which may be a link that `agent-tool images` refuses to write through. Android 12+ splash screens only take a solid color, so Android uses the
 background's average color there. Android adaptive icons show the inner 72dp of a 108dp layer,
 which the mark fills; its bottom row is stretched to the layer's edge so the columns still
 reach the bottom under any launcher mask. Single-color renders (themed and notification icons),
@@ -145,13 +146,45 @@ finding at its site with the reason beside it, rather than adding a baseline.
 ## Screenshots
 
 ```sh
-sh scripts/testing/takeScreenshots.sh [ios|android]
+bun run screenshots [ios|android]   # default: both
 ```
+
+Needs Maestro, ImageMagick, jq, Xcode with the iOS 26.2 simulator runtime
+(`IOS_SCREENSHOT_RUNTIME_VERSION` picks another), and the Android SDK with its emulator and
+command-line tools (see [setup](#setup)). Maestro drives one device at a time on a machine,
+so don't start a capture while another Maestro run is going.
 
 Drives the app with the Maestro flows in `maestro/screenshots/` on dedicated simulators and
 a headless emulator, with a fixed 9:41 status bar, in light and dark appearance. Android
 runs the minified release build, signed with the debug key. Writes store-sized PNGs (no
-alpha) to the gitignored `.screenshots/`: iPhone 6.9" (1320x2868), iPad 13" (2064x2752),
-and Android phone (1080x1920, within Google Play's 2:1 limit). iOS captures use the full
-rectangle without black device corners. The `listing` lanes upload them
-(see [releasing](releasing.md)).
+alpha) below the gitignored `.screenshots` (or `SCREENSHOT_OUTPUT_DIR`): iPhone 6.9"
+(1320x2868), iPad 13" (2064x2752), and Android phone (1080x1920, within Google Play's 2:1
+limit). iOS captures use the full rectangle without black device corners.
+
+```text
+.screenshots/
+  capture.json                 # shared capture record (see below)
+  ios/iphone/01-home.png, 02-playing.png, 03-playing-dark.png
+  ios/ipad/01-home.png, 02-playing.png, 03-playing-dark.png
+  ios/maestro/                 # Maestro's run reports
+  android/phone/01-home.png, 02-playing.png, 03-playing-dark.png
+  android/maestro/, android/emulator.log
+```
+
+Captures are shared: every clone's `.screenshots` is normally a link to this project's folder in the
+matrix workspace's `matrix-artifacts` store, so a capture taken in any clone is the one every
+clone uploads, and no clone recaptures to release. A capture through the store records its
+commit and status in `.screenshots/capture.json`; the capture scripts replace files inside
+`.screenshots` and never remove the folder or that record, and refuse to write over a recorded
+capture, or into a linked store, unless the store is running them (its record says `running`). In a linked clone, capture
+from a commit through the store, which runs `bun run screenshots` and records it:
+
+```sh
+bun ~/.agents/skills/take-screenshots/scripts/artifacts.ts capture --apply [-- ios|android]
+```
+
+The `listing` lanes upload the screenshots (see [releasing](releasing.md)) and refuse a capture
+that isn't `complete`, names no full commit, wasn't taken from a clean tree, or is limited to the other platform,
+or one that starts while they copy. Without a record they upload a plain `.screenshots` folder
+(CI, or a clone not yet linked) as it is, but refuse a linked, non-empty store, whose images have
+no known commit until one capture through the store records them.
