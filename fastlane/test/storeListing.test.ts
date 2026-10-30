@@ -198,11 +198,25 @@ test.each(["running", "failed", "incomplete"])("a %s shared capture is refused b
 });
 
 test("a capture of uncommitted changes is refused before copying", async () => {
-  expect(await guard({ ...complete, dirty: true })).toEqual({
-    error: "The shared screenshots were captured from uncommitted changes; recapture from a commit.",
-    messages: [],
-    copied: false,
-  });
+  const { dirty: _dirty, ...unknown } = complete;
+  for (const record of [{ ...complete, dirty: true }, unknown]) {
+    expect(await guard(record)).toEqual({
+      error: "The shared screenshots were captured from uncommitted changes; recapture from a commit.",
+      messages: [],
+      copied: false,
+    });
+  }
+});
+
+test("a capture record without a full commit is refused before copying", async () => {
+  const { commit: _commit, ...missing } = complete;
+  for (const record of [missing, { ...complete, commit: "0123456789" }, { ...complete, commit: "HEAD" }]) {
+    expect(await guard(record)).toEqual({
+      error: "The shared screenshot capture record names no commit; recapture.",
+      messages: [],
+      copied: false,
+    });
+  }
 });
 
 test("a capture that starts while copying fails the upload", async () => {

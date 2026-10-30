@@ -184,7 +184,7 @@ bun ~/.agents/skills/take-screenshots/scripts/artifacts.ts capture --apply [-- i
 ```
 
 The `listing` lanes upload the screenshots (see [releasing](releasing.md)) and refuse a capture
-that isn't `complete`, was taken from uncommitted changes, or is limited to the other platform,
+that isn't `complete`, names no full commit, wasn't taken from a clean tree, or is limited to the other platform,
 or one that starts while they copy. Without a record they upload a plain `.screenshots` folder
 (CI, or a clone not yet linked) as it is, but refuse a linked, non-empty store, whose images have
 no known commit until one capture through the store records them.

@@ -47,12 +47,22 @@ module StoreListing
     unless record['status'] == 'complete'
       raise "The shared screenshot capture is #{record['status']}; wait for it or recapture."
     end
-    raise 'The shared screenshots were captured from uncommitted changes; recapture from a commit.' if record['dirty']
+
+    check_commit(record)
     # `bun run screenshots ios` leaves the Android screenshots from an earlier capture;
     # takeScreenshots.sh reads only its first argument.
     return if [nil, 'all', platform].include?(args.first)
 
     raise "The shared capture took only #{args.first}; capture #{platform} before uploading its screenshots."
+  end
+
+  def self.check_commit(record)
+    unless record['commit'].is_a?(String) && record['commit'].match?(/\A[0-9a-f]{40}\z/)
+      raise 'The shared screenshot capture record names no commit; recapture.'
+    end
+    return if record['dirty'] == false
+
+    raise 'The shared screenshots were captured from uncommitted changes; recapture from a commit.'
   end
 
   def self.read_capture(screenshots_dir)
