@@ -178,4 +178,5 @@ commit and status in `.screenshots/capture.json`; the capture scripts replace fi
 `.screenshots` and never remove the folder or that record, and refuse to write over a recorded
 capture unless the store is running them (its record says `running`). The `listing` lanes upload the
 screenshots (see [releasing](releasing.md)) and refuse a capture that is still running,
-failed, or taken from uncommitted changes, or one that starts while they copy.
+failed, taken from uncommitted changes, or limited to the other platform, or one that starts
+while they copy.

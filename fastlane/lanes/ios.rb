@@ -294,7 +294,7 @@ platform :ios do
     api_key = app_store_connect_api_key(**app_store_connect_api_key_options)
     review_details = ios_review_details?
     Dir.mktmpdir('nc-listing') do |dir|
-      screenshots = StoreListing.with_shared_capture(SCREENSHOTS_DIR, announce: UI.method(:message)) do
+      screenshots = StoreListing.with_shared_capture(SCREENSHOTS_DIR, platform: 'ios', announce: UI.method(:message)) do
         StoreListing.stage_ios_screenshots(SCREENSHOTS_DIR, dir)
       end
       deliver(

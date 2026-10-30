@@ -70,7 +70,7 @@ Dir.mktmpdir do |dir|
   # staging real screenshots or reading this clone's capture record.
   guarded = []
   StoreListing.define_singleton_method(:stage_play_listing) { |_metadata, _screenshots, dir| File.join(dir, 'images') }
-  StoreListing.define_singleton_method(:with_shared_capture) { |screenshots, **, &copy| guarded << screenshots; copy.call }
+  StoreListing.define_singleton_method(:with_shared_capture) { |screenshots, platform:, **, &copy| guarded << [screenshots, platform]; copy.call }
   lanes = FakeFastfile.new(File.join(ARGV[0], 'fastlane/Fastfile'),
     sh: ->(*) {}, google_play_track_version_codes: ->(**) { [12, 13] }, upload_to_play_store: ->(**) {})
   lanes.run_lane(:android, :listing)
@@ -169,7 +169,7 @@ describe("Android release and readiness lanes", () => {
       package_name: "net.a2f0.nc", track: "internal", version_code: 13, changes_not_sent_for_review: true, rescue_changes_not_sent_for_review: false,
       skip_upload_apk: true, skip_upload_aab: true, skip_upload_changelogs: true,
     })]);
-    expect(result.listing.guarded).toEqual([resolve(root, ".screenshots")]);
+    expect(result.listing.guarded).toEqual([[resolve(root, ".screenshots"), "android"]]);
   });
   test("offline and strict modes inspect without store calls, resolving explicit and environment tool paths", () => {
     expect(status(result.offline, "fixture.inspected")).toBe("verified");

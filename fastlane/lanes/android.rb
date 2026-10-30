@@ -189,7 +189,7 @@ platform :android do
     end
 
     Dir.mktmpdir('nc-listing') do |dir|
-      images = StoreListing.with_shared_capture(SCREENSHOTS_DIR, announce: UI.method(:message)) do
+      images = StoreListing.with_shared_capture(SCREENSHOTS_DIR, platform: 'android', announce: UI.method(:message)) do
         StoreListing.stage_play_listing(ANDROID_METADATA_DIR, SCREENSHOTS_DIR, dir)
       end
       sh('sh', File.join(REPO_ROOT, 'scripts/build/buildImages.sh'), 'store', '--out', images)

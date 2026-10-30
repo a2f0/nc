@@ -14,14 +14,14 @@ module StoreListing
   IOS_DEVICES = %w[iphone ipad].freeze
   CAPTURE_RECORD = 'capture.json'
 
-  # Runs the block that copies screenshots only from a finished capture of a commit
-  # that no capture overlapped, and returns its value. A shared capture writes a
-  # `running` capture.json before it touches an image, so an unchanged record on both
-  # sides of the copy proves none started meanwhile. Without a record (a direct capture,
-  # or no store) it copies whatever is there.
-  def self.with_shared_capture(screenshots_dir, announce: ->(line) { puts line })
+  # Runs the block that copies a platform's screenshots only from a finished capture of
+  # a commit that took that platform and that no capture overlapped, and returns its
+  # value. A shared capture writes a `running` capture.json before it touches an image,
+  # so an unchanged record on both sides of the copy proves none started meanwhile.
+  # Without a record (a direct capture, or no store) it copies whatever is there.
+  def self.with_shared_capture(screenshots_dir, platform:, announce: ->(line) { puts line })
     before = read_capture(screenshots_dir)
-    announce.call(capture_provenance(before)) if before
+    announce.call(capture_provenance(before, platform)) if before
     result = yield
     unless read_capture(screenshots_dir) == before
       raise 'A screenshot capture started while copying the screenshots; upload again once it finishes.'
@@ -30,16 +30,23 @@ module StoreListing
     result
   end
 
-  def self.capture_provenance(raw)
+  def self.capture_provenance(raw, platform)
     record = JSON.parse(raw)
+    args = Array(record['args'])
+    check_capture(record, args, platform)
+    partial = args.empty? ? '' : " (partial: #{args.join(' ')})"
+    "Screenshots from #{record['commit'].to_s[0, 10]}, captured #{record['finishedAt']}#{partial}."
+  end
+
+  def self.check_capture(record, args, platform)
     unless record['status'] == 'complete'
       raise "The shared screenshot capture is #{record['status']}; wait for it or recapture."
     end
     raise 'The shared screenshots were captured from uncommitted changes; recapture from a commit.' if record['dirty']
+    # `bun run screenshots ios` leaves the Android screenshots from an earlier capture.
+    return if args.empty? || args.include?(platform)
 
-    args = Array(record['args'])
-    partial = args.empty? ? '' : " (partial: #{args.join(' ')})"
-    "Screenshots from #{record['commit'].to_s[0, 10]}, captured #{record['finishedAt']}#{partial}."
+    raise "The shared capture took only #{args.join(' ')}; capture #{platform} before uploading its screenshots."
   end
 
   def self.read_capture(screenshots_dir)

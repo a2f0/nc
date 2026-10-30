@@ -96,10 +96,10 @@ const guardScript = `
 require "json"
 require ARGV.fetch(0)
 
-shots, output, rewrite = ARGV.drop(1)
+platform, shots, output, rewrite = ARGV.drop(1)
 messages = []
 begin
-  result = StoreListing.with_shared_capture(shots, announce: ->(line) { messages << line }) do
+  result = StoreListing.with_shared_capture(shots, platform: platform, announce: ->(line) { messages << line }) do
     File.write(File.join(output, "copied"), "")
     File.write(File.join(shots, "capture.json"), rewrite) if rewrite
     :copied
@@ -118,7 +118,7 @@ const complete = {
   finishedAt: "2026-10-30T12:00:00.000Z",
 };
 
-async function guard(record?: object | string, rewrite?: object): Promise<{ result?: string; error?: string; messages: string[]; copied: boolean }> {
+async function guard(record?: object | string, rewrite?: object, platform = "ios"): Promise<{ result?: string; error?: string; messages: string[]; copied: boolean }> {
   await rm(join(root, "shots"), { recursive: true, force: true });
   await rm(join(root, "out"), { recursive: true, force: true });
   await mkdir(join(root, "shots"), { recursive: true });
@@ -126,7 +126,7 @@ async function guard(record?: object | string, rewrite?: object): Promise<{ resu
   if (record !== undefined) {
     await writeFile(join(root, "shots/capture.json"), typeof record === "string" ? record : JSON.stringify(record));
   }
-  const args = [helperPath, join(root, "shots"), join(root, "out"), ...(rewrite ? [JSON.stringify(rewrite)] : [])];
+  const args = [helperPath, platform, join(root, "shots"), join(root, "out"), ...(rewrite ? [JSON.stringify(rewrite)] : [])];
   const child = Bun.spawn(["ruby", "-e", guardScript, ...args], { stderr: "pipe", stdout: "pipe" });
   const [exitCode, stderr, stdout] = await Promise.all([
     child.exited,
@@ -147,6 +147,15 @@ test("a complete shared capture is copied and named by its commit", async () => 
   expect((await guard({ ...complete, args: ["ios"] })).messages).toEqual([
     "Screenshots from 0123456789, captured 2026-10-30T12:00:00.000Z (partial: ios).",
   ]);
+});
+
+test("a capture of only the other platform is refused before copying", async () => {
+  expect(await guard({ ...complete, args: ["ios"] }, undefined, "android")).toEqual({
+    error: "The shared capture took only ios; capture android before uploading its screenshots.",
+    messages: [],
+    copied: false,
+  });
+  expect((await guard({ ...complete, args: ["android"] }, undefined, "android")).result).toBe("copied");
 });
 
 test("without a capture record the screenshots are copied as they are", async () => {
