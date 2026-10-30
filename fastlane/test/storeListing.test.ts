@@ -156,6 +156,7 @@ test("a capture of only the other platform is refused before copying", async () 
     copied: false,
   });
   expect((await guard({ ...complete, args: ["android"] }, undefined, "android")).result).toBe("copied");
+  expect((await guard({ ...complete, args: ["all"] }, undefined, "android")).result).toBe("copied");
 });
 
 test("without a capture record the screenshots are copied as they are", async () => {

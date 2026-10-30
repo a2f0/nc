@@ -44,7 +44,7 @@ module StoreListing
     end
     raise 'The shared screenshots were captured from uncommitted changes; recapture from a commit.' if record['dirty']
     # `bun run screenshots ios` leaves the Android screenshots from an earlier capture.
-    return if args.empty? || args.include?(platform)
+    return if args.empty? || args.include?(platform) || args.include?('all')
 
     raise "The shared capture took only #{args.join(' ')}; capture #{platform} before uploading its screenshots."
   end
