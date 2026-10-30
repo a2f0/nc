@@ -175,6 +175,7 @@ Captures are shared: every clone's `.screenshots` is normally a link to this pro
 matrix workspace's `matrix-artifacts` store, so a capture taken in any clone is the one every
 clone uploads, and no clone recaptures to release. A capture through the store records its
 commit and status in `.screenshots/capture.json`; the capture scripts replace files inside
-`.screenshots` and never remove the folder or that record. The `listing` lanes upload the
+`.screenshots` and never remove the folder or that record, and refuse to write over a recorded
+capture unless the store is running them (its record says `running`). The `listing` lanes upload the
 screenshots (see [releasing](releasing.md)) and refuse a capture that is still running,
 failed, or taken from uncommitted changes, or one that starts while they copy.

@@ -1,0 +1,50 @@
+import { afterEach, beforeEach, expect, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+
+const root = resolve(import.meta.dir, "../..");
+let output = "";
+
+beforeEach(() => {
+  output = mkdtempSync(join(tmpdir(), "nc-screenshots-"));
+});
+
+afterEach(() => {
+  rmSync(output, { recursive: true, force: true });
+});
+
+// Runs the capture with no Maestro on PATH, so a capture that gets past the
+// shared-capture check stops at its first prerequisite instead of capturing.
+function capture(platform: string): { status: number | null; stderr: string } {
+  const result = spawnSync("sh", [join(root, "scripts/testing/takeScreenshots.sh"), platform], {
+    encoding: "utf8",
+    env: { HOME: output, PATH: "/usr/bin:/bin", SCREENSHOT_OUTPUT_DIR: output },
+  });
+  return { status: result.status, stderr: result.stderr };
+}
+
+function record(status: string): void {
+  const record = { schemaVersion: 1, status, commit: "0".repeat(40), dirty: false, args: [] };
+  writeFileSync(join(output, "capture.json"), `${JSON.stringify(record, null, 2)}\n`);
+}
+
+test.each(["ios", "android"])("%s capture refuses to overwrite a recorded shared capture", (platform) => {
+  for (const status of ["complete", "failed"]) {
+    record(status);
+    const result = capture(platform);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(`${output} holds a recorded shared capture`);
+    expect(result.stderr).not.toContain("maestro is required");
+  }
+});
+
+test.each(["ios", "android"])("%s capture runs under a running record or without one", (platform) => {
+  for (const setup of [() => record("running"), () => rmSync(join(output, "capture.json"), { force: true })]) {
+    setup();
+    const result = capture(platform);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Error: maestro is required.");
+  }
+});
