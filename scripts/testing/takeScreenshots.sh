@@ -10,6 +10,11 @@ set -eu
 # Requires: Maestro (https://maestro.mobile.dev), Xcode, the Android SDK, jq,
 # and ImageMagick.
 
+if [ "$#" -gt 1 ]; then
+  echo "Usage: $0 [ios|android]" >&2
+  exit 2
+fi
+
 SCRIPT_DIR="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)"
 
 case "${1:-all}" in

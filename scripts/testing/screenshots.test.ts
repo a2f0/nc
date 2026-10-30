@@ -30,6 +30,12 @@ function record(status: string): void {
   writeFileSync(join(output, "capture.json"), `${JSON.stringify(record, null, 2)}\n`);
 }
 
+test("capture takes at most one platform", () => {
+  const result = spawnSync("sh", [join(root, "scripts/testing/takeScreenshots.sh"), "ios", "android"], { encoding: "utf8" });
+  expect(result.status).toBe(2);
+  expect(result.stderr).toContain("Usage:");
+});
+
 test.each(["ios", "android"])("%s capture refuses to overwrite a recorded shared capture", (platform) => {
   for (const status of ["complete", "failed"]) {
     record(status);

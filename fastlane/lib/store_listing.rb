@@ -43,10 +43,11 @@ module StoreListing
       raise "The shared screenshot capture is #{record['status']}; wait for it or recapture."
     end
     raise 'The shared screenshots were captured from uncommitted changes; recapture from a commit.' if record['dirty']
-    # `bun run screenshots ios` leaves the Android screenshots from an earlier capture.
-    return if args.empty? || args.include?(platform) || args.include?('all')
+    # `bun run screenshots ios` leaves the Android screenshots from an earlier capture;
+    # takeScreenshots.sh reads only its first argument.
+    return if [nil, 'all', platform].include?(args.first)
 
-    raise "The shared capture took only #{args.join(' ')}; capture #{platform} before uploading its screenshots."
+    raise "The shared capture took only #{args.first}; capture #{platform} before uploading its screenshots."
   end
 
   def self.read_capture(screenshots_dir)
