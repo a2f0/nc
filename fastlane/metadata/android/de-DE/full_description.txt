@@ -9,6 +9,7 @@ Jeder Klang entsteht in Echtzeit und ist keine Aufnahme in Endlosschleife, desha
 • Ventilator: ein gleichmäßiger Luftstrom über einem tiefen Brummen.
 • Spielt im Hintergrund und bei gesperrtem Gerät weiter. Stoppe es auf dem Sperrbildschirm oder in der Benachrichtigung.
 • Widget für den Startbildschirm: Starte und stoppe jeden Klang mit einem Tippen.
+• Hörverlauf: Sieh dir an, wie viele Minuten du jeden Klang gehört hast, Tag für Tag oder für den gesamten Zeitraum. Er bleibt auf deinem Gerät.
 • Eigener Lautstärkeregler, damit das Rauschen leiser sein kann als deine anderen Audioinhalte. Die Einstellung bleibt beim nächsten Start erhalten.
 • Sanftes Ein- und Ausblenden.
 

@@ -9,6 +9,7 @@ Every sound is made in real time, not looped from a recording, so there's no rep
 • Fan: a steady stream of air over a low hum.
 • Keeps playing in the background and with your phone locked. Stop it from the lock screen or Control Center.
 • Home screen widget: start and stop each sound with one tap.
+• Listening history: see how many minutes you've played each sound, day by day or for all time. It stays on your device.
 • Its own volume slider, so the noise can sit quieter than your other audio. It's remembered between launches.
 • Fades gently in and out.
 

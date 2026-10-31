@@ -193,7 +193,7 @@ private struct SettingsSheet: View {
     }
 }
 
-/// App identity, other platforms, privacy, and support.
+/// App identity, the website, privacy, and support.
 private struct AboutSheet: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .title3) private var logoSize = 64
@@ -202,7 +202,6 @@ private struct AboutSheet: View {
     private static let version = info["CFBundleShortVersionString"] as? String ?? ""
     private static let build = info["CFBundleVersion"] as? String ?? ""
 
-    private static let playURL = URL(string: "https://play.google.com/store/apps/details?id=net.a2f0.nc")!
     private static let webURL = URL(string: "https://nc.a2f0.net")!
 
     var body: some View {
@@ -240,14 +239,13 @@ private struct AboutSheet: View {
         }
     }
 
-    /// "Also available on Android and the web.", with each of those linked.
+    /// "Also available on the web.", with "the web" linked. App Review Guideline 2.3.10 keeps
+    /// other mobile platforms, such as the Android app, out of the iOS app.
     private static var alsoOn: AttributedString {
-        let android = LanguageSettings.string(.platformAndroid)
         let web = LanguageSettings.string(.platformWeb)
-        var text = AttributedString(LanguageSettings.string(.aboutAlsoAndroidWeb(android, web)))
-        for (label, url) in [(android, playURL), (web, webURL)] {
-            guard let range = text.range(of: label) else { continue }
-            text[range].link = url
+        var text = AttributedString(LanguageSettings.string(.aboutAlsoWeb(web)))
+        if let range = text.range(of: web) {
+            text[range].link = webURL
             text[range].underlineStyle = Text.LineStyle.single
         }
         return text

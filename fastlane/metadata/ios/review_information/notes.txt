@@ -1,1 +1,22 @@
-No account or sign-in. Tap a sound (White Noise, Pink Noise, Brown Noise, Fan, or Ocean Waves) to start, and tap it again to stop. It keeps playing in the background and with the phone locked (stop it from the lock screen or Control Center), and the home screen widget starts and stops each sound.
+SCREEN RECORDING
+A recording of the flow below on a physical iPhone running the latest iOS, starting from launch, is attached to our App Review reply. The app has no account registration, login, account deletion, user-generated content, or in-app purchases, so it has none of those flows to show.
+
+PURPOSE AND AUDIENCE
+Noise Connoisseur plays white, pink, and brown noise, a fan, and ocean waves for anyone who uses steady background sound to fall asleep, focus, study, or cover up a noisy room. Most noise apps loop short recordings, which leaves an audible seam or repeating pattern, and many depend on ads, subscriptions, or tracking. Noise Connoisseur synthesizes each sound live on the device, so it never repeats. It is a one-time purchase with no ads, accounts, subscriptions, or in-app purchases; it works entirely offline and collects no data.
+
+HOW TO USE IT
+No login, demo account, or sample files are needed.
+1. Launch the app. The main screen lists the five sounds.
+2. Tap a sound to start it; it fades in. Tap it again to stop it.
+3. Go to the Home Screen or lock the phone: the sound keeps playing. Pause, resume, or stop it from the Lock Screen or Control Center.
+4. Add the Noise Connoisseur widget from the Home Screen widget gallery. Each of its buttons starts or stops a sound without opening the app.
+5. The ••• menu at the top right opens Listening history (minutes played per sound, by week or for all time, kept only on the device), Settings (language, light or dark appearance, the app's own volume, and a log of playback starts and stops that can be shared), Rate App, and About (privacy policy and support links).
+
+EXTERNAL SERVICES
+None. The app makes no network requests and contains no third-party SDKs, analytics, advertising, authentication, payment, or AI services. Sound is generated on the device with Apple's AVFoundation, and the App Store handles the purchase. Rate App opens the App Store; the privacy policy, support, and website links in About open our own website (nc.a2f0.net) in the browser.
+
+REGIONAL DIFFERENCES
+None. The app works the same way, with the same features and content, in every region. Its interface is in English, German, and Spanish, following the device language unless another is chosen in Settings.
+
+REGULATED INDUSTRIES AND THIRD-PARTY MATERIAL
+Not applicable. The app is not a medical device and makes no medical, health, or treatment claims. Every sound is synthesized by our own code; the app contains no recordings, music, or other third-party or licensed material.
