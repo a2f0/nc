@@ -137,7 +137,7 @@
     <string name="about_also_ios_web">Also available on %1$s and %2$s.</string>
     <!-- Link to the app in the App Store, in the About sheet's “Also available on …” line. -->
     <string name="platform_ios" translatable="false">iOS</string>
-    <!-- Link to the website, which fills {web} in the About sheet's “Also available on {android} and {web}.” or “Also available on {ios} and {web}.” -->
+    <!-- Link to the website, which fills {web} in the About sheet's “Also available on {web}.” or “Also available on {ios} and {web}.” -->
     <string name="platform_web">the web</string>
     <!-- Label for the button that closes a sheet, such as History, Settings, or About. -->
     <string name="close">Close</string>

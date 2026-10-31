@@ -83,7 +83,7 @@ export default {
   about: "Acerca de",
   about_version: "Versión {version} ({build})",
   about_site_version: "Versión {version}",
-  about_also_android_web: "También disponible en {android} y en {web}.",
+  about_also_web: "También disponible en {web}.",
   about_also_ios_web: "También disponible en {ios} y en {web}.",
   about_also_ios_android: "También disponible en {ios} y {android}.",
   platform_web: "la web",

@@ -386,9 +386,9 @@ export const STRINGS = {
     comment: "In the website's About sheet, under its name. {version}: the website's version, such as “1.0.4”.",
     platforms: ["web"],
   },
-  about_also_android_web: {
-    text: "Also available on {android} and {web}.",
-    comment: "In the About sheet, under the app's name and version. {android}: a link to the app in Google Play, “Android”. {web}: a link to the website, “the web” (translated separately).",
+  about_also_web: {
+    text: "Also available on {web}.",
+    comment: "In the About sheet, under the app's name and version. {web}: a link to the website, “the web” (translated separately). The iOS app doesn't name other mobile platforms (App Review Guideline 2.3.10).",
     platforms: ["ios"],
   },
   about_also_ios_web: {
@@ -404,7 +404,7 @@ export const STRINGS = {
   platform_android: {
     text: "Android",
     comment: "Link to the app in Google Play, in the About sheet's “Also available on …” line.",
-    platforms: ["ios", "web"],
+    platforms: ["web"],
     translatable: false,
   },
   platform_ios: {
@@ -415,7 +415,7 @@ export const STRINGS = {
   },
   platform_web: {
     text: "the web",
-    comment: "Link to the website, which fills {web} in the About sheet's “Also available on {android} and {web}.” or “Also available on {ios} and {web}.”",
+    comment: "Link to the website, which fills {web} in the About sheet's “Also available on {web}.” or “Also available on {ios} and {web}.”",
     platforms: ["android", "ios"],
   },
   close: {

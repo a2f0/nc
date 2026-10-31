@@ -9,6 +9,7 @@ Cada sonido se crea en tiempo real; no es una grabación en bucle, así que no h
 • Ventilador: un flujo de aire constante sobre un zumbido grave.
 • Sigue sonando en segundo plano y con el dispositivo bloqueado. Detenlo desde la pantalla bloqueada o el Centro de control.
 • Widget para la pantalla de inicio: inicia y detén cada sonido con un toque.
+• Historial de escucha: mira cuántos minutos has escuchado cada sonido, día a día o de todo el tiempo. Se queda en tu dispositivo.
 • Control de volumen propio, para que el ruido suene más bajo que el resto de tu audio. La app lo recuerda para la próxima vez.
 • Entra y sale con un fundido suave.
 

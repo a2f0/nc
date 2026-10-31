@@ -13,8 +13,8 @@ import {
   validate,
 } from "../build";
 import type { Catalog } from "../catalog";
-import { LOCALES } from "../locales";
-import { STRINGS } from "../strings";
+import { LOCALES, localeText } from "../locales";
+import { type SourceString, STRINGS, type StringKey } from "../strings";
 
 const EN = { tag: "en", appStore: ["en-US"], play: ["en-US"] };
 const DE = { tag: "de", appStore: ["de-DE"], play: ["de-DE"] };
@@ -241,4 +241,15 @@ describe("repository checks", () => {
       removed: ["android/app/src/main/res/values-fr/strings.xml"],
     });
   });
+});
+
+// App Review Guideline 2.3.10: the iOS app doesn't name other mobile platforms.
+test("iOS strings name no other mobile platform in any language", () => {
+  const ios = (Object.keys(STRINGS) as StringKey[]).filter(key => {
+    const { platforms }: SourceString = STRINGS[key];
+    return !platforms || platforms.includes("ios");
+  });
+  const named = LOCALES.flatMap(locale =>
+    ios.filter(key => /android|google play|\{android\}/i.test(localeText(locale, key))).map(key => `${locale.tag}:${key}`));
+  expect(named).toEqual([]);
 });

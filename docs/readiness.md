@@ -41,6 +41,16 @@ writes the report first, then fails unless the result is `ready_within_tested_sc
 Manual device/accessibility checks, declarations, and current policy review remain unverified
 in these automated reports, so strict mode intentionally cannot certify full readiness alone.
 
+## App Review information
+
+`fastlane/metadata/ios/review_information/notes.txt` answers App Review's standard questions
+(purpose and audience, how to use the app, external services, regional differences, regulated
+or third-party material) and points to the screen recording; `ios listing` uploads it to the
+App Review Information notes, and `fastlane/test/reviewInformation.test.ts` keeps each section
+present. Before each submission, check the notes against the candidate, install that build
+from TestFlight on a physical iPhone running the latest iOS, and record the flow they describe
+from launch. Attach the recording to the App Review reply; it stays out of Git.
+
 ## Tools and build provenance
 
 Use the repository's Ruby/Bundler setup and existing [store credentials](releasing.md#stores). iOS

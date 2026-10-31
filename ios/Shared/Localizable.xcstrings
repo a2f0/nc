@@ -25,26 +25,26 @@
         }
       }
     },
-    "about_also_android_web" : {
-      "comment" : "In the About sheet, under the app's name and version. {android}: a link to the app in Google Play, “Android”. {web}: a link to the website, “the web” (translated separately).",
+    "about_also_web" : {
+      "comment" : "In the About sheet, under the app's name and version. {web}: a link to the website, “the web” (translated separately). The iOS app doesn't name other mobile platforms (App Review Guideline 2.3.10).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auch für %1$@ und im %2$@ erhältlich."
+            "value" : "Auch im %1$@ erhältlich."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Also available on %1$@ and %2$@."
+            "value" : "Also available on %1$@."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "También disponible en %1$@ y en %2$@."
+            "value" : "También disponible en %1$@."
           }
         }
       }
@@ -1394,33 +1394,8 @@
         }
       }
     },
-    "platform_android" : {
-      "comment" : "Link to the app in Google Play, in the About sheet's “Also available on …” line.",
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Android"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Android"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Android"
-          }
-        }
-      },
-      "shouldTranslate" : false
-    },
     "platform_web" : {
-      "comment" : "Link to the website, which fills {web} in the About sheet's “Also available on {android} and {web}.” or “Also available on {ios} and {web}.”",
+      "comment" : "Link to the website, which fills {web} in the About sheet's “Also available on {web}.” or “Also available on {ios} and {web}.”",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
