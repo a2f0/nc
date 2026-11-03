@@ -12,6 +12,14 @@ compatibility matrices and migrations together, then run the full local gate and
 audit resolved dependencies. Keep intentional minimum OS versions and supported toolchains
 explicit. Bun owns `bun.lock`; Bundler owns `Gemfile.lock`.
 
+Select Ruby and isolate `GEM_HOME`, `GEM_PATH`, `BUNDLE_PATH`,
+`BUNDLE_APP_CONFIG`, and `BUNDLE_USER_HOME` before any gem or bundle write;
+selecting the Ruby executable alone does not isolate an inherited bundle.
+Keep these paths in this checkout or its task runtime and verify `gem env home`
+and `bundle config get path` in the command environment. Preserve frozen installs
+for validation. After changing Ruby, install the locked native extensions under
+that Ruby rather than reusing extensions compiled by another runtime.
+
 The iOS and Android implementations have separate native toolchains, so validate
 both platform builds when updating coupled native dependencies. The web version
 has its own TypeScript build and Worker configuration. Its package version and
@@ -78,6 +86,18 @@ read-only preview of the affected store operations is available; never run a
 publishing lane just to test an upgrade. Recheck the selected
 [Fastlane release notes](https://github.com/fastlane/fastlane/releases) and Ruby
 advisory audit before revisiting it.
+
+Holding deployment tools does not make their dependency graphs advisory-free.
+Wrangler's Miniflare dependency pins an affected Undici release; the
+[Undici advisory](https://github.com/advisories/GHSA-4qv8-2p9j-2685)
+identifies fixes starting at 7.30.1 on that line. Addressable in Fastlane and its
+SDK graph is also affected by
+[upstream advisories](https://github.com/sporkmonger/addressable/security/advisories/GHSA-4w5q-wg7v-w6gp),
+with fixes starting at 2.9.1. Re-audit both complete graphs on every upgrade.
+Revisit these holds with the owning group's real-environment preview and actual
+integration checks; an override, mocked lane test, or successful bundle alone
+cannot establish safety. Remove these constraints only after the resolved graph
+is fixed and the corresponding preview and regression gates pass.
 
 ## Recording an upgrade
 
