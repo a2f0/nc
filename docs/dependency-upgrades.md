@@ -12,6 +12,19 @@ compatibility matrices and migrations together, then run the full local gate and
 audit resolved dependencies. Keep intentional minimum OS versions and supported toolchains
 explicit. Bun owns `bun.lock`; Bundler owns `Gemfile.lock`.
 
+Select Ruby and isolate `GEM_HOME`, `GEM_PATH`, `BUNDLE_PATH`,
+`BUNDLE_APP_CONFIG`, and `BUNDLE_USER_HOME` before any gem or bundle write;
+selecting the Ruby executable alone does not isolate an inherited bundle.
+Keep these paths in this checkout or its task runtime and verify `gem env home`
+and `bundle config get path` in the command environment. Preserve frozen installs
+for validation. After changing Ruby, install the locked native extensions under
+that Ruby rather than reusing extensions compiled by another runtime.
+On macOS, verify that `clang` resolves to Xcode rather than another toolchain.
+If invoking Xcode's compiler directly, set `SDKROOT` from
+`xcrun --sdk macosx --show-sdk-path` for the bundle installation command only;
+otherwise native extension probes can fail to find standard headers. Do not carry
+that macOS SDK selection into iOS builds or change the global Xcode selection.
+
 The iOS and Android implementations have separate native toolchains, so validate
 both platform builds when updating coupled native dependencies. The web version
 has its own TypeScript build and Worker configuration. Its package version and
@@ -39,9 +52,18 @@ version remains API 26. Regenerate both wrapper scripts with the selected Gradle
 and verify the distribution SHA-256; the wrapper jar stays gitignored.
 
 Android Lint's version follows AGP, and Slack's compose-lints is built against a specific
-Lint version, so move them together; detekt is also built against particular Kotlin, AGP,
-and Gradle versions. Detekt stays on its 2.0 prereleases, built for Kotlin 2.4 and AGP 9,
-because its stable 1.23 line predates both; take 2.0.0 once it's released. ktlint,
+Lint version, so move them together. Keep AGP on the 9.4 line while
+[compose-lints 1.6.1](https://github.com/slackhq/compose-lints/blob/1.6.1/gradle/libs.versions.toml)
+is built and tested against Lint 32.4.1; AGP 9.5 moves Lint to 32.5.0. Revisit with
+upstream compatibility evidence and the full Android lint, detekt, build, unit, and
+minified playback gates, not merely the AGP minimum Gradle/JDK table.
+
+Detekt's [compatibility table](https://detekt.dev/docs/introduction/compatibility/)
+lists its build/test combination, not enforced version equality: its Gradle plugin uses
+compile-only Kotlin/AGP dependencies. A newer combination still needs real
+analysis/build verification; do not call it upstream-tested solely because resolution
+succeeds. Detekt stays on its 2.0 prereleases, built for Kotlin 2.4
+and AGP 9, because its stable 1.23 line predates both; take 2.0.0 once it's released. ktlint,
 SwiftFormat, and SwiftLint are pinned in `.mise.toml`. A new release, or a new Xcode with
 its warnings now errors, can add findings: run `bun run format:kotlin`, `bun run format:swift`,
 and the Gradle analysis, and fix them in the upgrade.
@@ -78,6 +100,28 @@ read-only preview of the affected store operations is available; never run a
 publishing lane just to test an upgrade. Recheck the selected
 [Fastlane release notes](https://github.com/fastlane/fastlane/releases) and Ruby
 advisory audit before revisiting it.
+
+Holding deployment tools does not make their dependency graphs advisory-free.
+Wrangler's Miniflare dependency pins an affected Undici release; the
+[Undici advisory](https://github.com/advisories/GHSA-4qv8-2p9j-2685)
+identifies fixes starting at 7.30.1 on that line.
+
+Addressable in Fastlane and its SDK graph is also affected by
+[upstream advisories](https://github.com/sporkmonger/addressable/security/advisories/GHSA-4w5q-wg7v-w6gp),
+with fixes starting at 2.9.1. Unlike Undici, this is not a resolver constraint:
+Fastlane's existing ranges permit 2.9.1 without upgrading Fastlane. The blocker
+is the missing read-only store-effect preview for the changed URI-handling library
+used by the release SDKs. Local mocked lane tests do not exercise the real Apple
+and Google API requests, signing/profile operations, or publication targets.
+Keep this advisory-bearing dependency unchanged until that preview can establish
+those effects without publishing or mutating production. Once available, prefer a
+conservative Addressable-only update and its regression checks; do not require a
+Fastlane version change merely to take the security patch.
+
+Re-audit both complete graphs on every upgrade. An override, mocked lane test, or
+successful bundle alone cannot establish store/deployment safety. Remove these
+holds only after the resolved graph is fixed and the corresponding real-environment
+preview and regression gates pass.
 
 ## Recording an upgrade
 

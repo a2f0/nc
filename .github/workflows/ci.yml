@@ -22,14 +22,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Bun and ShellCheck
-        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.17
+          version: 2026.11.0
           install_args: bun shellcheck
           cache: true
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@b1da4809b005e0178fe08a1d57317bffc00b7b4c # v1.332.0
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           ruby-version: .ruby-version
           bundler-cache: true
@@ -76,9 +76,9 @@ jobs:
 
       # The Gradle build renders its images with agent-tool (scripts/build/buildImages.sh).
       - name: Set up Bun, Java, Gradle, and ktlint
-        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.17
+          version: 2026.11.0
           install_args: bun java gradle ktlint
           cache: true
 
@@ -104,9 +104,9 @@ jobs:
 
       # The Xcode build renders its images with agent-tool (scripts/build/buildImages.sh).
       - name: Set up Bun, SwiftFormat, and SwiftLint
-        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.17
+          version: 2026.11.0
           install_args: bun swiftformat swiftlint
           cache: true
 
@@ -141,9 +141,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Bun
-        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.17
+          version: 2026.11.0
           install_args: bun
           cache: true
 
@@ -171,9 +171,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Bun
-        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.17
+          version: 2026.11.0
           install_args: bun
           cache: true
 
