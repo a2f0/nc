@@ -19,6 +19,11 @@ Keep these paths in this checkout or its task runtime and verify `gem env home`
 and `bundle config get path` in the command environment. Preserve frozen installs
 for validation. After changing Ruby, install the locked native extensions under
 that Ruby rather than reusing extensions compiled by another runtime.
+On macOS, verify that `clang` resolves to Xcode rather than another toolchain.
+If invoking Xcode's compiler directly, set `SDKROOT` from
+`xcrun --sdk macosx --show-sdk-path` for the bundle installation command only;
+otherwise native extension probes can fail to find standard headers. Do not carry
+that macOS SDK selection into iOS builds or change the global Xcode selection.
 
 The iOS and Android implementations have separate native toolchains, so validate
 both platform builds when updating coupled native dependencies. The web version
