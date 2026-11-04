@@ -60,10 +60,9 @@ minified playback gates, not merely the AGP minimum Gradle/JDK table.
 
 Detekt's [compatibility table](https://detekt.dev/docs/introduction/compatibility/)
 lists its build/test combination, not enforced version equality: its Gradle plugin uses
-compile-only Kotlin/AGP dependencies. The 2.0 alpha.6 baseline is Kotlin 2.4.10,
-AGP 9.3.1, Gradle 9.6.1, and a highest tested JDK of 25. NC's newer combination
-still needs real analysis/build verification; do not call it upstream-tested solely
-because resolution succeeds. Detekt stays on its 2.0 prereleases, built for Kotlin 2.4
+compile-only Kotlin/AGP dependencies. A newer combination still needs real
+analysis/build verification; do not call it upstream-tested solely because resolution
+succeeds. Detekt stays on its 2.0 prereleases, built for Kotlin 2.4
 and AGP 9, because its stable 1.23 line predates both; take 2.0.0 once it's released. ktlint,
 SwiftFormat, and SwiftLint are pinned in `.mise.toml`. A new release, or a new Xcode with
 its warnings now errors, can add findings: run `bun run format:kotlin`, `bun run format:swift`,
@@ -105,14 +104,24 @@ advisory audit before revisiting it.
 Holding deployment tools does not make their dependency graphs advisory-free.
 Wrangler's Miniflare dependency pins an affected Undici release; the
 [Undici advisory](https://github.com/advisories/GHSA-4qv8-2p9j-2685)
-identifies fixes starting at 7.30.1 on that line. Addressable in Fastlane and its
-SDK graph is also affected by
+identifies fixes starting at 7.30.1 on that line.
+
+Addressable in Fastlane and its SDK graph is also affected by
 [upstream advisories](https://github.com/sporkmonger/addressable/security/advisories/GHSA-4w5q-wg7v-w6gp),
-with fixes starting at 2.9.1. Re-audit both complete graphs on every upgrade.
-Revisit these holds with the owning group's real-environment preview and actual
-integration checks; an override, mocked lane test, or successful bundle alone
-cannot establish safety. Remove these constraints only after the resolved graph
-is fixed and the corresponding preview and regression gates pass.
+with fixes starting at 2.9.1. Unlike Undici, this is not a resolver constraint:
+Fastlane's existing ranges permit 2.9.1 without upgrading Fastlane. The blocker
+is the missing read-only store-effect preview for the changed URI-handling library
+used by the release SDKs. Local mocked lane tests do not exercise the real Apple
+and Google API requests, signing/profile operations, or publication targets.
+Keep this advisory-bearing dependency unchanged until that preview can establish
+those effects without publishing or mutating production. Once available, prefer a
+conservative Addressable-only update and its regression checks; do not require a
+Fastlane version change merely to take the security patch.
+
+Re-audit both complete graphs on every upgrade. An override, mocked lane test, or
+successful bundle alone cannot establish store/deployment safety. Remove these
+holds only after the resolved graph is fixed and the corresponding real-environment
+preview and regression gates pass.
 
 ## Recording an upgrade
 
