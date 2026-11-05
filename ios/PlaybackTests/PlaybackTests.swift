@@ -99,6 +99,40 @@ final class PlaybackTests: XCTestCase {
         XCTAssertEqual(releases.count, 2)
     }
 
+    func testEngineThatFailsToStartReleasesTheSession() async {
+        let player = NoisePlayer.shared
+        let log = player.playbackLog
+        player.stop(source: "test_reset", requested: false)
+        player.setVolume(0)
+        let release = player.releaseSession
+        let start = player.startEngine
+        let releases = Counter()
+        defer {
+            player.startEngine = start
+            player.releaseSession = release
+            player.stop(source: "test_cleanup", requested: false)
+        }
+
+        // Playing cancels the reset's fade, and an interruption that ends without resuming stops the
+        // engine at once, so the next play has to start it while the player is stopped.
+        player.play(.pink)
+        let center = NotificationCenter.default
+        let session = AVAudioSession.sharedInstance()
+        for type in [AVAudioSession.InterruptionType.began, .ended] {
+            center.post(name: AVAudioSession.interruptionNotification, object: session, userInfo: [
+                AVAudioSessionInterruptionTypeKey: type.rawValue,
+            ])
+        }
+        await log.flush()
+        XCTAssertNil(player.nowPlaying)
+
+        player.releaseSession = { releases.count += 1 }
+        player.startEngine = { _ in throw StartFailure() }
+        player.play(.fan)
+        XCTAssertNil(player.nowPlaying)
+        XCTAssertEqual(releases.count, 1, "an engine that fails to start releases the session it activated")
+    }
+
     func testPlayerStateTransitions() {
         let cases: [Transition] = [
             Transition(.stopped, .started(.pink), .playing(.pink)),
@@ -109,6 +143,10 @@ final class PlaybackTests: XCTestCase {
             Transition(.playing(.pink), .interruptionBegan, .interrupted(.pink)),
             Transition(.interrupted(.pink), .interruptionEnded(shouldResume: true), .stopped, .resume(.pink)),
             Transition(.interrupted(.pink), .interruptionEnded(shouldResume: false), .stopped, .releaseSession),
+            // A failed start releases what the player holds, even when it was stopped.
+            Transition(.stopped, .startFailed, .stopped, .releaseSession),
+            Transition(.playing(.pink), .startFailed, .stopped, .fadeOut(.pink)),
+            Transition(.interrupted(.pink), .startFailed, .stopped, .releaseSession),
             // Ignored: events that don't apply in the state.
             Transition(.stopped, .stop, .stopped),
             Transition(.stopped, .interruptionBegan, .stopped),
@@ -152,6 +190,8 @@ final class PlaybackTests: XCTestCase {
     private func marker() throws -> String? { try contents().active?.soundId }
     private func events() throws -> [LogEvent] { try contents().events }
 }
+
+private struct StartFailure: Error {}
 
 @MainActor
 private final class Counter {
