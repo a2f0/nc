@@ -5,6 +5,50 @@ import os
 import UIKit
 import WidgetKit
 
+/// What the player is doing. Only `handling(_:)` changes it.
+enum PlayerState: Equatable {
+    case stopped
+    case playing(NoiseType)
+    /// The system stopped playback for an interruption (a call, an alarm); its end may resume this noise.
+    case interrupted(NoiseType)
+
+    /// The noise playing, or nil.
+    var nowPlaying: NoiseType? {
+        switch self {
+        case let .playing(type): type
+        case .stopped, .interrupted: nil
+        }
+    }
+
+    /// The noise playing or interrupted, or nil.
+    var noise: NoiseType? {
+        switch self {
+        case let .playing(type), let .interrupted(type): type
+        case .stopped: nil
+        }
+    }
+
+    /// Events that don't apply leave the state as it is.
+    func handling(_ event: PlayerEvent) -> Self {
+        switch (self, event) {
+        case let (_, .started(type)): .playing(type)
+        case (_, .stop): .stopped
+        case let (.playing(type), .interruptionBegan): .interrupted(type)
+        case (.stopped, .interruptionBegan), (.interrupted, .interruptionBegan): self
+        case (.interrupted, .interruptionEnded): .stopped
+        case (.stopped, .interruptionEnded), (.playing, .interruptionEnded): self
+        }
+    }
+}
+
+enum PlayerEvent: Equatable {
+    /// The engine is running `type`.
+    case started(NoiseType)
+    case stop
+    case interruptionBegan
+    case interruptionEnded
+}
+
 /// Owns the audio engine and session. Playback continues in the background (the app
 /// declares the `audio` background mode), responds to lock screen and headphone
 /// controls, and publishes state for the widget.
@@ -16,10 +60,12 @@ final class NoisePlayer {
     let playbackLog = PlaybackLog()
     @ObservationIgnored private var historyTimer: Timer?
 
-    /// The noise currently playing, or nil when stopped.
-    private(set) var nowPlaying: NoiseType? {
+    private(set) var state = PlayerState.stopped {
         didSet { history.transition(to: nowPlaying?.rawValue) }
     }
+
+    /// The noise currently playing, or nil when stopped.
+    var nowPlaying: NoiseType? { state.nowPlaying }
 
     /// The most recently played noise, which the play button and lock screen controls
     /// resume. Saved across launches.
@@ -32,7 +78,6 @@ final class NoisePlayer {
     @ObservationIgnored private let renderer = NoiseRenderer()
     @ObservationIgnored private var isConfigured = false
     @ObservationIgnored private var fadeOutTask: Task<Void, Never>?
-    @ObservationIgnored private var interruptedNoise: NoiseType?
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
 
     private static let log = Logger(subsystem: "net.a2f0.nc", category: "NoisePlayback")
@@ -80,20 +125,19 @@ final class NoisePlayer {
             return
         }
         playbackLog.record(.started, soundId: type.rawValue, updateActive: true, activeSound: type.rawValue)
-        nowPlaying = type
+        state = state.handling(.started(type))
         lastPlayed = type
         UserDefaults.standard.set(type.rawValue, forKey: Self.lastPlayedKey)
-        interruptedNoise = nil
         publishState()
     }
 
     /// Fades out, then stops the engine and releases the audio session.
     func stop(source: String = "ui", requested: Bool = true) {
         if requested { playbackLog.record(.stopRequested, soundId: nowPlaying?.rawValue, detail: source) }
-        interruptedNoise = nil
-        if nowPlaying != nil {
-            playbackLog.record(.stopped, soundId: nowPlaying?.rawValue, detail: source, updateActive: true)
-            nowPlaying = nil
+        let stopping = nowPlaying
+        state = state.handling(.stop)
+        if let stopping {
+            playbackLog.record(.stopped, soundId: stopping.rawValue, detail: source, updateActive: true)
             renderer.setFadingOut(true)
             fadeOutTask = Task {
                 try? await Task.sleep(for: .seconds(NoiseRenderer.fadeDuration + 0.1))
@@ -213,7 +257,7 @@ final class NoisePlayer {
         let phase = type == .began ? "began" : "ended"
         playbackLog.record(
             .interruption,
-            soundId: (nowPlaying ?? interruptedNoise)?.rawValue,
+            soundId: state.noise?.rawValue,
             detail: "type=\(type.rawValue) (\(phase)); options=\(options); shouldResume=\(shouldResume)",
         )
         switch type {
@@ -221,12 +265,12 @@ final class NoisePlayer {
             // The system has already stopped the engine.
             guard let noise = nowPlaying else { return }
             playbackLog.record(.stopped, soundId: noise.rawValue, detail: "interruption_began", updateActive: true)
-            nowPlaying = nil
-            interruptedNoise = noise
+            state = state.handling(.interruptionBegan)
             publishState()
         case .ended:
-            if shouldResume, let noise = interruptedNoise { play(noise, source: "interruption_ended") }
-            interruptedNoise = nil
+            guard case let .interrupted(noise) = state else { return }
+            state = state.handling(.interruptionEnded)
+            if shouldResume { play(noise, source: "interruption_ended") }
         @unknown default:
             break
         }

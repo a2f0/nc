@@ -40,18 +40,56 @@ function clampVolume(volume: number): number {
   return Number.isFinite(volume) ? Math.min(Math.max(volume, 0), 1) : 1;
 }
 
+/**
+ * What the player is doing. `starting` covers a requested noise the browser isn't playing
+ * yet, including one whose context the browser suspended; `playing` is one whose start has
+ * been logged. `failed` lasts until the next play.
+ */
+export type PlayerState =
+  | { status: "idle" }
+  | { status: "failed" }
+  | { status: "starting"; sound: NoiseType }
+  | { status: "playing"; sound: NoiseType };
+
+export type PlayerEvent =
+  | { type: "play"; sound: NoiseType }
+  | { type: "started"; sound: NoiseType }
+  | { type: "suspended" }
+  | { type: "stop" }
+  | { type: "fail" };
+
+/** The player's only state change. Events that don't apply leave the state as it is. */
+export function transition(state: PlayerState, event: PlayerEvent): PlayerState {
+  switch (event.type) {
+    case "play":
+      // Playing the noise that's already playing doesn't start, or log, it again.
+      return state.status === "playing" && state.sound === event.sound ? state : { status: "starting", sound: event.sound };
+    case "started":
+      return state.status === "starting" && state.sound === event.sound ? { status: "playing", sound: event.sound } : state;
+    case "suspended":
+      return state.status === "playing" ? { status: "starting", sound: state.sound } : state;
+    case "stop":
+      return state.status === "starting" || state.status === "playing" ? { status: "idle" } : state;
+    case "fail":
+      return { status: "failed" };
+    default:
+      return assertNever(event);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled player event: ${JSON.stringify(value)}`);
+}
+
 /** Plays one noise at a time. Starting and stopping fade (see noiseProcessor.ts). */
 export class NoisePlayer {
-  nowPlaying: NoiseType | null = null;
   /** The most recently played noise, which the play button and media keys resume. Saved in this browser. */
   lastPlayed: NoiseType = loadLastPlayed();
-  /** Set when the browser couldn't start audio; cleared by the next play. */
-  failed = false;
   /** The page's own volume, from 0 to 1, on top of the system volume. Saved in this browser. */
   volume = loadVolume();
 
+  private playerState: PlayerState = { status: "idle" };
   private engine: Engine | null = null;
-  private activeSound: NoiseType | null = null;
   private commandId = 0;
   private readonly listeners = new Set<() => void>();
 
@@ -59,6 +97,17 @@ export class NoisePlayer {
     this.setActionHandler("play", () => this.play(this.lastPlayed, "media_play"));
     this.setActionHandler("pause", () => this.stop("media_pause"));
     this.setActionHandler("stop", () => this.stop("media_stop"));
+  }
+
+  /** The noise requested and not since stopped, or null. */
+  get nowPlaying(): NoiseType | null {
+    const state = this.playerState;
+    return state.status === "starting" || state.status === "playing" ? state.sound : null;
+  }
+
+  /** Whether the browser couldn't start audio; cleared by the next play. */
+  get failed(): boolean {
+    return this.playerState.status === "failed";
   }
 
   subscribe(listener: () => void): void {
@@ -85,18 +134,16 @@ export class NoisePlayer {
   play(type: NoiseType, source = "ui"): void {
     this.playbackLog.record("log_play_requested", type, source);
     if (this.nowPlaying !== type) this.history.transition(null);
-    this.nowPlaying = type;
+    this.dispatch({ type: "play", sound: type });
     this.lastPlayed = type;
     save(LAST_PLAYED_KEY, type);
-    this.failed = false;
 
     let engine: Engine;
     try { engine = (this.engine ??= this.createEngine()); }
     catch (error) {
       this.playbackLog.record("log_engine_failed", type, String(error), false);
-      this.nowPlaying = this.activeSound = null;
+      this.dispatch({ type: "fail" });
       this.history.transition(null);
-      this.failed = true;
       this.publish();
       return;
     }
@@ -118,9 +165,8 @@ export class NoisePlayer {
     if (requested) this.playbackLog.record("log_stop_requested", this.nowPlaying, source);
     if (this.nowPlaying === null) return;
     this.playbackLog.record("log_stopped", this.nowPlaying, source, false);
-    this.activeSound = null;
+    this.dispatch({ type: "stop" });
     this.history.transition(null);
-    this.nowPlaying = null;
     if (this.engine !== null) this.send(this.engine, false);
     this.publish();
   }
@@ -159,7 +205,7 @@ export class NoisePlayer {
       if (engine !== this.engine) return;
       this.playbackLog.record("log_context_state", this.nowPlaying, context.state, context.state === "running" ? undefined : false);
       if (context.state !== "running") {
-        this.activeSound = null;
+        this.dispatch({ type: "suspended" });
         this.history.transition(null);
       }
       else if (!audio.paused && this.nowPlaying !== null) {
@@ -216,21 +262,26 @@ export class NoisePlayer {
     if (engine !== this.engine) return;
     console.error("Couldn't start audio", error);
     this.playbackLog.record("log_engine_failed", this.nowPlaying, String(error), false);
-    this.activeSound = null;
+    this.dispatch({ type: "fail" });
     this.history.transition(null);
     this.engine = null;
     engine.audio.pause();
     void engine.context.close();
-    this.nowPlaying = null;
-    this.failed = true;
     this.publish();
   }
 
   private started(type: NoiseType): void {
+    const previous = this.dispatch({ type: "started", sound: type });
+    if (this.playerState.status !== "playing" || this.playerState.sound !== type) return;
     this.history.transition(type);
-    if (this.activeSound === type) return;
-    this.activeSound = type;
-    this.playbackLog.record("log_started", type, "", true);
+    if (previous.status === "starting") this.playbackLog.record("log_started", type, "", true);
+  }
+
+  /** Applies `event` and returns the state it replaced. */
+  private dispatch(event: PlayerEvent): PlayerState {
+    const previous = this.playerState;
+    this.playerState = transition(previous, event);
+    return previous;
   }
 
   private publish(): void {

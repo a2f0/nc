@@ -47,7 +47,7 @@ open class PlaybackService : Service() {
         createEngine(
             onStarted = { type ->
                 scope.launch {
-                    if (nowPlaying == type && !pausedForFocusLoss) {
+                    if (state == ServiceState.Playing(type)) {
                         ListeningHistory.get(this@PlaybackService).transition(type.id)
                         log.record(PlaybackEvent.STARTED, type, activeSound = type.id, updateActive = true)
                     }
@@ -65,8 +65,10 @@ open class PlaybackService : Service() {
     private lateinit var audioManager: AudioManager
     private lateinit var focusRequest: AudioFocusRequest
     private lateinit var session: MediaSession
-    private var nowPlaying: NoiseType? = null
-    private var pausedForFocusLoss = false
+    private var state: ServiceState = ServiceState.Stopped
+
+    /** The noise this service holds, playing or paused for focus loss, or null. */
+    private val nowPlaying: NoiseType? get() = state.noise
 
     private val becomingNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -93,7 +95,7 @@ open class PlaybackService : Service() {
         scope.launch {
             while (true) {
                 delay(CHECKPOINT_INTERVAL_MILLIS)
-                if (nowPlaying != null && !pausedForFocusLoss) history.checkpoint()
+                if (state is ServiceState.Playing) history.checkpoint()
             }
         }
         val volume = NoisePlayer.volume(this)
@@ -175,9 +177,8 @@ open class PlaybackService : Service() {
             stop("focus_denied")
             return
         }
-        pausedForFocusLoss = false
         if (nowPlaying != type) ListeningHistory.get(this).transition(null)
-        nowPlaying = type
+        state = state.on(ServiceEvent.Play(type))
         engine.play(type)
         registerNoisyReceiver()
 
@@ -189,14 +190,15 @@ open class PlaybackService : Service() {
 
     private fun stop(reason: String, requested: Boolean = false) {
         if (requested) log.record(PlaybackEvent.STOP_REQUESTED, nowPlaying, reason)
-        if (nowPlaying != null && !pausedForFocusLoss) {
+        // A pause for focus loss already logged its stop.
+        if (state is ServiceState.Playing) {
             log.record(PlaybackEvent.STOPPED, nowPlaying, reason, updateActive = true)
         }
         engine.stop()
         ListeningHistory.get(this).transition(null)
         audioManager.abandonAudioFocusRequest(focusRequest)
         unregisterNoisyReceiver()
-        nowPlaying = null
+        state = state.on(ServiceEvent.Stop)
         session.setPlaybackState(playbackState(PlaybackState.STATE_STOPPED))
         session.isActive = false
         NoisePlayer.update(this, null)
@@ -216,20 +218,18 @@ open class PlaybackService : Service() {
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS -> stop("audiofocus_loss")
 
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> if (nowPlaying != null) {
-                log.record(PlaybackEvent.STOPPED, nowPlaying, "audiofocus_loss_transient", updateActive = true)
-                pausedForFocusLoss = true
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> (state as? ServiceState.Playing)?.let { playing ->
+                log.record(PlaybackEvent.STOPPED, playing.type, "audiofocus_loss_transient", updateActive = true)
+                state = state.on(ServiceEvent.FocusLostTransiently)
                 engine.stop()
                 ListeningHistory.get(this).transition(null)
                 session.setPlaybackState(playbackState(PlaybackState.STATE_PAUSED))
             }
 
-            AudioManager.AUDIOFOCUS_GAIN -> if (pausedForFocusLoss) {
-                pausedForFocusLoss = false
-                nowPlaying?.let {
-                    engine.play(it)
-                    session.setPlaybackState(playbackState(PlaybackState.STATE_PLAYING))
-                }
+            AudioManager.AUDIOFOCUS_GAIN -> (state as? ServiceState.PausedForFocusLoss)?.let { paused ->
+                state = state.on(ServiceEvent.FocusGained)
+                engine.play(paused.type)
+                session.setPlaybackState(playbackState(PlaybackState.STATE_PLAYING))
             }
             // AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK: the system ducks our volume automatically.
         }

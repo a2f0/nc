@@ -162,6 +162,27 @@ class PlaybackHistoryTest {
         service.onStartCommand(PlaybackService.stopIntent(service), 0, 2)
         assertEquals(1, rows().size)
     }
+
+    @Test fun aRepeatedTransientFocusLossLogsOneStop() {
+        started()
+        focus(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        focus(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        service.diagnostics.flush()
+        val stops = service.diagnostics.entries.value.count { it.event == PlaybackEvent.STOPPED }
+        assertEquals(1, stops)
+        assertEquals(PlaybackState.STATE_PAUSED, state())
+    }
+
+    @Test fun stoppingWhilePausedForFocusLossLeavesNothingToResume() {
+        started()
+        focus(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        service.onStartCommand(PlaybackService.stopIntent(service), 0, 2)
+        focus(AudioManager.AUDIOFOCUS_GAIN)
+        assertEquals(listOf(NoiseType.PINK), service.plays)
+        assertNull(NoisePlayer.nowPlaying.value)
+        assertEquals(PlaybackState.STATE_STOPPED, state())
+    }
+
     private fun marker(): String? {
         service.diagnostics.flush()
         val data = JSONObject(File(service.noBackupFilesDir, "playback-log-v1.json").readText())

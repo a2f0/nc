@@ -15,6 +15,18 @@ theirs with samples from the iOS one. Each app has its own volume slider on top 
 system volume: saved between launches, squared so halfway is about -12 dB, and ramped over
 about 50 ms so dragging doesn't crackle.
 
+## Playback state
+
+Each player keeps what it is doing in one closed state type changed by one pure transition
+function, with its transition table tested directly: `PlayerState` and `transition` in
+`web/src/noisePlayer.ts` (idle, starting, playing, failed), `ServiceState` and `on` in
+`android/app/src/main/java/net/a2f0/nc/playback/ServiceState.kt` (stopped, playing, paused
+for focus loss), and
+`PlayerState` and `handling(_:)` in `ios/Shared/NoisePlayer.swift` (stopped, playing,
+interrupted). Side effects (engine, audio session, history, log) stay in the player, around
+the transition. Add a state or event there rather than a new flag beside it, and keep the
+three in step.
+
 ## Appearance
 
 Open **More → Settings → Appearance** and choose **System**, **Light**, or **Dark**.
