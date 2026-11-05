@@ -57,22 +57,67 @@ final class PlaybackTests: XCTestCase {
         try assertLoggedEveryEventAndSource()
     }
 
+    func testInterruptionThatDoesNotResumeReleasesTheSession() async {
+        let player = NoisePlayer.shared
+        let log = player.playbackLog
+        player.stop(source: "test_reset", requested: false)
+        player.setVolume(0)
+        let release = player.releaseSession
+        let releases = Counter()
+        defer {
+            player.stop(source: "test_cleanup", requested: false)
+            player.releaseSession = release
+        }
+
+        let center = NotificationCenter.default
+        let session = AVAudioSession.sharedInstance()
+        func interruption(_ type: AVAudioSession.InterruptionType) async {
+            center.post(name: AVAudioSession.interruptionNotification, object: session, userInfo: [
+                AVAudioSessionInterruptionTypeKey: type.rawValue,
+            ])
+            await log.flush()
+        }
+
+        // Playing cancels the reset's fade, so only this test's releases are counted.
+        player.play(.pink)
+        player.releaseSession = { releases.count += 1 }
+        await interruption(.began)
+        XCTAssertEqual(releases.count, 0)
+        await interruption(.ended)
+        XCTAssertNil(player.nowPlaying)
+        XCTAssertEqual(releases.count, 1, "an interruption that ends without resuming releases the session")
+
+        // Stopping while interrupted releases it too, and the interruption's end then changes nothing.
+        player.releaseSession = release
+        player.play(.pink)
+        player.releaseSession = { releases.count += 1 }
+        await interruption(.began)
+        player.stop()
+        XCTAssertEqual(releases.count, 2, "stopping while interrupted releases the session")
+        await interruption(.ended)
+        XCTAssertNil(player.nowPlaying)
+        XCTAssertEqual(releases.count, 2)
+    }
+
     func testPlayerStateTransitions() {
         let cases: [Transition] = [
             Transition(.stopped, .started(.pink), .playing(.pink)),
             Transition(.playing(.pink), .started(.fan), .playing(.fan)),
             Transition(.interrupted(.pink), .started(.fan), .playing(.fan)),
-            Transition(.playing(.pink), .stop, .stopped),
-            Transition(.interrupted(.pink), .stop, .stopped),
+            Transition(.playing(.pink), .stop, .stopped, .fadeOut(.pink)),
+            Transition(.interrupted(.pink), .stop, .stopped, .releaseSession),
             Transition(.playing(.pink), .interruptionBegan, .interrupted(.pink)),
-            Transition(.interrupted(.pink), .interruptionEnded, .stopped),
+            Transition(.interrupted(.pink), .interruptionEnded(shouldResume: true), .stopped, .resume(.pink)),
+            Transition(.interrupted(.pink), .interruptionEnded(shouldResume: false), .stopped, .releaseSession),
             // Ignored: events that don't apply in the state.
             Transition(.stopped, .stop, .stopped),
             Transition(.stopped, .interruptionBegan, .stopped),
             Transition(.interrupted(.pink), .interruptionBegan, .interrupted(.pink)),
-            Transition(.stopped, .interruptionEnded, .stopped),
+            Transition(.stopped, .interruptionEnded(shouldResume: true), .stopped),
+            Transition(.stopped, .interruptionEnded(shouldResume: false), .stopped),
             // A noise played during the interruption isn't stopped by its end.
-            Transition(.playing(.fan), .interruptionEnded, .playing(.fan)),
+            Transition(.playing(.fan), .interruptionEnded(shouldResume: true), .playing(.fan)),
+            Transition(.playing(.fan), .interruptionEnded(shouldResume: false), .playing(.fan)),
         ]
         for transition in cases {
             XCTAssertEqual(
@@ -108,15 +153,20 @@ final class PlaybackTests: XCTestCase {
     private func events() throws -> [LogEvent] { try contents().events }
 }
 
+@MainActor
+private final class Counter {
+    var count = 0
+}
+
 private struct Transition {
     let state: PlayerState
     let event: PlayerEvent
-    let next: PlayerState
+    let next: PlayerStep
 
-    init(_ state: PlayerState, _ event: PlayerEvent, _ next: PlayerState) {
+    init(_ state: PlayerState, _ event: PlayerEvent, _ next: PlayerState, _ effect: PlayerEffect? = nil) {
         self.state = state
         self.event = event
-        self.next = next
+        self.next = PlayerStep(next, effect)
     }
 }
 

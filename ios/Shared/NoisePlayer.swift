@@ -28,15 +28,20 @@ enum PlayerState: Equatable {
         }
     }
 
-    /// Events that don't apply leave the state as it is.
-    func handling(_ event: PlayerEvent) -> Self {
+    /// The next state, and what the player must do about the change. Events that don't apply
+    /// leave the state as it is and do nothing.
+    func handling(_ event: PlayerEvent) -> PlayerStep {
         switch (self, event) {
-        case let (_, .started(type)): .playing(type)
-        case (_, .stop): .stopped
-        case let (.playing(type), .interruptionBegan): .interrupted(type)
-        case (.stopped, .interruptionBegan), (.interrupted, .interruptionBegan): self
-        case (.interrupted, .interruptionEnded): .stopped
-        case (.stopped, .interruptionEnded), (.playing, .interruptionEnded): self
+        case let (_, .started(type)): PlayerStep(.playing(type))
+        case let (.playing(type), .stop): PlayerStep(.stopped, .fadeOut(type))
+        // The interruption already stopped the engine, so nothing fades; just let go of the session.
+        case (.interrupted, .stop): PlayerStep(.stopped, .releaseSession)
+        case (.stopped, .stop): PlayerStep(self)
+        case let (.playing(type), .interruptionBegan): PlayerStep(.interrupted(type))
+        case (.stopped, .interruptionBegan), (.interrupted, .interruptionBegan): PlayerStep(self)
+        case let (.interrupted(type), .interruptionEnded(shouldResume: true)): PlayerStep(.stopped, .resume(type))
+        case (.interrupted, .interruptionEnded(shouldResume: false)): PlayerStep(.stopped, .releaseSession)
+        case (.stopped, .interruptionEnded), (.playing, .interruptionEnded): PlayerStep(self)
         }
     }
 }
@@ -46,7 +51,29 @@ enum PlayerEvent: Equatable {
     case started(NoiseType)
     case stop
     case interruptionBegan
-    case interruptionEnded
+    /// `shouldResume` is the system's hint that playback may resume.
+    case interruptionEnded(shouldResume: Bool)
+}
+
+/// Side effects a transition asks of the player, which performs them; `handling(_:)` stays pure.
+enum PlayerEffect: Equatable {
+    /// Fade `type` out, then stop the engine and release the audio session.
+    case fadeOut(NoiseType)
+    /// Play `type` again.
+    case resume(NoiseType)
+    /// Stop the engine and deactivate the audio session, telling other apps they may resume.
+    case releaseSession
+}
+
+/// One transition: the next state and the effect, if any, it asks for.
+struct PlayerStep: Equatable {
+    let state: PlayerState
+    let effect: PlayerEffect?
+
+    init(_ state: PlayerState, _ effect: PlayerEffect? = nil) {
+        self.state = state
+        self.effect = effect
+    }
 }
 
 /// Owns the audio engine and session. Playback continues in the background (the app
@@ -79,6 +106,11 @@ final class NoisePlayer {
     @ObservationIgnored private var isConfigured = false
     @ObservationIgnored private var fadeOutTask: Task<Void, Never>?
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
+
+    /// Deactivates the audio session and tells other apps they may resume. Tests replace it.
+    @ObservationIgnored var releaseSession: @MainActor () -> Void = {
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
 
     private static let log = Logger(subsystem: "net.a2f0.nc", category: "NoisePlayback")
     private static let volumeKey = "volume"
@@ -125,7 +157,7 @@ final class NoisePlayer {
             return
         }
         playbackLog.record(.started, soundId: type.rawValue, updateActive: true, activeSound: type.rawValue)
-        state = state.handling(.started(type))
+        perform(dispatch(.started(type)))
         lastPlayed = type
         UserDefaults.standard.set(type.rawValue, forKey: Self.lastPlayedKey)
         publishState()
@@ -134,18 +166,11 @@ final class NoisePlayer {
     /// Fades out, then stops the engine and releases the audio session.
     func stop(source: String = "ui", requested: Bool = true) {
         if requested { playbackLog.record(.stopRequested, soundId: nowPlaying?.rawValue, detail: source) }
-        let stopping = nowPlaying
-        state = state.handling(.stop)
-        if let stopping {
+        let effect = dispatch(.stop)
+        if case let .fadeOut(stopping) = effect {
             playbackLog.record(.stopped, soundId: stopping.rawValue, detail: source, updateActive: true)
-            renderer.setFadingOut(true)
-            fadeOutTask = Task {
-                try? await Task.sleep(for: .seconds(NoiseRenderer.fadeDuration + 0.1))
-                guard !Task.isCancelled else { return }
-                self.engine.stop()
-                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            }
         }
+        perform(effect)
         publishState()
     }
 
@@ -265,12 +290,10 @@ final class NoisePlayer {
             // The system has already stopped the engine.
             guard let noise = nowPlaying else { return }
             playbackLog.record(.stopped, soundId: noise.rawValue, detail: "interruption_began", updateActive: true)
-            state = state.handling(.interruptionBegan)
+            perform(dispatch(.interruptionBegan))
             publishState()
         case .ended:
-            guard case let .interrupted(noise) = state else { return }
-            state = state.handling(.interruptionEnded)
-            if shouldResume { play(noise, source: "interruption_ended") }
+            perform(dispatch(.interruptionEnded(shouldResume: shouldResume)))
         @unknown default:
             break
         }
@@ -332,5 +355,38 @@ final class NoisePlayer {
             MPNowPlayingInfoPropertyIsLiveStream: true,
             MPNowPlayingInfoPropertyPlaybackRate: nowPlaying == nil ? 0.0 : 1.0,
         ]
+    }
+}
+
+// MARK: - Transitions
+
+extension NoisePlayer {
+    /// The only place `state` changes. Returns the effect the caller performs, after any logging.
+    private func dispatch(_ event: PlayerEvent) -> PlayerEffect? {
+        let step = state.handling(event)
+        state = step.state
+        return step.effect
+    }
+
+    private func perform(_ effect: PlayerEffect?) {
+        switch effect {
+        case .fadeOut:
+            renderer.setFadingOut(true)
+            fadeOutTask = Task {
+                try? await Task.sleep(for: .seconds(NoiseRenderer.fadeDuration + 0.1))
+                guard !Task.isCancelled else { return }
+                self.engine.stop()
+                self.releaseSession()
+            }
+        case let .resume(noise):
+            play(noise, source: "interruption_ended")
+        case .releaseSession:
+            // The interruption stopped the engine; stopping it again is harmless and keeps
+            // deactivation from failing because the session is still in use.
+            engine.stop()
+            releaseSession()
+        case nil:
+            break
+        }
     }
 }
