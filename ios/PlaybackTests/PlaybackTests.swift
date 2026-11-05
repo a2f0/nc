@@ -57,6 +57,35 @@ final class PlaybackTests: XCTestCase {
         try assertLoggedEveryEventAndSource()
     }
 
+    func testPlayerStateTransitions() {
+        let cases: [Transition] = [
+            Transition(.stopped, .started(.pink), .playing(.pink)),
+            Transition(.playing(.pink), .started(.fan), .playing(.fan)),
+            Transition(.interrupted(.pink), .started(.fan), .playing(.fan)),
+            Transition(.playing(.pink), .stop, .stopped),
+            Transition(.interrupted(.pink), .stop, .stopped),
+            Transition(.playing(.pink), .interruptionBegan, .interrupted(.pink)),
+            Transition(.interrupted(.pink), .interruptionEnded, .stopped),
+            // Ignored: events that don't apply in the state.
+            Transition(.stopped, .stop, .stopped),
+            Transition(.stopped, .interruptionBegan, .stopped),
+            Transition(.interrupted(.pink), .interruptionBegan, .interrupted(.pink)),
+            Transition(.stopped, .interruptionEnded, .stopped),
+            // A noise played during the interruption isn't stopped by its end.
+            Transition(.playing(.fan), .interruptionEnded, .playing(.fan)),
+        ]
+        for transition in cases {
+            XCTAssertEqual(
+                transition.state.handling(transition.event),
+                transition.next,
+                "\(transition.state) + \(transition.event)",
+            )
+        }
+        XCTAssertNil(PlayerState.interrupted(.pink).nowPlaying)
+        XCTAssertEqual(PlayerState.interrupted(.pink).noise, .pink)
+        XCTAssertNil(PlayerState.stopped.noise)
+    }
+
     private func assertLoggedEveryEventAndSource() throws {
         let rows = try events()
         for event in ["playRequested", "started", "stopped", "interruption", "routeChanged", "termination"] {
@@ -77,6 +106,18 @@ final class PlaybackTests: XCTestCase {
 
     private func marker() throws -> String? { try contents().active?.soundId }
     private func events() throws -> [LogEvent] { try contents().events }
+}
+
+private struct Transition {
+    let state: PlayerState
+    let event: PlayerEvent
+    let next: PlayerState
+
+    init(_ state: PlayerState, _ event: PlayerEvent, _ next: PlayerState) {
+        self.state = state
+        self.event = event
+        self.next = next
+    }
 }
 
 /// The parts of the log file these tests read, decoded independently of the app's types.

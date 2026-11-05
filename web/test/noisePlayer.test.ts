@@ -2,7 +2,7 @@ import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { setPreferredLanguages } from "../src/l10n";
 import { ListeningHistory, type ListeningSession } from "../src/listeningHistory";
-import { NoisePlayer } from "../src/noisePlayer";
+import { NoisePlayer, type PlayerEvent, type PlayerState, transition } from "../src/noisePlayer";
 import type { NoiseCommand, NoiseEvent } from "../src/noiseProtocol";
 
 // A stand-in for the browser audio stack, recording what the player asks of it.
@@ -448,4 +448,70 @@ test("diagnostic observer failures cannot prevent play or stop", async () => {
   expect(player.nowPlaying).toBe("pink");
   player.stop();
   expect(player.nowPlaying).toBeNull();
+});
+
+describe("player state transitions", () => {
+  const idle: PlayerState = { status: "idle" };
+  const failed: PlayerState = { status: "failed" };
+  const startingPink: PlayerState = { status: "starting", sound: "pink" };
+  const playingPink: PlayerState = { status: "playing", sound: "pink" };
+  const cases: [string, PlayerState, PlayerEvent, PlayerState][] = [
+    ["idle plays", idle, { type: "play", sound: "pink" }, startingPink],
+    ["a failure clears on the next play", failed, { type: "play", sound: "pink" }, startingPink],
+    ["a start is confirmed", startingPink, { type: "started", sound: "pink" }, playingPink],
+    ["playing the same noise again keeps it playing", playingPink, { type: "play", sound: "pink" }, playingPink],
+    ["switching noise starts the new one", playingPink, { type: "play", sound: "fan" }, { status: "starting", sound: "fan" }],
+    ["a suspended context waits to start again", playingPink, { type: "suspended" }, startingPink],
+    ["stopping a pending start", startingPink, { type: "stop" }, idle],
+    ["stopping playback", playingPink, { type: "stop" }, idle],
+    ["a failure while playing", playingPink, { type: "fail" }, failed],
+    ["a failure while starting", startingPink, { type: "fail" }, failed],
+    ["a failure while idle, from an engine still loading", idle, { type: "fail" }, failed],
+    // Ignored: events that don't apply in the state.
+    ["stop while idle", idle, { type: "stop" }, idle],
+    ["stop keeps a failure showing", failed, { type: "stop" }, failed],
+    ["a start for another noise", startingPink, { type: "started", sound: "fan" }, startingPink],
+    ["a start after stopping", idle, { type: "started", sound: "pink" }, idle],
+    ["a start after a failure", failed, { type: "started", sound: "pink" }, failed],
+    ["a repeated start", playingPink, { type: "started", sound: "pink" }, playingPink],
+    ["a suspension while starting", startingPink, { type: "suspended" }, startingPink],
+    ["a suspension while idle", idle, { type: "suspended" }, idle],
+  ];
+  test.each(cases)("%s", (_name, state, event, next) => {
+    expect(transition(state, event)).toEqual(next);
+  });
+
+  test("a start for a replaced request cannot finish the newer one", () => {
+    const events: PlayerEvent[] = [
+      { type: "play", sound: "pink" }, { type: "stop" }, { type: "play", sound: "fan" }, { type: "started", sound: "pink" },
+    ];
+    expect(events.reduce(transition, idle)).toEqual({ status: "starting", sound: "fan" });
+  });
+});
+
+test("logs one start per audible start, including a switch back before the new noise started", async () => {
+  const { player, context } = await loaded();
+  const starts = () => player.playbackLog.entries.filter((row) => row.event === "log_started").map((row) => row.soundId);
+  expect(starts()).toEqual(["white"]);
+
+  // Media keys replaying the noise that's playing don't log it again.
+  mediaSession.handlers.get("play")!();
+  await settle();
+  expect(starts()).toEqual(["white"]);
+
+  // A suspended context that resumes is a new start.
+  context.state = "suspended";
+  context.dispatchEvent(new Event("statechange"));
+  context.state = "running";
+  context.dispatchEvent(new Event("statechange"));
+  await settle();
+  expect(starts()).toEqual(["white", "white"]);
+
+  // Switching away and back before the switch started closes the session and opens a new
+  // one, so the log records that start too.
+  player.play("pink");
+  player.play("white");
+  await settle();
+  expect(starts()).toEqual(["white", "white", "white"]);
+  expect(player.history.snapshot().filter((row) => row.endedAt === null)).toHaveLength(1);
 });
