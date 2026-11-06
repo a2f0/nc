@@ -68,9 +68,10 @@ test.each(["ios", "android"])("%s capture refuses a linked store without a runni
 });
 
 // The Android capture in a copy of its tree, with stand-ins for the build, the SDK, and
-// Maestro. The emulator stand-in either exits at once or never boots; adb, like the real
-// one without a device, finds none and waits forever for one.
-function fakeAndroidCapture(emulator: "exits" | "never-boots") {
+// Maestro. The emulator stand-in either exits at once or never boots. adb either finds no
+// device and, like the real one, waits forever for one, or hangs on every shell command, as
+// it can on an emulator that has stopped responding.
+function fakeAndroidCapture(emulator: "exits" | "never-boots", adb: "no-device" | "hangs" = "no-device") {
   const repo = join(output, "repo");
   const sdk = join(output, "sdk");
   const bin = join(output, "bin");
@@ -89,7 +90,7 @@ function fakeAndroidCapture(emulator: "exits" | "never-boots") {
   script(join(sdk, "emulator/emulator"), `[ "$1" = -list-avds ] && { echo NoiseConnoisseur_Screenshots; exit 0; }
 ${emulator === "exits" ? "exit 1" : `echo $$ >"${pidFile}"; exec sleep 300`}`);
   script(join(sdk, "platform-tools/adb"), `[ "$3" = wait-for-device ] && exec sleep 300
-echo "adb: device '$2' not found" >&2; exit 1`);
+${adb === "hangs" ? "exec sleep 300" : `echo "adb: device '$2' not found" >&2; exit 1`}`);
   script(join(sdk, "cmdline-tools/latest/bin/avdmanager"), "exit 1");
   for (const tool of ["maestro", "magick"]) script(join(bin, tool), "exit 1");
   // Its own process group, so the test can stop everything the capture left behind.
@@ -125,8 +126,8 @@ test("android capture fails, rather than waiting forever, when the emulator exit
   } finally { capture.stop(); }
 }, 20_000);
 
-test("android capture stops its emulator when it never boots", async () => {
-  const capture = fakeAndroidCapture("never-boots");
+test.each(["no-device", "hangs"] as const)("android capture stops its emulator when it never boots (adb %s)", async (adb) => {
+  const capture = fakeAndroidCapture("never-boots", adb);
   try {
     expect(await capture.within(15_000)).toBe(1);
     expect(capture.stderr()).toContain("did not boot within 3 seconds");

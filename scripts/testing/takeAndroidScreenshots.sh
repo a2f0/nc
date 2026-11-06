@@ -54,13 +54,45 @@ emulator_log="$OUTPUT_DIR/emulator.log"
 # How long the emulator may take to boot before the capture gives up.
 BOOT_TIMEOUT="${ANDROID_SCREENSHOT_BOOT_TIMEOUT:-600}"
 
+# bounded <seconds> <command...>: runs the command, stopping it after that long. adb
+# can block forever on an emulator that has stopped responding.
+bounded() {
+  seconds=$1
+  shift
+  "$@" &
+  bounded_pid=$!
+  (
+    sleep_pid=""
+    trap 'kill "$sleep_pid" 2>/dev/null; exit 0' TERM
+    sleep "$seconds" &
+    sleep_pid=$!
+    wait "$sleep_pid"
+    kill "$bounded_pid" 2>/dev/null
+  ) >/dev/null 2>&1 &
+  watchdog_pid=$!
+  bounded_status=0
+  wait "$bounded_pid" || bounded_status=$?
+  kill "$watchdog_pid" 2>/dev/null || true
+  wait "$watchdog_pid" 2>/dev/null || true
+  return "$bounded_status"
+}
+
+# Each boot check waits at most 10 seconds, and never past the boot deadline.
+boot_poll_limit() {
+  remaining=$((boot_deadline - $(date +%s)))
+  if [ "$remaining" -lt 1 ]; then echo 1; elif [ "$remaining" -lt 10 ]; then echo "$remaining"; else echo 10; fi
+}
+
 emulator_pid=""
+booted=false
 cleanup() {
-  adb -s "$SERIAL" shell am broadcast -a com.android.systemui.demo -e command exit >/dev/null 2>&1 || true
-  adb -s "$SERIAL" shell cmd uimode night no >/dev/null 2>&1 || true
-  adb -s "$SERIAL" emu kill >/dev/null 2>&1 || true
-  # Before adb sees the emulator its console can't stop it, and a background job
-  # ignores Ctrl-C, so stop the process too.
+  if [ "$booted" = true ]; then
+    bounded 10 adb -s "$SERIAL" shell am broadcast -a com.android.systemui.demo -e command exit >/dev/null 2>&1 || true
+    bounded 10 adb -s "$SERIAL" shell cmd uimode night no >/dev/null 2>&1 || true
+    bounded 10 adb -s "$SERIAL" emu kill >/dev/null 2>&1 || true
+  fi
+  # The console can't stop an emulator adb doesn't see yet, or one that stopped
+  # responding, and a background job ignores Ctrl-C: stop the process too.
   [ -z "$emulator_pid" ] || kill "$emulator_pid" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -71,9 +103,10 @@ echo "Booting $AVD_NAME..."
 emulator -avd "$AVD_NAME" -port "$EMULATOR_PORT" -no-window -no-audio \
   -no-snapshot -no-boot-anim >"$emulator_log" 2>&1 &
 emulator_pid=$!
-# Poll rather than adb wait-for-device, which waits forever for an emulator that exited.
+# Poll, each try bounded, rather than adb wait-for-device, which waits forever for an
+# emulator that exited.
 boot_deadline=$(($(date +%s) + BOOT_TIMEOUT))
-until [ "$(adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
+until [ "$(bounded "$(boot_poll_limit)" adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
   if ! kill -0 "$emulator_pid" 2>/dev/null; then
     echo "Error: the emulator exited before it booted; see $emulator_log." >&2
     exit 1
@@ -84,6 +117,7 @@ until [ "$(adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d
   fi
   sleep 2
 done
+booted=true
 
 # A fresh install: an earlier build may have a higher version code or another signature.
 adb -s "$SERIAL" uninstall "$APP_ID" >/dev/null 2>&1 || true
