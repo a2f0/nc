@@ -51,10 +51,17 @@ sh "$REPO_ROOT/scripts/dev/ensureGradleWrapper.sh"
 mkdir -p "$OUTPUT_DIR/phone" "$MAESTRO_OUTPUT_DIR"
 emulator_log="$OUTPUT_DIR/emulator.log"
 
+# How long the emulator may take to boot before the capture gives up.
+BOOT_TIMEOUT="${ANDROID_SCREENSHOT_BOOT_TIMEOUT:-600}"
+
+emulator_pid=""
 cleanup() {
   adb -s "$SERIAL" shell am broadcast -a com.android.systemui.demo -e command exit >/dev/null 2>&1 || true
   adb -s "$SERIAL" shell cmd uimode night no >/dev/null 2>&1 || true
   adb -s "$SERIAL" emu kill >/dev/null 2>&1 || true
+  # Before adb sees the emulator its console can't stop it, and a background job
+  # ignores Ctrl-C, so stop the process too.
+  [ -z "$emulator_pid" ] || kill "$emulator_pid" 2>/dev/null || true
 }
 trap cleanup EXIT
 trap 'exit 130' INT
@@ -63,8 +70,18 @@ trap 'exit 143' TERM
 echo "Booting $AVD_NAME..."
 emulator -avd "$AVD_NAME" -port "$EMULATOR_PORT" -no-window -no-audio \
   -no-snapshot -no-boot-anim >"$emulator_log" 2>&1 &
-adb -s "$SERIAL" wait-for-device
+emulator_pid=$!
+# Poll rather than adb wait-for-device, which waits forever for an emulator that exited.
+boot_deadline=$(($(date +%s) + BOOT_TIMEOUT))
 until [ "$(adb -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; do
+  if ! kill -0 "$emulator_pid" 2>/dev/null; then
+    echo "Error: the emulator exited before it booted; see $emulator_log." >&2
+    exit 1
+  fi
+  if [ "$(date +%s)" -ge "$boot_deadline" ]; then
+    echo "Error: $AVD_NAME did not boot within $BOOT_TIMEOUT seconds; see $emulator_log." >&2
+    exit 1
+  fi
   sleep 2
 done
 
