@@ -93,7 +93,15 @@ cleanup() {
   fi
   # The console can't stop an emulator adb doesn't see yet, or one that stopped
   # responding, and a background job ignores Ctrl-C: stop the process too.
-  [ -z "$emulator_pid" ] || kill "$emulator_pid" 2>/dev/null || true
+  [ -n "$emulator_pid" ] || return 0
+  kill "$emulator_pid" 2>/dev/null || true
+  # Wait for it to let go of its port and AVD lock, so a rerun can start another.
+  tries=0
+  while kill -0 "$emulator_pid" 2>/dev/null && [ "$tries" -lt 20 ]; do
+    sleep 0.5
+    tries=$((tries + 1))
+  done
+  if kill -0 "$emulator_pid" 2>/dev/null; then kill -9 "$emulator_pid" 2>/dev/null || true; fi
 }
 trap cleanup EXIT
 trap 'exit 130' INT
