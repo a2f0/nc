@@ -109,6 +109,22 @@ log; inspect it there or with `agent-tool runs list --head <commit>`.
   change on the others. The web app has no widget, and its noise generator must keep
   matching the native ones (`web/test/noiseGenerator.test.ts` compares it with iOS output).
 
+## State machines
+
+Make implicit state machines explicit when you write or change code: one closed
+state type (a discriminated union, enum, or sealed type) carrying each state's
+data, typed events, and one pure transition function, with effects run on
+entering a state and async work tagged so only the current request can finish.
+Follow the `explicit-state-machines` skill for what to convert, what to leave
+alone, and how to prove behavior did not change; `agent-tool state-machines`
+lists leads. Reviews flag new implicit machines.
+
+Here, machines cluster in playback, one per platform, documented in
+[architecture](docs/architecture.md#playback-state): web `PlayerState` (tag `status`) and
+`transition` in `web/src/noisePlayer.ts`, Android sealed `ServiceState` and `ServiceState.on`
+in `playback/ServiceState.kt`, iOS enum `PlayerState.handling(_:)` in `ios/Shared/NoisePlayer.swift`.
+The player runs effects around one dispatch; keep the three in step like other behavior.
+
 ## Shipping
 
 Use the `update-dependencies` skill for dependency upgrades, including runtime,
