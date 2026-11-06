@@ -148,11 +148,21 @@ class PlaybackHistoryTest {
     }
 
     @Test fun stoppingLeavesCommandsTheServiceHasNotHandledYet() {
-        service.onStartCommand(PlaybackService.playIntent(service, NoiseType.WHITE, "widget"), 0, 2)
+        started()
+        // The widget's play (start command 2) is queued in the system when the failure stops the service.
         failed()
         main.idle()
-        // stopSelf(startId) keeps the service for a play the system is still delivering.
+        // Only stopSelf(startId) with the newest handled command, 1, lets the system keep the service
+        // for command 2; stopSelf() would destroy it. Robolectric records the ID without enforcing it.
         assertTrue(shadowOf(service).isStoppedBySelf)
+        assertEquals(1, shadowOf(service).stopSelfId)
+        service.onStartCommand(PlaybackService.playIntent(service, NoiseType.WHITE, "widget"), 0, 2)
+        main.idle()
+        assertEquals(NoiseType.WHITE, NoisePlayer.nowPlaying.value)
+        assertEquals(listOf(NoiseType.PINK, NoiseType.WHITE), service.plays)
+        failed()
+        main.idle()
+        assertNull(NoisePlayer.nowPlaying.value)
         assertEquals(2, shadowOf(service).stopSelfId)
     }
 
