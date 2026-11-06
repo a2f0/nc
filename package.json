@@ -46,7 +46,7 @@
     "web:deploy:preview": "wrangler deploy --config web/wrangler.jsonc --dry-run"
   },
   "devDependencies": {
-    "@a2f0/agent-tool": "0.1.44",
+    "@a2f0/agent-tool": "0.1.46",
     "@a2f0/ct-client": "0.1.7",
     "@types/bun": "1.4.4",
     "fake-indexeddb": "6.2.7",
