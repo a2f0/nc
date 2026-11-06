@@ -23,6 +23,9 @@ internal interface AudioSink {
 
 /** Playback controls, separated from the hardware for service lifecycle tests. */
 internal interface PlaybackEngine {
+    /** Counts calls to [play]; a failure reports the count it ended. */
+    val playVersion: Int
+
     fun play(type: NoiseType)
     fun stop()
     fun setVolume(volume: Float)
@@ -35,7 +38,8 @@ internal interface PlaybackEngine {
  */
 internal class NoiseEngine(
     private val onStarted: (NoiseType) -> Unit = {},
-    private val onFailed: (String) -> Unit = {},
+    /** Called with why the audio thread stopped and the [playVersion] it was playing. */
+    private val onFailed: (String, Int) -> Unit = { _, _ -> },
     private val openSink: () -> AudioSink = ::AudioTrackSink,
 ) : PlaybackEngine {
     private val lock = Any()
@@ -43,7 +47,8 @@ internal class NoiseEngine(
 
     @Volatile private var type = NoiseType.WHITE
 
-    @Volatile private var playVersion = 0
+    @Volatile override var playVersion = 0
+        private set
 
     @Volatile private var fadingOut = false
 
@@ -135,7 +140,10 @@ internal class NoiseEngine(
     /** Releases [sink], then reports [failure], or a failure to release, unless a newer thread has taken over. */
     @Suppress("TooGenericExceptionCaught")
     private fun release(sink: AudioSink?, failure: String?) {
+        // A play() after this starts a new thread with a newer version, which this failure doesn't end.
+        var version = 0
         val current = synchronized(lock) {
+            version = playVersion
             (thread == Thread.currentThread()).also { if (it) thread = null }
         }
         var reported = failure
@@ -144,7 +152,7 @@ internal class NoiseEngine(
         } catch (error: Exception) {
             if (reported == null) reported = "release: ${error.javaClass.simpleName}: ${error.message}"
         } finally {
-            if (current) reported?.let(onFailed)
+            if (current) reported?.let { onFailed(it, version) }
         }
     }
 

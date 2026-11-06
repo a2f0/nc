@@ -12,6 +12,7 @@ import net.a2f0.nc.history.ListeningHistory
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -52,13 +53,15 @@ class PlaybackHistoryTest {
         val diagnostics by lazy { PlaybackLog(File(noBackupFilesDir, "playback-log-v1.json")) }
         override fun createLog(): PlaybackLog = diagnostics
         lateinit var started: (NoiseType) -> Unit
-        lateinit var failed: (String) -> Unit
+        lateinit var failed: (String, Int) -> Unit
         var stops = 0
         val plays = mutableListOf<NoiseType>()
-        override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine {
+        override fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String, Int) -> Unit): PlaybackEngine {
             started = onStarted
             failed = onFailed
             return object : PlaybackEngine {
+                override val playVersion get() = plays.size
+
                 override fun play(type: NoiseType) {
                     plays.add(type)
                 }
@@ -109,9 +112,12 @@ class PlaybackHistoryTest {
         main.idle()
     }
 
+    /** The engine reports a failure of its latest play, as its audio thread does. */
+    private fun failed() = service.failed("test failure", service.plays.size)
+
     @Test fun failedStartCreatesNoSessionAndStopsTheService() {
         assertTrue(rows().isEmpty())
-        service.failed("test failure")
+        failed()
         main.idle()
         assertTrue(rows().isEmpty())
         assertNull(NoisePlayer.nowPlaying.value)
@@ -122,11 +128,32 @@ class PlaybackHistoryTest {
     @Test fun engineFailureClosesAnEstablishedSession() {
         started()
         assertNull(rows().single().endedAt)
-        service.failed("test failure")
+        failed()
         main.idle()
         assertNotNull(rows().single().endedAt)
         assertNull(NoisePlayer.nowPlaying.value)
         assertTrue(shadowOf(service).isStoppedBySelf)
+    }
+
+    @Test fun aFailureReportedAfterANewerPlayLeavesItPlaying() {
+        started()
+        // The failed audio thread's report is still queued when the widget starts white noise.
+        failed()
+        service.onStartCommand(PlaybackService.playIntent(service, NoiseType.WHITE, "widget"), 0, 2)
+        main.idle()
+        assertEquals(NoiseType.WHITE, NoisePlayer.nowPlaying.value)
+        assertFalse(shadowOf(service).isStoppedBySelf)
+        service.diagnostics.flush()
+        assertTrue(service.diagnostics.entries.value.any { it.event == PlaybackEvent.ENGINE_FAILED })
+    }
+
+    @Test fun stoppingLeavesCommandsTheServiceHasNotHandledYet() {
+        service.onStartCommand(PlaybackService.playIntent(service, NoiseType.WHITE, "widget"), 0, 2)
+        failed()
+        main.idle()
+        // stopSelf(startId) keeps the service for a play the system is still delivering.
+        assertTrue(shadowOf(service).isStoppedBySelf)
+        assertEquals(2, shadowOf(service).stopSelfId)
     }
 
     @Test fun focusLossClosesHistoryAndResumeWaitsForActualAudio() {
