@@ -141,10 +141,10 @@ internal class NoiseEngine(
     @Suppress("TooGenericExceptionCaught")
     private fun release(sink: AudioSink?, failure: String?) {
         // A play() after this starts a new thread with a newer version, which this failure doesn't end.
-        var version = 0
-        val current = synchronized(lock) {
-            version = playVersion
-            (thread == Thread.currentThread()).also { if (it) thread = null }
+        val (current, version) = synchronized(lock) {
+            val current = thread == Thread.currentThread()
+            if (current) thread = null
+            current to playVersion
         }
         var reported = failure
         try {
