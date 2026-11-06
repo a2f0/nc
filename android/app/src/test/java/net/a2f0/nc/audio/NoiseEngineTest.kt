@@ -74,8 +74,8 @@ class NoiseEngineTest {
         val failed = CountDownLatch(1)
         var starts = 0
         var reason = ""
-        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = {
-            reason = it
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { failure, _ ->
+            reason = failure
             failed.countDown()
         }) {
             error("audio output unavailable")
@@ -92,8 +92,10 @@ class NoiseEngineTest {
         val released = CountDownLatch(1)
         var starts = 0
         var reason = ""
-        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = {
-            reason = it
+        var version = 0
+        val engine = NoiseEngine(onStarted = { starts++ }, onFailed = { failure, failedVersion ->
+            reason = failure
+            version = failedVersion
             failed.countDown()
         }) {
             object : AudioSink {
@@ -109,6 +111,55 @@ class NoiseEngineTest {
         assertTrue(released.await(5, TimeUnit.SECONDS))
         assertEquals(0, starts)
         assertEquals("AudioTrack.write=-1", reason)
+        // The service compares this with playVersion to ignore a failure that a newer play replaced.
+        assertEquals(engine.playVersion, version)
+        assertEquals(1, version)
+    }
+
+    @Test
+    fun aFailureReportsTheVersionItEndedNotANewerPlays() {
+        val failed = CountDownLatch(1)
+        val releasing = CountDownLatch(1)
+        val finishRelease = CountDownLatch(1)
+        val newerStarted = CountDownLatch(1)
+        var version = 0
+        var sinks = 0
+        val engine = NoiseEngine(
+            onStarted = { newerStarted.countDown() },
+            onFailed = { _, failedVersion ->
+                version = failedVersion
+                failed.countDown()
+            },
+        ) {
+            sinks++
+            if (sinks == 1) {
+                // The first thread fails, then is slow to release its sink.
+                object : AudioSink {
+                    override val bufferSizeInFrames = 1024
+                    override fun write(buffer: FloatArray, size: Int) = -1
+                    override fun release() {
+                        releasing.countDown()
+                        finishRelease.await(5, TimeUnit.SECONDS)
+                    }
+                }
+            } else {
+                object : AudioSink {
+                    override val bufferSizeInFrames = 1024
+                    override fun write(buffer: FloatArray, size: Int) = size
+                    override fun release() = Unit
+                }
+            }
+        }
+        engine.play(NoiseType.WHITE)
+        assertTrue(releasing.await(5, TimeUnit.SECONDS))
+        // The failed thread has given up the engine, so this play starts a new thread.
+        engine.play(NoiseType.PINK)
+        assertTrue(newerStarted.await(5, TimeUnit.SECONDS))
+        finishRelease.countDown()
+        assertTrue(failed.await(5, TimeUnit.SECONDS))
+        assertEquals(1, version)
+        assertEquals(2, engine.playVersion)
+        engine.stop()
     }
 
     @Test
