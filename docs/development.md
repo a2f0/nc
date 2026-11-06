@@ -156,10 +156,11 @@ so don't start a capture while another Maestro run is going.
 
 Drives the app with the Maestro flows in `maestro/screenshots/` on dedicated simulators and
 a headless emulator, with a fixed 9:41 status bar, in light and dark appearance. Android
-runs the minified release build, signed with the debug key. Writes store-sized PNGs (no
-alpha) below the gitignored `.screenshots` (or `SCREENSHOT_OUTPUT_DIR`): iPhone 6.9"
-(1320x2868), iPad 13" (2064x2752), and Android phone (1080x1920, within Google Play's 2:1
-limit). iOS captures use the full rectangle without black device corners.
+runs the minified release build, signed with the debug key, and fails if its emulator exits
+or hasn't booted within `ANDROID_SCREENSHOT_BOOT_TIMEOUT` seconds (600). Writes store-sized
+PNGs (no alpha) below the gitignored `.screenshots` (or `SCREENSHOT_OUTPUT_DIR`): iPhone
+6.9" (1320x2868), iPad 13" (2064x2752), and Android phone (1080x1920, within Google Play's
+2:1 limit). iOS captures use the full rectangle without black device corners.
 
 ```text
 .screenshots/
