@@ -27,6 +27,9 @@ interrupted). Side effects (engine, audio session, history, log) stay in the pla
 the transition. On iOS, `handling(_:)` also names the effect a transition needs (fade out,
 resume, or release the audio session so other apps can resume), which the player performs.
 Add a state or event there rather than a new flag beside it, and keep the three in step.
+A failure that arrives after a newer play never stops it: the web player checks the engine
+and command it belongs to, and Android the engine's `playVersion`. Android's service stops
+with `stopSelf(startId)`, so a play command still being delivered keeps it running.
 
 ## Appearance
 

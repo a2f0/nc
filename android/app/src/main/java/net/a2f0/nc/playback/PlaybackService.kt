@@ -43,7 +43,7 @@ import net.a2f0.nc.history.ListeningHistory
  */
 open class PlaybackService : Service() {
     private val log by lazy { createLog() }
-    private val engine by lazy {
+    private val engine: PlaybackEngine by lazy {
         createEngine(
             onStarted = { type ->
                 scope.launch {
@@ -53,10 +53,11 @@ open class PlaybackService : Service() {
                     }
                 }
             },
-            onFailed = { failure ->
+            onFailed = { failure, version ->
                 scope.launch {
                     log.record(PlaybackEvent.ENGINE_FAILED, nowPlaying, failure)
-                    stop("engine_failed")
+                    // A play since then runs on a new audio thread, which this failure doesn't stop.
+                    if (version == engine.playVersion) stop("engine_failed")
                 }
             },
         )
@@ -66,6 +67,9 @@ open class PlaybackService : Service() {
     private lateinit var focusRequest: AudioFocusRequest
     private lateinit var session: MediaSession
     private var state: ServiceState = ServiceState.Stopped
+
+    /** The newest start command handled; stopping with it keeps the service for any still being delivered. */
+    private var lastStartId = 0
 
     /** The noise this service holds, playing or paused for focus loss, or null. */
     private val nowPlaying: NoiseType? get() = state.noise
@@ -82,7 +86,7 @@ open class PlaybackService : Service() {
 
     internal open fun createLog(): PlaybackLog = PlaybackLog.get(this)
 
-    internal open fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String) -> Unit): PlaybackEngine =
+    internal open fun createEngine(onStarted: (NoiseType) -> Unit, onFailed: (String, Int) -> Unit): PlaybackEngine =
         NoiseEngine(onStarted = onStarted, onFailed = onFailed)
 
     private val languageListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -134,6 +138,7 @@ open class PlaybackService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        lastStartId = startId
         when (intent?.action) {
             ACTION_PLAY -> play(
                 NoiseType.fromId(intent.getStringExtra(EXTRA_NOISE)) ?: NoisePlayer.lastPlayed(this).value,
@@ -203,7 +208,8 @@ open class PlaybackService : Service() {
         session.isActive = false
         NoisePlayer.update(this, null)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        // stopSelf() would also drop a play command the system has queued but not yet delivered.
+        stopSelf(lastStartId)
     }
 
     private fun onAudioFocusChange(change: Int) {
