@@ -86,10 +86,11 @@ running foreground service), the system's last memory samples, its description, 
 While playing, it leaves one at start and every 15 seconds: the time, its Java and native
 heaps, the device's free memory, its low-memory flag, and the thermal status
 (`PowerManager.THERMAL_STATUS_*`). `REASON_SIGNALED` means a signal ended the process with
-no kill recorded by the activity manager or low-memory killer and no crash reported; a
-snapshot well before the exit means the main thread had stopped. Older Android, iOS and the
-web cannot always recover a cause: an unfinished playback marker is reported with an unknown
-cause, at the time it was detected. Web recovery uses Web Locks to avoid confusing a live
+no kill recorded by the activity manager or low-memory killer and no crash reported. A
+snapshot well before the exit suggests the main thread had stopped, though the system may
+also have rejected later snapshots as too frequent. Older Android, iOS and the web cannot
+always recover a cause: an unfinished playback marker is reported with an unknown cause, at
+the time it was detected. Web recovery uses Web Locks to avoid confusing a live
 tab with a closed one; without that API, only the original events are shown. iOS also
 records audio interruptions, route and engine configuration changes, and delivered
 termination notices; web logs context state, worklet/media failures, visibility and page exits.

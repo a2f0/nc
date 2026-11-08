@@ -58,6 +58,19 @@ class PlaybackHistoryTest {
         protected fun setProcessStateSummary(@Suppress("UNUSED_PARAMETER") state: ByteArray?): Unit = error("throttled")
     }
 
+    // Keeps what the service leaves with the system for the record of its exit.
+    @Implements(ActivityManager::class)
+    class RecordingActivityManager : ShadowActivityManager() {
+        @Implementation
+        protected fun setProcessStateSummary(state: ByteArray?) {
+            summaries += state!!
+        }
+
+        companion object {
+            val summaries = mutableListOf<ByteArray>()
+        }
+    }
+
     class TestService : PlaybackService() {
         val diagnostics by lazy { PlaybackLog(File(noBackupFilesDir, "playback-log-v1.json")) }
         override fun createLog(): PlaybackLog = diagnostics
@@ -224,6 +237,33 @@ class PlaybackHistoryTest {
         }
         assertEquals(emptyList<Throwable>(), crashes)
         assertEquals(PlaybackState.STATE_PLAYING, state())
+    }
+
+    @Test
+    @Config(shadows = [RecordingActivityManager::class])
+    fun playingLeavesABoundedSnapshotAtStartAndEachCheckpoint() {
+        val summaries = RecordingActivityManager.summaries.apply { clear() }
+        // With the most free memory a device can report, the summary still fits the system's limit.
+        val memory = ActivityManager.MemoryInfo().apply {
+            availMem = Long.MAX_VALUE
+            lowMemory = true
+        }
+        Shadow.extract<RecordingActivityManager>(service.getSystemService(ActivityManager::class.java))
+            .setMemoryInfo(memory)
+        started()
+        assertEquals(1, summaries.size)
+        main.idleFor(Duration.ofSeconds(15))
+        assertEquals(2, summaries.size)
+        focus(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        main.idleFor(Duration.ofSeconds(30))
+        assertEquals(2, summaries.size)
+        for (summary in summaries) {
+            assertTrue(summary.size <= 128)
+            val text = summary.toString(Charsets.UTF_8)
+            for (field in listOf("at=", " java=", " native=", " avail=", " low=1", " thermal=")) {
+                assertTrue(text, text.contains(field))
+            }
+        }
     }
 
     @Test fun aRepeatedTransientFocusLossLogsOneStop() {
