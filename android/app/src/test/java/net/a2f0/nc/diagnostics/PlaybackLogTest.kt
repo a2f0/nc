@@ -14,6 +14,17 @@ import java.nio.file.Files
 class PlaybackLogTest {
     private fun file() = File(Files.createTempDirectory("playback-log").toFile(), "log.json")
 
+    /** Recovers a playback started by process 42 that ended with [exit]. */
+    private fun recover(exit: PlaybackExit): PlaybackLogEntry {
+        val file = file()
+        val first = PlaybackLog(file, clock = { 1000 }, pid = 42)
+        first.record(PlaybackEvent.STARTED, NoiseType.WHITE, activeSound = "white", updateActive = true)
+        first.flush()
+        val recovered = PlaybackLog(file, { listOf(exit) }, clock = { 3000 }, pid = 99)
+        recovered.flush()
+        return recovered.entries.value.last()
+    }
+
     @Test fun boundedEventsAndDetailsSurviveRelaunch() {
         val file = file()
         val log = PlaybackLog(file)
@@ -34,9 +45,9 @@ class PlaybackLogTest {
         first.flush()
         val exits = {
             listOf(
-                PlaybackExit(1500, 99, 3, 400, "different process"),
-                PlaybackExit(900, 42, 3, 400, "old exit"),
-                PlaybackExit(2000, 42, 16, 125, "killDueToPackageUpdate"),
+                PlaybackExit(1500, 99, 3, 0, 400, 0, 0, "different process", ""),
+                PlaybackExit(900, 42, 3, 0, 400, 0, 0, "old exit", ""),
+                PlaybackExit(2000, 42, 16, 0, 125, 0, 0, "killDueToPackageUpdate", ""),
             )
         }
         val recovered = PlaybackLog(file, exits, clock = { 3000 }, pid = 99)
@@ -50,6 +61,19 @@ class PlaybackLogTest {
         val again = PlaybackLog(file, exits)
         again.flush()
         assertEquals(1, again.entries.value.count { it.event == PlaybackEvent.PROCESS_EXIT })
+    }
+
+    @Test fun signaledExitNamesTheSignalAndKeepsMemoryAndLastState() {
+        val state = "at=2026-11-08T14:30:16Z java=12MB native=8MB avail=1534MB low=0 thermal=0"
+        val row = recover(PlaybackExit(2000, 42, 2, 9, 125, 46_080, 133_120, "", state))
+        assertEquals(PlaybackEvent.PROCESS_EXIT, row.event)
+        assertTrue(row.detail.contains("reason=2 (SIGNALED); status=9 (SIGKILL); importance=125"))
+        assertTrue(row.detail.contains("pss=45MB; rss=130MB"))
+        assertTrue(row.detail.endsWith("; state=[$state]"))
+        // An exit code is not a signal, even when its number matches one.
+        val exited = recover(PlaybackExit(2000, 42, 1, 9, 125, 0, 0, "", ""))
+        assertTrue(exited.detail.contains("status=9;"))
+        assertFalse(exited.detail.contains("SIGKILL"))
     }
 
     @Test fun missingExitInformationReportsUnknownAndNormalStopDoesNot() {

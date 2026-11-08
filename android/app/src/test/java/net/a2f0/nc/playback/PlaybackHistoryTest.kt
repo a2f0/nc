@@ -1,5 +1,6 @@
 package net.a2f0.nc.playback
 
+import android.app.ActivityManager
 import android.media.AudioManager
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
@@ -29,6 +30,7 @@ import org.robolectric.annotation.Implementation
 import org.robolectric.annotation.Implements
 import org.robolectric.annotation.LooperMode
 import org.robolectric.shadow.api.Shadow
+import org.robolectric.shadows.ShadowActivityManager
 import org.robolectric.shadows.ShadowMediaSession
 import java.io.File
 import java.time.Duration
@@ -46,6 +48,26 @@ class PlaybackHistoryTest {
         @Implementation
         protected fun setPlaybackState(value: PlaybackState?) {
             playback = value
+        }
+    }
+
+    // The system may throttle process state summaries with an exception.
+    @Implements(ActivityManager::class)
+    class ThrottlingActivityManager : ShadowActivityManager() {
+        @Implementation
+        protected fun setProcessStateSummary(@Suppress("UNUSED_PARAMETER") state: ByteArray?): Unit = error("throttled")
+    }
+
+    // Keeps what the service leaves with the system for the record of its exit.
+    @Implements(ActivityManager::class)
+    class RecordingActivityManager : ShadowActivityManager() {
+        @Implementation
+        protected fun setProcessStateSummary(state: ByteArray?) {
+            summaries += state!!
+        }
+
+        companion object {
+            val summaries = mutableListOf<ByteArray>()
         }
     }
 
@@ -198,6 +220,50 @@ class PlaybackHistoryTest {
         assertNull(NoisePlayer.nowPlaying.value)
         service.onStartCommand(PlaybackService.stopIntent(service), 0, 2)
         assertEquals(1, rows().size)
+    }
+
+    @Test
+    @Config(shadows = [ThrottlingActivityManager::class])
+    fun aRejectedProcessStateDoesNotCrashPlayback() {
+        // On a device, an exception escaping the service's coroutines kills the process.
+        val crashes = mutableListOf<Throwable>()
+        val handler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, error -> crashes += error }
+        try {
+            started()
+            main.idleFor(Duration.ofSeconds(30))
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(handler)
+        }
+        assertEquals(emptyList<Throwable>(), crashes)
+        assertEquals(PlaybackState.STATE_PLAYING, state())
+    }
+
+    @Test
+    @Config(shadows = [RecordingActivityManager::class])
+    fun playingLeavesABoundedSnapshotAtStartAndEachCheckpoint() {
+        val summaries = RecordingActivityManager.summaries.apply { clear() }
+        // With the most free memory a device can report, the summary still fits the system's limit.
+        val memory = ActivityManager.MemoryInfo().apply {
+            availMem = Long.MAX_VALUE
+            lowMemory = true
+        }
+        Shadow.extract<RecordingActivityManager>(service.getSystemService(ActivityManager::class.java))
+            .setMemoryInfo(memory)
+        started()
+        assertEquals(1, summaries.size)
+        main.idleFor(Duration.ofSeconds(15))
+        assertEquals(2, summaries.size)
+        focus(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT)
+        main.idleFor(Duration.ofSeconds(30))
+        assertEquals(2, summaries.size)
+        for (summary in summaries) {
+            assertTrue(summary.size <= 128)
+            val text = summary.toString(Charsets.UTF_8)
+            for (field in listOf("at=", " java=", " native=", " avail=", " low=1", " thermal=")) {
+                assertTrue(text, text.contains(field))
+            }
+        }
     }
 
     @Test fun aRepeatedTransientFocusLossLogsOneStop() {

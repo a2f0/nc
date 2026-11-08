@@ -79,12 +79,21 @@ lost if the process is killed before they reach disk.
 Android records UI, widget, notification and media commands, focus changes, output
 disconnections, task removal, engine failures, and service destruction. On Android 11+
 it matches unfinished playback to the system's retained process-exit records, including
-package updates, low memory, crashes and ANRs. Older Android, iOS and the web cannot always
-recover a cause: an unfinished playback marker is reported with an unknown cause, at the
-time it was detected. Web recovery uses Web Locks to avoid confusing a live tab with a
-closed one; without that API, only the original events are shown. iOS also records audio
-interruptions, route and engine configuration changes, and delivered termination notices;
-web logs context state, worklet/media failures, visibility and page exits.
+package updates, low memory, crashes and ANRs. Each match shows the reason, the exit status
+(the signal's number and name when a signal killed the process), the importance (125 is a
+running foreground service), the system's last memory samples, its description, and
+`state=[…]`: the snapshot the service last left with the system before the process died.
+While playing, it leaves one at start and every 15 seconds: the time, its Java and native
+heaps, the device's free memory, its low-memory flag, and the thermal status
+(`PowerManager.THERMAL_STATUS_*`). `REASON_SIGNALED` means a signal ended the process with
+no kill recorded by the activity manager or low-memory killer and no crash reported. A
+snapshot well before the exit suggests the main thread had stopped, though the system may
+also have rejected later snapshots as too frequent. Older Android, iOS and the web cannot
+always recover a cause: an unfinished playback marker is reported with an unknown cause, at
+the time it was detected. Web recovery uses Web Locks to avoid confusing a live
+tab with a closed one; without that API, only the original events are shown. iOS also
+records audio interruptions, route and engine configuration changes, and delivered
+termination notices; web logs context state, worklet/media failures, visibility and page exits.
 
 Android logs live to `adb logcat -s NoisePlayback`; iOS uses the `NoisePlayback` Logger
 category; the browser console uses the same tag. The persisted native files are
