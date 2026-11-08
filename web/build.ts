@@ -11,7 +11,7 @@ const PACKAGE_JSON = join(REPO_ROOT, "package.json");
 const AGENT_TOOL = join(REPO_ROOT, "node_modules/.bin/agent-tool");
 // The website's pages, and the privacy and support pages the iOS and Android apps link to.
 export const PAGES = [
-  "index.html", "privacy.html", "support.html",
+  "index.html", "privacy.html", "support.html", "terms.html",
   "ios/privacy.html", "ios/support.html", "android/privacy.html", "android/support.html",
 ];
 // Served with status 404 for every path outside /review/ that has no page or file

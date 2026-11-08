@@ -229,7 +229,7 @@ test("default preview builds are inert even on the production host", async () =>
   }
 }, 15_000);
 
-for (const path of ["/privacy", "/support"]) {
+for (const path of ["/privacy", "/support", "/terms"]) {
   test(`production text page ${path} also records safe clicks`, async () => {
     const { context, page, batches } = await openSite("gpc");
     try {

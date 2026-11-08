@@ -89,6 +89,7 @@ function localize(): void {
   );
   element("support").textContent = t("support");
   element("privacy").textContent = t("privacy_policy");
+  element("terms").textContent = t("terms_of_service");
   for (const [type, button] of cards) {
     button.querySelector(".title")!.textContent = t(NOISE_INFO[type].title);
     button.querySelector(".blurb")!.textContent = t(NOISE_INFO[type].blurb);
