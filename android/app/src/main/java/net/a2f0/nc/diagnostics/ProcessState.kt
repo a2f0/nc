@@ -19,16 +19,22 @@ internal object ProcessState {
     private const val MAX_BYTES = 128
     private const val BYTES_PER_MB = 1024 * 1024L
 
+    // The system may reject calls it finds too frequent with any RuntimeException, and diagnostics
+    // must never stop playback.
     fun record(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        val activityManager = context.getSystemService(ActivityManager::class.java)
-        val memory = ActivityManager.MemoryInfo().also(activityManager::getMemoryInfo)
-        val runtime = Runtime.getRuntime()
-        val javaHeap = runtime.totalMemory() - runtime.freeMemory()
-        val thermal = context.getSystemService(PowerManager::class.java).currentThermalStatus
-        val summary = "at=${Instant.now().truncatedTo(ChronoUnit.SECONDS)}" +
-            " java=${javaHeap / BYTES_PER_MB}MB native=${Debug.getNativeHeapAllocatedSize() / BYTES_PER_MB}MB" +
-            " avail=${memory.availMem / BYTES_PER_MB}MB low=${if (memory.lowMemory) 1 else 0} thermal=$thermal"
-        activityManager.setProcessStateSummary(summary.take(MAX_BYTES).toByteArray(Charsets.UTF_8))
+        try {
+            val activityManager = context.getSystemService(ActivityManager::class.java)
+            val memory = ActivityManager.MemoryInfo().also(activityManager::getMemoryInfo)
+            val runtime = Runtime.getRuntime()
+            val javaHeap = runtime.totalMemory() - runtime.freeMemory()
+            val thermal = context.getSystemService(PowerManager::class.java).currentThermalStatus
+            val summary = "at=${Instant.now().truncatedTo(ChronoUnit.SECONDS)}" +
+                " java=${javaHeap / BYTES_PER_MB}MB native=${Debug.getNativeHeapAllocatedSize() / BYTES_PER_MB}MB" +
+                " avail=${memory.availMem / BYTES_PER_MB}MB low=${if (memory.lowMemory) 1 else 0} thermal=$thermal"
+            activityManager.setProcessStateSummary(summary.take(MAX_BYTES).toByteArray(Charsets.UTF_8))
+        } catch (_: RuntimeException) {
+            // A rejected snapshot leaves the previous one, whose time shows its age.
+        }
     }
 }
