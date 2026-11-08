@@ -41,8 +41,15 @@ data class PlaybackExit(
     val timestamp: Long,
     val pid: Int,
     val reason: Int,
+    /** The process's exit code, or the signal's number if a signal killed it. */
+    val status: Int,
     val importance: Int,
+    /** The system's last samples of the process's memory in kB, not taken at death; 0 if never taken. */
+    val pss: Long,
+    val rss: Long,
     val description: String,
+    /** The last summary [ProcessState] left with the system, or empty. */
+    val state: String,
 )
 
 /** All reads, recovery, and atomic writes share one queue; no disk I/O on the audio thread. */
@@ -94,12 +101,7 @@ class PlaybackLog(
                         exit?.timestamp ?: clock(),
                         if (exit == null) PlaybackEvent.UNCLEAN_EXIT else PlaybackEvent.PROCESS_EXIT,
                         previous.soundId,
-                        if (exit == null) {
-                            "startedAt=${Instant.ofEpochMilli(previous.timestamp)}"
-                        } else {
-                            val reason = "reason=${exit.reason} (${exitReason(exit.reason)})"
-                            "$reason; importance=${exit.importance}; ${exit.description}"
-                        },
+                        if (exit == null) "startedAt=${Instant.ofEpochMilli(previous.timestamp)}" else exitDetail(exit),
                     ),
                 )
                 active = null
@@ -178,7 +180,17 @@ class PlaybackLog(
                         app.getSystemService(ActivityManager::class.java).getHistoricalProcessExitReasons(null, 0, 0)
                             .filter { it.processName == app.packageName }
                             .map {
-                                PlaybackExit(it.timestamp, it.pid, it.reason, it.importance, it.description.orEmpty())
+                                PlaybackExit(
+                                    it.timestamp,
+                                    it.pid,
+                                    it.reason,
+                                    it.status,
+                                    it.importance,
+                                    it.pss,
+                                    it.rss,
+                                    it.description.orEmpty(),
+                                    it.processStateSummary?.toString(Charsets.UTF_8).orEmpty(),
+                                )
                             }
                     } else {
                         emptyList()
@@ -186,6 +198,39 @@ class PlaybackLog(
                 }).also { instance = it }
             }
         }
+
+        /** The system's description and the process's own state come last, so the detail limit cuts them first. */
+        @SuppressLint("InlinedApi") // Compiled in as numbers, like exitReason's constants.
+        internal fun exitDetail(exit: PlaybackExit): String {
+            val signaled = exit.reason == ApplicationExitInfo.REASON_SIGNALED ||
+                exit.reason == ApplicationExitInfo.REASON_CRASH_NATIVE
+            val signal = SIGNALS[exit.status]?.takeIf { signaled }?.let { " ($it)" }.orEmpty()
+            return listOfNotNull(
+                "reason=${exit.reason} (${exitReason(exit.reason)})",
+                "status=${exit.status}$signal",
+                "importance=${exit.importance}",
+                "pss=${exit.pss / KB_PER_MB}MB",
+                "rss=${exit.rss / KB_PER_MB}MB",
+                exit.description.ifEmpty { null },
+                exit.state.ifEmpty { null }?.let { "state=[$it]" },
+            ).joinToString("; ")
+        }
+
+        private const val KB_PER_MB = 1024
+
+        // Linux numbers these the same on every Android ABI.
+        private val SIGNALS = mapOf(
+            3 to "SIGQUIT",
+            4 to "SIGILL",
+            5 to "SIGTRAP",
+            6 to "SIGABRT",
+            7 to "SIGBUS",
+            8 to "SIGFPE",
+            9 to "SIGKILL",
+            11 to "SIGSEGV",
+            15 to "SIGTERM",
+            31 to "SIGSYS",
+        )
 
         // The constants are compiled in as numbers, so the newer ones also match on older devices.
         @SuppressLint("InlinedApi")

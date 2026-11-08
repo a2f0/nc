@@ -34,6 +34,7 @@ import net.a2f0.nc.audio.NoiseEngine
 import net.a2f0.nc.audio.PlaybackEngine
 import net.a2f0.nc.diagnostics.PlaybackEvent
 import net.a2f0.nc.diagnostics.PlaybackLog
+import net.a2f0.nc.diagnostics.ProcessState
 import net.a2f0.nc.history.ListeningHistory
 
 /**
@@ -50,6 +51,7 @@ open class PlaybackService : Service() {
                     if (state == ServiceState.Playing(type)) {
                         ListeningHistory.get(this@PlaybackService).transition(type.id)
                         log.record(PlaybackEvent.STARTED, type, activeSound = type.id, updateActive = true)
+                        ProcessState.record(this@PlaybackService)
                     }
                 }
             },
@@ -99,7 +101,10 @@ open class PlaybackService : Service() {
         scope.launch {
             while (true) {
                 delay(CHECKPOINT_INTERVAL_MILLIS)
-                if (state is ServiceState.Playing) history.checkpoint()
+                if (state is ServiceState.Playing) {
+                    history.checkpoint()
+                    ProcessState.record(this@PlaybackService)
+                }
             }
         }
         val volume = NoisePlayer.volume(this)
@@ -335,7 +340,10 @@ open class PlaybackService : Service() {
         private const val CHANNEL_ID = "playback"
         private const val NOTIFICATION_ID = 1
 
-        /** How often a playing session is saved, so a crash loses at most this much history. */
+        /**
+         * How often a playing session is saved, so a crash loses at most this much history, and
+         * leaves the process's state with the system for the record of its exit.
+         */
         private const val CHECKPOINT_INTERVAL_MILLIS = 15_000L
 
         fun playIntent(context: Context, type: NoiseType, source: String = "ui"): Intent =
