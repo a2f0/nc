@@ -460,6 +460,11 @@ export const STRINGS = {
     text: "Privacy policy",
     comment: "Link to the privacy policy, in About on mobile and the website footer.",
   },
+  terms_of_service: {
+    text: "Terms of service",
+    comment: "Link to the terms of service in the website footer.",
+    platforms: ["web"],
+  },
   web_title: {
     text: "White, Pink, and Brown Noise Generator",
     comment: "The website's title in the browser tab and history, followed by “ · Noise Connoisseur”.",

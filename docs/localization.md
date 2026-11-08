@@ -139,7 +139,7 @@ Use a staged rollout with these review gates for each language:
 - Introduce a typed plural-message schema before adding count-dependent sentences.
   One/other is insufficient for many languages. Generate Android plurals, iOS catalog
   variations, and web `Intl.PluralRules` from that schema; avoid concatenating fragments.
-- Localize support/privacy pages with appropriate review. They remain English today.
+- Localize support/privacy/terms pages with appropriate review. They remain English today.
 - Add a review ledger or source-fingerprint workflow before scaling beyond what reviewers
   can track in code review. A changed English sentence can leave a valid but stale translation.
 

@@ -95,6 +95,7 @@ export default {
   intent_stop_description: "Stoppt die Wiedergabe.",
   support: "Support",
   privacy_policy: "Datenschutzerklärung",
+  terms_of_service: "Nutzungsbedingungen",
   web_title: "Generator für weißes, rosa und braunes Rauschen",
   review_title: "Android-Hintergrundwiedergabe",
   review_intro: "Diese Aufnahme zeigt, wie vom Nutzer gestartetes Audio weiterläuft, während Noise Connoisseur im Hintergrund ist. Schalten Sie den Ton ein, um die Wiedergabe zu hören.",

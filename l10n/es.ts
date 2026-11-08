@@ -96,6 +96,7 @@ export default {
   intent_stop_description: "Detiene la reproducción.",
   support: "Soporte",
   privacy_policy: "Política de privacidad",
+  terms_of_service: "Términos del servicio",
   web_title: "Generador de ruido blanco, rosa y marrón",
   review_title: "Reproducción en segundo plano en Android",
   review_intro: "Esta grabación muestra cómo el audio iniciado por el usuario continúa mientras Noise Connoisseur está en segundo plano. Active el sonido para escuchar la reproducción.",
