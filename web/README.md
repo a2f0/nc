@@ -36,9 +36,9 @@ The iOS and Android apps and their store listings link to their own privacy and 
 in `web/ios/` and `web/android/` (served at `/ios/privacy`, `/android/support`, and so on);
 `web/privacy.html` and `web/support.html` cover the website and every platform. Keep each
 privacy policy accurate when an app starts storing or sending anything new.
-`web/terms.html` (`/terms`) is the terms of service for the apps and the website, provided by
-Tearleads, LLC; it's the terms link for the stores' trader declarations. Change its effective
-date with its text.
+`web/terms.html` (`/terms`) is the terms of service for the apps and the website; it's the terms
+link for the stores' trader declarations. The terms and every privacy policy name the provider
+as Tearleads, LLC (“we” or “us”). Change a policy's effective date whenever its text changes.
 
 ## Deployment
 
