@@ -67,15 +67,28 @@ test.each(["ios", "android"])("%s capture refuses a linked store without a runni
   expect(capture(platform, link).stderr).toContain("Error: maestro is required.");
 });
 
+// The image the capture builds its AVD on unless ANDROID_SCREENSHOT_SYSTEM_IMAGE says otherwise.
+const screenshotImage = "system-images;android-37.0;google_apis_playstore;arm64-v8a";
+
 // The Android capture in a copy of its tree, with stand-ins for the build, the SDK, and
 // Maestro. The emulator stand-in either exits at once or never boots. adb either finds no
 // device and, like the real one, waits forever for one, or hangs on every shell command, as
-// it can on an emulator that has stopped responding.
-function fakeAndroidCapture(emulator: "exits" | "never-boots", adb: "no-device" | "hangs" = "no-device") {
+// it can on an emulator that has stopped responding. The capture's AVD already exists, built
+// on avdImage; the avdmanager stand-in records its arguments.
+function fakeAndroidCapture(
+  emulator: "exits" | "never-boots",
+  adb: "no-device" | "hangs" = "no-device",
+  avdImage = screenshotImage,
+) {
   const repo = join(output, "repo");
   const sdk = join(output, "sdk");
   const bin = join(output, "bin");
   const pidFile = join(output, "emulator.pid");
+  const avdmanagerArgs = join(output, "avdmanager.args");
+  const avdDir = join(output, ".android/avd/NoiseConnoisseur_Screenshots.avd");
+  mkdirSync(avdDir, { recursive: true });
+  writeFileSync(join(output, ".android/avd/NoiseConnoisseur_Screenshots.ini"), `avd.ini.encoding=UTF-8\npath=${avdDir}\n`);
+  writeFileSync(join(avdDir, "config.ini"), `hw.lcd.density=420\nimage.sysdir.1=${avdImage.replaceAll(";", "/")}/\n`);
   const script = (path: string, body: string) => {
     mkdirSync(resolve(path, ".."), { recursive: true });
     writeFileSync(path, `#!/bin/sh\n${body}\n`);
@@ -91,7 +104,7 @@ function fakeAndroidCapture(emulator: "exits" | "never-boots", adb: "no-device" 
 ${emulator === "exits" ? "exit 1" : `echo $$ >"${pidFile}"; exec sleep 300`}`);
   script(join(sdk, "platform-tools/adb"), `[ "$3" = wait-for-device ] && exec sleep 300
 ${adb === "hangs" ? "exec sleep 300" : `echo "adb: device '$2' not found" >&2; exit 1`}`);
-  script(join(sdk, "cmdline-tools/latest/bin/avdmanager"), "exit 1");
+  script(join(sdk, "cmdline-tools/latest/bin/avdmanager"), `echo "$@" >"${avdmanagerArgs}"`);
   for (const tool of ["maestro", "magick"]) script(join(bin, tool), "exit 1");
   // Its own process group, so the test can stop everything the capture left behind.
   const child = spawn("sh", [join(repo, "scripts/testing/takeAndroidScreenshots.sh")], {
@@ -101,8 +114,11 @@ ${adb === "hangs" ? "exec sleep 300" : `echo "adb: device '$2' not found" >&2; e
       SCREENSHOT_OUTPUT_DIR: join(output, "screenshots"), ANDROID_SCREENSHOT_BOOT_TIMEOUT: "3",
     },
   });
+  let stdout = "";
   let stderr = "";
+  child.stdout.on("data", (chunk: Buffer) => { stdout += chunk.toString(); });
   child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString(); });
+  const avdmanager = () => existsSync(avdmanagerArgs) ? readFileSync(avdmanagerArgs, "utf8").trim() : null;
   const exited = new Promise<number | null>((done) => child.on("exit", (code, signal) => done(code ?? (signal ? -1 : null))));
   const within = (ms: number) => Promise.race([exited, Bun.sleep(ms).then(() => "still running" as const)]);
   const emulatorPid = () => existsSync(pidFile) ? Number(readFileSync(pidFile, "utf8")) : null;
@@ -115,7 +131,7 @@ ${adb === "hangs" ? "exec sleep 300" : `echo "adb: device '$2' not found" >&2; e
       try { if (target) process.kill(target, "SIGKILL"); } catch { /* already gone */ }
     }
   };
-  return { child, within, stderr: () => stderr, emulatorPid, alive, stop };
+  return { child, within, stdout: () => stdout, stderr: () => stderr, avdmanager, emulatorPid, alive, stop };
 }
 
 test("android capture fails, rather than waiting forever, when the emulator exits", async () => {
@@ -123,6 +139,19 @@ test("android capture fails, rather than waiting forever, when the emulator exit
   try {
     expect(await capture.within(15_000)).toBe(1);
     expect(capture.stderr()).toContain("the emulator exited before it booted");
+    // Its AVD is already on the capture's image, so it's reused.
+    expect(capture.avdmanager()).toBeNull();
+  } finally { capture.stop(); }
+}, 20_000);
+
+test("android capture recreates its AVD when it was built on another system image", async () => {
+  const capture = fakeAndroidCapture("exits", "no-device", "system-images;android-35;google_apis_playstore;arm64-v8a");
+  try {
+    expect(await capture.within(15_000)).toBe(1);
+    expect(capture.stdout()).toContain("it was on system-images/android-35/google_apis_playstore/arm64-v8a");
+    expect(capture.avdmanager()).toBe(
+      `--silent create avd --name NoiseConnoisseur_Screenshots --package ${screenshotImage} --device pixel_2 --force`,
+    );
   } finally { capture.stop(); }
 }, 20_000);
 

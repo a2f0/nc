@@ -23,7 +23,7 @@ OUTPUT_DIR="$SCREENSHOT_OUTPUT_ROOT/android"
 MAESTRO_OUTPUT_DIR="$OUTPUT_DIR/maestro"
 APP_ID=net.a2f0.nc
 AVD_NAME=NoiseConnoisseur_Screenshots
-SYSTEM_IMAGE="${ANDROID_SCREENSHOT_SYSTEM_IMAGE:-system-images;android-35;google_apis_playstore;arm64-v8a}"
+SYSTEM_IMAGE="${ANDROID_SCREENSHOT_SYSTEM_IMAGE:-system-images;android-37.0;google_apis_playstore;arm64-v8a}"
 # Pixel 2 is 1080x1920: Google Play rejects screenshots whose long side is
 # more than twice the short side, which rules out most modern phone shapes.
 DEVICE_PROFILE=pixel_2
@@ -32,10 +32,31 @@ EXPECTED_SIZE=1080x1920
 EMULATOR_PORT=5584
 SERIAL="emulator-$EMULATOR_PORT"
 
+create_avd() {
+  echo no | avdmanager --silent create avd --name "$AVD_NAME" \
+    --package "$SYSTEM_IMAGE" --device "$DEVICE_PROFILE" "$@" >/dev/null
+}
+
+# The system image an existing AVD was built on, as a package path such as
+# system-images/android-37.0/google_apis_playstore/arm64-v8a, or nothing if unknown.
+avd_image() {
+  avd_home="${ANDROID_AVD_HOME:-${ANDROID_USER_HOME:-$HOME/.android}/avd}"
+  avd_dir=$(sed -n 's/^path=//p' "$avd_home/$AVD_NAME.ini" 2>/dev/null | tr -d '\r')
+  sed -n 's/^image\.sysdir\.1 *= *//p' "${avd_dir:-$avd_home/$AVD_NAME.avd}/config.ini" 2>/dev/null |
+    tr -d '\r' | sed 's:/*$::'
+}
+
+# The AVD is this script's own. Reusing one built on another image (an earlier default,
+# or another ANDROID_SCREENSHOT_SYSTEM_IMAGE) would capture another Android version.
 if ! emulator -list-avds | grep -qx "$AVD_NAME"; then
   echo "Creating the $AVD_NAME emulator..."
-  echo no | avdmanager --silent create avd --name "$AVD_NAME" \
-    --package "$SYSTEM_IMAGE" --device "$DEVICE_PROFILE" >/dev/null
+  create_avd
+else
+  current_image=$(avd_image)
+  if [ "$current_image" != "$(printf '%s' "$SYSTEM_IMAGE" | tr ';' /)" ]; then
+    echo "Recreating the $AVD_NAME emulator on $SYSTEM_IMAGE (it was on ${current_image:-an unknown image})..."
+    create_avd --force
+  fi
 fi
 
 # A minified release build, so this run exercises the same R8 output that ships (debug

@@ -1,6 +1,6 @@
 [tools]
 java = "temurin-25.0.5+8.0.LTS"
-gradle = "9.8.2"
+gradle = "9.9.1"
 shellcheck = "0.11.0"
 "aqua:jqlang/jq" = "1.8.2"
 ruby = "4.0.9"

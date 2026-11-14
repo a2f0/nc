@@ -21,7 +21,7 @@ android {
         // Permanent once published on Google Play.
         applicationId = "net.a2f0.nc"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         // Release lanes pass the next Play version code with -PncVersionCode=<n>.
         versionCode = providers.gradleProperty("ncVersionCode").orNull?.toInt() ?: 1
         versionName = "1.0"
@@ -73,7 +73,7 @@ android {
     }
 
     // Robolectric tests (e.g. PlaybackServiceTest) build notifications from app resources,
-    // and its Android 16 runtime reaches into a JDK internal on newer JDKs.
+    // and its Android 17 runtime (the target SDK's) reaches into a JDK internal on newer JDKs.
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all { it.jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED") }
