@@ -32,49 +32,6 @@ EXPECTED_SIZE=1080x1920
 EMULATOR_PORT=5584
 SERIAL="emulator-$EMULATOR_PORT"
 
-create_avd() {
-  echo no | avdmanager --silent create avd --name "$AVD_NAME" \
-    --package "$SYSTEM_IMAGE" --device "$DEVICE_PROFILE" "$@" >/dev/null
-}
-
-# The system image an existing AVD was built on, as a package path such as
-# system-images/android-37.0/google_apis_playstore/arm64-v8a, or nothing if unknown.
-avd_image() {
-  avd_home="${ANDROID_AVD_HOME:-${ANDROID_USER_HOME:-$HOME/.android}/avd}"
-  avd_dir=$(sed -n 's/^path=//p' "$avd_home/$AVD_NAME.ini" 2>/dev/null | tr -d '\r')
-  sed -n 's/^image\.sysdir\.1 *= *//p' "${avd_dir:-$avd_home/$AVD_NAME.avd}/config.ini" 2>/dev/null |
-    tr -d '\r' | sed 's:/*$::'
-}
-
-# The AVD is this script's own. Reusing one built on another image (an earlier default,
-# or another ANDROID_SCREENSHOT_SYSTEM_IMAGE) would capture another Android version.
-if ! emulator -list-avds | grep -qx "$AVD_NAME"; then
-  echo "Creating the $AVD_NAME emulator..."
-  create_avd
-else
-  current_image=$(avd_image)
-  if [ "$current_image" != "$(printf '%s' "$SYSTEM_IMAGE" | tr ';' /)" ]; then
-    echo "Recreating the $AVD_NAME emulator on $SYSTEM_IMAGE (it was on ${current_image:-an unknown image})..."
-    create_avd --force
-  fi
-fi
-
-# A minified release build, so this run exercises the same R8 output that ships (debug
-# builds aren't minified). It's signed with the local debug key, only to install it here.
-echo "Building the Android app (release)..."
-sh "$REPO_ROOT/scripts/dev/ensureGradleWrapper.sh"
-(cd "$REPO_ROOT/android" && ./gradlew --quiet assembleRelease \
-  -Pandroid.injected.signing.store.file="$HOME/.android/debug.keystore" \
-  -Pandroid.injected.signing.store.password=android \
-  -Pandroid.injected.signing.key.alias=androiddebugkey \
-  -Pandroid.injected.signing.key.password=android)
-
-mkdir -p "$OUTPUT_DIR/phone" "$MAESTRO_OUTPUT_DIR"
-emulator_log="$OUTPUT_DIR/emulator.log"
-
-# How long the emulator may take to boot before the capture gives up.
-BOOT_TIMEOUT="${ANDROID_SCREENSHOT_BOOT_TIMEOUT:-600}"
-
 # bounded <seconds> <command...>: runs the command, stopping it after that long. adb
 # can block forever on an emulator that has stopped responding.
 bounded() {
@@ -97,6 +54,56 @@ bounded() {
   wait "$watchdog_pid" 2>/dev/null || true
   return "$bounded_status"
 }
+
+create_avd() {
+  echo no | avdmanager --silent create avd --name "$AVD_NAME" \
+    --package "$SYSTEM_IMAGE" --device "$DEVICE_PROFILE" "$@" >/dev/null
+}
+
+# The system image an existing AVD was built on, as a package path such as
+# system-images/android-37.0/google_apis_playstore/arm64-v8a, or nothing if unknown.
+avd_image() {
+  avd_home="${ANDROID_AVD_HOME:-${ANDROID_USER_HOME:-$HOME/.android}/avd}"
+  avd_dir=$(sed -n 's/^path=//p' "$avd_home/$AVD_NAME.ini" 2>/dev/null | tr -d '\r')
+  sed -n 's/^image\.sysdir\.1 *= *//p' "${avd_dir:-$avd_home/$AVD_NAME.avd}/config.ini" 2>/dev/null |
+    tr -d '\r' | sed 's:/*$::'
+}
+
+# The AVD is this script's own. Reusing one built on another image (an earlier default,
+# or another ANDROID_SCREENSHOT_SYSTEM_IMAGE) would capture another Android version.
+if ! emulator -list-avds | grep -qx "$AVD_NAME"; then
+  echo "Creating the $AVD_NAME emulator..."
+  create_avd
+else
+  current_image=$(avd_image)
+  if [ "$current_image" != "$(printf '%s' "$SYSTEM_IMAGE" | tr ';' /)" ]; then
+    # Recreating an AVD would replace the files of an emulator running it.
+    for serial in $(bounded 10 adb devices 2>/dev/null | sed -n 's/^\(emulator-[0-9]*\)[[:space:]]*device$/\1/p'); do
+      if [ "$(bounded 10 adb -s "$serial" emu avd name 2>/dev/null | head -n 1 | tr -d '\r')" = "$AVD_NAME" ]; then
+        echo "Error: $AVD_NAME is running on $serial; stop it so it can be recreated on $SYSTEM_IMAGE." >&2
+        exit 1
+      fi
+    done
+    echo "Recreating the $AVD_NAME emulator on $SYSTEM_IMAGE (it was on ${current_image:-an unknown image})..."
+    create_avd --force
+  fi
+fi
+
+# A minified release build, so this run exercises the same R8 output that ships (debug
+# builds aren't minified). It's signed with the local debug key, only to install it here.
+echo "Building the Android app (release)..."
+sh "$REPO_ROOT/scripts/dev/ensureGradleWrapper.sh"
+(cd "$REPO_ROOT/android" && ./gradlew --quiet assembleRelease \
+  -Pandroid.injected.signing.store.file="$HOME/.android/debug.keystore" \
+  -Pandroid.injected.signing.store.password=android \
+  -Pandroid.injected.signing.key.alias=androiddebugkey \
+  -Pandroid.injected.signing.key.password=android)
+
+mkdir -p "$OUTPUT_DIR/phone" "$MAESTRO_OUTPUT_DIR"
+emulator_log="$OUTPUT_DIR/emulator.log"
+
+# How long the emulator may take to boot before the capture gives up.
+BOOT_TIMEOUT="${ANDROID_SCREENSHOT_BOOT_TIMEOUT:-600}"
 
 # Each boot check waits at most 10 seconds, and never past the boot deadline.
 boot_poll_limit() {
