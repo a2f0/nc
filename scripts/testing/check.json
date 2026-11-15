@@ -94,7 +94,7 @@
       "command": [
         "sh",
         "-c",
-        "sh scripts/dev/ensureGradleWrapper.sh && (cd android && ./gradlew --quiet assembleDebug lintDebug testDebugUnitTest detektMain detektTest)"
+        "sh scripts/dev/ensureGradleWrapper.sh && (cd android && ./gradlew --quiet assembleDebug lintDebug testDebugUnitTest detektMain detektTest checkReleaseKeepRules)"
       ]
     },
     {

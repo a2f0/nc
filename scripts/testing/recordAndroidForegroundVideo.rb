@@ -88,6 +88,19 @@ def rms(path, start, duration)
   Math.sqrt(samples.sum { |value| value * value } / samples.length)
 end
 
+# A key's value in an AVD .ini file, or nil when the file or key is missing.
+def ini_value(path, key)
+  File.file?(path) ? File.read(path)[/^#{Regexp.escape(key)}\s*=\s*(.+)$/, 1]&.strip : nil
+end
+
+# The system image the AVD was built on, as a package path such as
+# system-images/android-37.0/google_apis_playstore/arm64-v8a, or nil if unknown.
+def avd_image
+  home = ENV['ANDROID_AVD_HOME'] || File.join(ENV['ANDROID_USER_HOME'] || File.join(Dir.home, '.android'), 'avd')
+  dir = ini_value(File.join(home, "#{AVD}.ini"), 'path') || File.join(home, "#{AVD}.avd")
+  ini_value(File.join(dir, 'config.ini'), 'image.sysdir.1')&.delete_suffix('/')
+end
+
 artifact = File.expand_path(ARGV.fetch(0))
 bundletool = File.expand_path(ARGV.fetch(1))
 capture_source = Readiness.source(ROOT)
@@ -101,15 +114,27 @@ if run('adb', 'devices').lines.any? { |line| line.start_with?("#{SERIAL}\t") }
   raise "#{SERIAL} is already in use; no device was changed"
 end
 
-run('adb', 'devices').lines.grep(/^emulator-\d+\s+device/).each do |line|
-  name = run('adb', '-s', line.split.first, 'emu', 'avd', 'name').lines.first.to_s.strip
+# Every emulator, even an offline one, must say which AVD it runs: recording, or recreating
+# the AVD below, would otherwise change files a running emulator uses.
+run('adb', 'devices').lines.grep(/^emulator-\d+\s/).each do |line|
+  serial = line.split.first
+  name = begin
+    run('adb', '-s', serial, 'emu', 'avd', 'name').lines.first.to_s.strip
+  rescue RuntimeError
+    raise "#{serial} didn't say which AVD it runs; no device was changed"
+  end
   raise "#{AVD} is already running; no device was changed" if name == AVD
 end
 
-unless run('emulator', '-list-avds').lines.map(&:strip).include?(AVD)
-  image = ENV.fetch('ANDROID_EVIDENCE_SYSTEM_IMAGE', 'system-images;android-35;google_apis_playstore;arm64-v8a')
+# The AVD is this script's own. Reusing one built on another image (an earlier default, or
+# another ANDROID_EVIDENCE_SYSTEM_IMAGE) would record another Android version.
+image = ENV.fetch('ANDROID_EVIDENCE_SYSTEM_IMAGE', 'system-images;android-37.0;google_apis_playstore;arm64-v8a')
+existing = run('emulator', '-list-avds').lines.map(&:strip).include?(AVD)
+current = existing && avd_image
+unless current == image.tr(';', '/')
+  puts "Recreating #{AVD} on #{image} (it was on #{current || 'an unknown image'})" if existing
   run('avdmanager', '--silent', 'create', 'avd', '--name', AVD, '--package', image, '--device', 'pixel_2',
-      input: "no\n")
+      *('--force' if existing), input: "no\n")
 end
 
 tool = ['java', '-jar', bundletool]

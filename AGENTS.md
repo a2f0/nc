@@ -40,7 +40,7 @@ bun run l10n:check                                    # translations, generated 
 bun run test                                          # fastlane, web, localization, and workflow tests
 bun run web:check && bun run web:build                # web typecheck and build
 bun run web:deploy:preview                            # web deploy config
-(cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest detektMain detektTest)
+(cd android && ./gradlew assembleDebug lintDebug testDebugUnitTest detektMain detektTest checkReleaseKeepRules)
 xcodebuild -quiet -project ios/NoiseConnoisseur.xcodeproj -scheme NoiseConnoisseur \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 sh scripts/testing/testIosPlayback.sh                 # iOS player lifecycle on an isolated simulator

@@ -153,8 +153,8 @@ code, brand assets, image-generation configuration, toolchain pins and Gradle bo
 script still match this checkout, allowing subsequent web-only releases.
 
 Install `scrcpy` and `ffmpeg` (`brew install scrcpy ffmpeg` on macOS), Maestro, the Android
-SDK emulator/platform/command-line tools and a JDK. Install the
-`system-images;android-35;google_apis_playstore;arm64-v8a` SDK image (or set
+SDK emulator/platform/command-line tools and a JDK. Install the Android 17
+`system-images;android-37.0;google_apis_playstore;arm64-v8a` SDK image (or set
 `ANDROID_EVIDENCE_SYSTEM_IMAGE` for the host architecture). Supply Google's bundletool JAR
 as for readiness. The standard `$HOME/.android/debug.keystore` must exist; a Gradle debug
 build creates it. No release signing credentials are needed for capture.
@@ -167,8 +167,10 @@ bundle exec fastlane android readiness bundletool:/absolute/path/bundletool-all.
 ```
 
 The recorder creates/uses only the dedicated `NoiseConnoisseur_Evidence` AVD on port 5586,
-refuses an occupied adb serial or already-running AVD, resets the app on that emulator and
-stops its emulator afterward. It generates an APK from the release AAB with bundletool,
+recreating it when it was built on another image. It refuses an occupied adb serial, an
+already-running AVD, or an emulator that doesn't say which AVD it runs, resets the app on
+that emulator and stops its emulator afterward.
+It generates an APK from the release AAB with bundletool,
 using the public local debug key for installation. Release code/resources and minification
 are retained; the APK's signing identity is intentionally different and recorded in the manifest.
 
