@@ -167,8 +167,9 @@ bundle exec fastlane android readiness bundletool:/absolute/path/bundletool-all.
 ```
 
 The recorder creates/uses only the dedicated `NoiseConnoisseur_Evidence` AVD on port 5586,
-recreating it when it was built on another image. It refuses an occupied adb serial or
-already-running AVD, resets the app on that emulator and stops its emulator afterward.
+recreating it when it was built on another image. It refuses an occupied adb serial, an
+already-running AVD, or an emulator that doesn't say which AVD it runs, resets the app on
+that emulator and stops its emulator afterward.
 It generates an APK from the release AAB with bundletool,
 using the public local debug key for installation. Release code/resources and minification
 are retained; the APK's signing identity is intentionally different and recorded in the manifest.

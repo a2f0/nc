@@ -154,8 +154,9 @@ Needs Maestro, ImageMagick, jq, Xcode with the iOS 26.2 simulator runtime
 command-line tools (see [setup](#setup)), and the Android 17 Google Play image
 `system-images;android-37.0;google_apis_playstore;arm64-v8a` (`ANDROID_SCREENSHOT_SYSTEM_IMAGE`
 picks another). The capture's own `NoiseConnoisseur_Screenshots` AVD is recreated when it was
-built on another image. Maestro drives one device at a time on a machine, so don't start a
-capture while another Maestro run is going.
+built on another image; the capture stops instead if an emulator is running it or doesn't say
+which AVD it runs. Maestro drives one device at a time on a machine, so don't start a capture
+while another Maestro run is going.
 
 Drives the app with the Maestro flows in `maestro/screenshots/` on dedicated simulators and
 a headless emulator, with a fixed 9:41 status bar, in light and dark appearance. Android

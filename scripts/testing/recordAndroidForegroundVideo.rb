@@ -114,8 +114,15 @@ if run('adb', 'devices').lines.any? { |line| line.start_with?("#{SERIAL}\t") }
   raise "#{SERIAL} is already in use; no device was changed"
 end
 
-run('adb', 'devices').lines.grep(/^emulator-\d+\s+device/).each do |line|
-  name = run('adb', '-s', line.split.first, 'emu', 'avd', 'name').lines.first.to_s.strip
+# Every emulator, even an offline one, must say which AVD it runs: recording, or recreating
+# the AVD below, would otherwise change files a running emulator uses.
+run('adb', 'devices').lines.grep(/^emulator-\d+\s/).each do |line|
+  serial = line.split.first
+  name = begin
+    run('adb', '-s', serial, 'emu', 'avd', 'name').lines.first.to_s.strip
+  rescue RuntimeError
+    raise "#{serial} didn't say which AVD it runs; no device was changed"
+  end
   raise "#{AVD} is already running; no device was changed" if name == AVD
 end
 
