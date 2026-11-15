@@ -10,8 +10,10 @@ build_dir=$(mktemp -d "${TMPDIR:-/tmp}/audio-tests.XXXXXX")
 trap 'rm -rf "$build_dir"' EXIT
 trap 'exit 1' HUP INT TERM
 
-# The Xcode project's strict settings (ios/Config/Base.xcconfig) and Swift 6 language mode.
-set -- -swift-version 6 -warnings-as-errors -strict-memory-safety \
+# The Xcode project's strict settings (ios/Config/Base.xcconfig) and Swift 6 language mode,
+# built for macOS 15, the counterpart of the app's iOS 18 deployment target, rather than for
+# the host's macOS: newer SDKs deprecate APIs the app must keep calling until its floor rises.
+set -- -target "$(uname -m)-apple-macos15.0" -swift-version 6 -warnings-as-errors -strict-memory-safety \
   -enable-upcoming-feature ExistentialAny -enable-upcoming-feature MemberImportVisibility
 
 # NoiseType.swift uses the string symbols Xcode generates from the String Catalog.
