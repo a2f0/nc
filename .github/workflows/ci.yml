@@ -92,7 +92,7 @@ jobs:
         run: |
           sh scripts/dev/ensureGradleWrapper.sh
           cd android
-          ./gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest detektMain detektTest
+          ./gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest detektMain detektTest checkReleaseKeepRules
 
   ios:
     name: iOS

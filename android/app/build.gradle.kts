@@ -154,3 +154,30 @@ val generateImages = tasks.register<Exec>("generateImages") {
     commandLine("sh", repoRoot.file("scripts/build/buildImages.sh").asFile.path, "android")
 }
 tasks.named("preBuild") { dependsOn(generateImages) }
+
+// Glance makes a widget's ActionCallback from its class name by reflection, which R8 can't
+// follow, so proguard-rules.pro keeps their constructors. Debug builds aren't minified: this
+// checks the release build's R8 usage report, which lists what R8 removed.
+tasks.register("checkReleaseKeepRules") {
+    description = "Checks that R8 keeps the constructors Glance calls by reflection."
+    group = "verification"
+    dependsOn("minifyReleaseWithR8")
+    val usage = layout.buildDirectory.file("outputs/mapping/release/usage.txt")
+    inputs.file(usage)
+    val actionCallbacks = listOf("net.a2f0.nc.widget.StopNoiseAction")
+    doLast {
+        val lines = usage.get().asFile.readLines()
+
+        // A class R8 removed entirely is a line of its own; one it kept has a section per
+        // shrinking pass, listing the removed members, such as `    public void <init>()`.
+        fun removesConstructor(section: Int) = lines.asSequence().drop(section + 1)
+            .takeWhile { it.startsWith(" ") }
+            .any { it.trim().endsWith("void <init>()") }
+        val removed = actionCallbacks.filter { name ->
+            lines.indices.any { index ->
+                lines[index] == name || (lines[index] == "$name:" && removesConstructor(index))
+            }
+        }
+        check(removed.isEmpty()) { "R8 removed the no-argument constructor Glance calls from $removed" }
+    }
+}
