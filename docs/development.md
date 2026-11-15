@@ -149,8 +149,9 @@ finding at its site with the reason beside it, rather than adding a baseline.
 bun run screenshots [ios|android]   # default: both
 ```
 
-Needs Maestro, ImageMagick, jq, Xcode with the iOS 26.2 simulator runtime
-(`IOS_SCREENSHOT_RUNTIME_VERSION` picks another), and the Android SDK with its emulator,
+Needs Maestro, ImageMagick, jq, Xcode with the iOS 27.2 simulator runtime
+(`IOS_SCREENSHOT_RUNTIME_VERSION` picks another version; each device uses a runtime of that
+version that supports its device type), and the Android SDK with its emulator,
 command-line tools (see [setup](#setup)), and the Android 17 Google Play image
 `system-images;android-37.0;google_apis_playstore;arm64-v8a` (`ANDROID_SCREENSHOT_SYSTEM_IMAGE`
 picks another). The capture's own `NoiseConnoisseur_Screenshots` AVD is recreated when it was
