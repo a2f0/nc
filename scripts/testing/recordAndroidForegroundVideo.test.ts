@@ -42,7 +42,7 @@ function record({ avdImage = evidenceImage, listed }: {
     copyFileSync(join(root, path), join(repo, path));
   }
   // The App Bundle's inputs, which its receipt must still match.
-  for (const path of ["android/build.gradle.kts", "assets/brand/logo.svg", "agent-tool.json", ".mise.toml", "scripts/dev/ensureGradleWrapper.sh"]) {
+  for (const path of ["android/build.gradle.kts", "assets/brand/logo.svg", "agent-tool.json", ".mise.toml", "mise.lock", "scripts/dev/ensureGradleWrapper.sh"]) {
     file(join(repo, path), "\n");
   }
   file(join(repo, ".gitignore"), ".store-evidence/\n");
