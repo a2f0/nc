@@ -77,9 +77,18 @@ if ! emulator -list-avds | grep -qx "$AVD_NAME"; then
 else
   current_image=$(avd_image)
   if [ "$current_image" != "$(printf '%s' "$SYSTEM_IMAGE" | tr ';' /)" ]; then
-    # Recreating an AVD would replace the files of an emulator running it.
-    for serial in $(bounded 10 adb devices 2>/dev/null | sed -n 's/^\(emulator-[0-9]*\)[[:space:]]*device$/\1/p'); do
-      if [ "$(bounded 10 adb -s "$serial" emu avd name 2>/dev/null | head -n 1 | tr -d '\r')" = "$AVD_NAME" ]; then
+    # Recreating an AVD would replace the files of an emulator running it, so every
+    # emulator adb knows of must answer which AVD it runs.
+    if ! devices=$(bounded 10 adb devices); then
+      echo "Error: adb couldn't list emulators to check that $AVD_NAME isn't running." >&2
+      exit 1
+    fi
+    for serial in $(printf '%s\n' "$devices" | sed -n 's/^\(emulator-[0-9]*\)[[:space:]].*$/\1/p'); do
+      if ! running_avd=$(bounded 10 adb -s "$serial" emu avd name); then
+        echo "Error: $serial didn't say which AVD it runs; stop it so $AVD_NAME can be recreated." >&2
+        exit 1
+      fi
+      if [ "$(printf '%s\n' "$running_avd" | head -n 1 | tr -d '\r')" = "$AVD_NAME" ]; then
         echo "Error: $AVD_NAME is running on $serial; stop it so it can be recreated on $SYSTEM_IMAGE." >&2
         exit 1
       fi

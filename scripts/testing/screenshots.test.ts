@@ -74,12 +74,12 @@ const screenshotImage = "system-images;android-37.0;google_apis_playstore;arm64-
 // Maestro. The emulator stand-in either exits at once or never boots. adb either finds no
 // device and, like the real one, waits forever for one, or hangs on every shell command, as
 // it can on an emulator that has stopped responding. The capture's AVD already exists, built
-// on avdImage, and with avdRunning adb lists an emulator running it; the avdmanager stand-in
-// records its arguments.
+// on avdImage. adb lists emulator-5590 when listedAvd is given, running that AVD, or not
+// answering which when it's null. The avdmanager stand-in records its arguments.
 function fakeAndroidCapture(
   emulator: "exits" | "never-boots",
   adb: "no-device" | "hangs" = "no-device",
-  { avdImage = screenshotImage, avdRunning = false } = {},
+  { avdImage = screenshotImage, listedAvd }: { avdImage?: string; listedAvd?: string | null } = {},
 ) {
   const repo = join(output, "repo");
   const sdk = join(output, "sdk");
@@ -103,9 +103,10 @@ function fakeAndroidCapture(
   script(join(repo, "android/gradlew"), ":");
   script(join(sdk, "emulator/emulator"), `[ "$1" = -list-avds ] && { echo NoiseConnoisseur_Screenshots; exit 0; }
 ${emulator === "exits" ? "exit 1" : `echo $$ >"${pidFile}"; exec sleep 300`}`);
-  script(join(sdk, "platform-tools/adb"), `${avdRunning ? `[ "$1" = devices ] && { printf 'List of devices attached\\nemulator-5590\\tdevice\\n'; exit 0; }
-[ "$3" = emu ] && { echo NoiseConnoisseur_Screenshots; echo OK; exit 0; }
-` : ""}[ "$3" = wait-for-device ] && exec sleep 300
+  const avdName = listedAvd === null ? `echo "error: could not connect" >&2; exit 1` : `echo ${listedAvd}; echo OK; exit 0`;
+  script(join(sdk, "platform-tools/adb"), `[ "$1" = devices ] && { echo "List of devices attached"; ${listedAvd === undefined ? "" : `printf 'emulator-5590\\tdevice\\n'; `}exit 0; }
+[ "$3" = emu ] && { ${avdName}; }
+[ "$3" = wait-for-device ] && exec sleep 300
 ${adb === "hangs" ? "exec sleep 300" : `echo "adb: device '$2' not found" >&2; exit 1`}`);
   script(join(sdk, "cmdline-tools/latest/bin/avdmanager"), `echo "$@" >"${avdmanagerArgs}"`);
   for (const tool of ["maestro", "magick"]) script(join(bin, tool), "exit 1");
@@ -149,8 +150,8 @@ test("android capture fails, rather than waiting forever, when the emulator exit
 
 const api35Image = "system-images;android-35;google_apis_playstore;arm64-v8a";
 
-test("android capture recreates its AVD when it was built on another system image", async () => {
-  const capture = fakeAndroidCapture("exits", "no-device", { avdImage: api35Image });
+test.each([undefined, "Pixel_9_API_37"])("android capture recreates its AVD built on another image (emulator running %s)", async (listedAvd) => {
+  const capture = fakeAndroidCapture("exits", "no-device", { avdImage: api35Image, listedAvd });
   try {
     expect(await capture.within(15_000)).toBe(1);
     expect(capture.stdout()).toContain("it was on system-images/android-35/google_apis_playstore/arm64-v8a");
@@ -160,11 +161,14 @@ test("android capture recreates its AVD when it was built on another system imag
   } finally { capture.stop(); }
 }, 20_000);
 
-test("android capture refuses to recreate its AVD while an emulator runs it", async () => {
-  const capture = fakeAndroidCapture("exits", "no-device", { avdImage: api35Image, avdRunning: true });
+test.each([
+  ["NoiseConnoisseur_Screenshots", "NoiseConnoisseur_Screenshots is running on emulator-5590"],
+  [null, "emulator-5590 didn't say which AVD it runs"],
+])("android capture won't recreate its AVD that may be running (emulator running %s)", async (listedAvd, error) => {
+  const capture = fakeAndroidCapture("exits", "no-device", { avdImage: api35Image, listedAvd });
   try {
     expect(await capture.within(15_000)).toBe(1);
-    expect(capture.stderr()).toContain("NoiseConnoisseur_Screenshots is running on emulator-5590");
+    expect(capture.stderr()).toContain(error);
     expect(capture.avdmanager()).toBeNull();
   } finally { capture.stop(); }
 }, 20_000);
