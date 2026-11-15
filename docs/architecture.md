@@ -30,6 +30,11 @@ Add a state or event there rather than a new flag beside it, and keep the three 
 A failure that arrives after a newer play never stops it: the web player checks the engine
 and command it belongs to, and Android the engine's `playVersion`. Android's service stops
 with `stopSelf(startId)`, so a play command still being delivered keeps it running.
+Android plays only in its `mediaPlayback` foreground service, started by a user action (the
+app, the widget, or the notification and media controls). Android 17 silences background audio
+unless that service has [while-in-use capability](https://developer.android.com/about/versions/17/changes/bg-audio),
+which those starts grant, so never start playback from a background trigger such as boot or
+a timer; check with `adb shell cmd audio set-hardening throw` and `dumpsys audio`.
 
 ## Appearance
 
