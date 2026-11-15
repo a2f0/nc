@@ -12,6 +12,12 @@ compatibility matrices and migrations together, then run the full local gate and
 audit resolved dependencies. Keep intentional minimum OS versions and supported toolchains
 explicit. Bun owns `bun.lock`; Bundler owns `Gemfile.lock`.
 
+`mise.lock` is committed beside `.mise.toml`; regenerate it with `mise lock` whenever
+`.mise.toml` changes. CI's mise action installs with `--locked`, so every job's tools need
+entries for its runner's platform. Every workflow's mise-action `version` must read the
+lockfile's `lockfile_version` (format 4 needs mise 2026.11.1 or later): move those pins
+before the lock's format.
+
 Select Ruby and isolate `GEM_HOME`, `GEM_PATH`, `BUNDLE_PATH`,
 `BUNDLE_APP_CONFIG`, and `BUNDLE_USER_HOME` before any gem or bundle write;
 selecting the Ruby executable alone does not isolate an inherited bundle.

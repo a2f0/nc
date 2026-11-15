@@ -157,7 +157,7 @@ Dir.mktmpdir do |dir|
              '-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'fixture')
     git.call('rev-parse', 'HEAD').strip
   end
-  %w[android/app assets/brand/icon.svg web/app agent-tool.json .mise.toml scripts/dev/ensureGradleWrapper.sh].each do |p|
+  %w[android/app assets/brand/icon.svg web/app agent-tool.json .mise.toml mise.lock scripts/dev/ensureGradleWrapper.sh].each do |p|
     File.write(File.join(repo, p), 'initial')
   end
   source = { 'commit' => commit.call, 'dirty' => false }
@@ -166,7 +166,7 @@ Dir.mktmpdir do |dir|
   File.write(File.join(repo, 'web/app'), 'web-only change')
   commit.call
   result[:web_source_matches] = PlayEvidence.artifact_source(artifact, repo) == source
-  result[:build_input_rejected] = %w[agent-tool.json .mise.toml scripts/dev/ensureGradleWrapper.sh].map do |p|
+  result[:build_input_rejected] = %w[agent-tool.json .mise.toml mise.lock scripts/dev/ensureGradleWrapper.sh].map do |p|
     File.write(File.join(repo, p), 'changed build input')
     commit.call
     rejected = false
@@ -247,7 +247,7 @@ test("capture accepts web-only commits but rejects changed Android code or a mis
   expect(result.android_change_rejected).toBe(true);
   expect(result.receipt_mismatch_rejected).toBe(true);
   expect(result.missing_receipt_rejected).toBe(true);
-  expect(result.build_input_rejected).toEqual([true, true, true]);
+  expect(result.build_input_rejected).toEqual([true, true, true, true]);
 });
 test("online readiness fetches the immutable video referenced by the manifest", () => {
   expect(status("online", "_candidate")).toBe("verified");
