@@ -16,7 +16,7 @@ REPO_ROOT=$SCREENSHOTS_REPO_ROOT
 OUTPUT_DIR="$SCREENSHOT_OUTPUT_ROOT/ios"
 MAESTRO_OUTPUT_DIR="$OUTPUT_DIR/maestro"
 BUILD_DIR="${TMPDIR:-/tmp}/noise-connoisseur-screenshots-derived-data"
-RUNTIME_VERSION="${IOS_SCREENSHOT_RUNTIME_VERSION:-26.2}"
+RUNTIME_VERSION="${IOS_SCREENSHOT_RUNTIME_VERSION:-27.2}"
 BUNDLE_ID=net.a2f0.nc
 APP_PATH="$BUILD_DIR/Build/Products/Debug-iphonesimulator/NoiseConnoisseur.app"
 
@@ -36,29 +36,37 @@ device_screenshot_size() {
   esac
 }
 
-runtime_identifier="$(
-  xcrun simctl list runtimes available -j |
-    jq -r --arg version "$RUNTIME_VERSION" \
-      '[.runtimes[] | select(.version == $version and .isAvailable == true)] | first | .identifier // empty'
-)"
-[ -n "$runtime_identifier" ] || {
-  echo "Error: no iOS $RUNTIME_VERSION simulator runtime is installed." >&2
-  echo "Install it in Xcode, or set IOS_SCREENSHOT_RUNTIME_VERSION." >&2
-  exit 1
+# Xcode can install several runtimes of one version, such as iOS 27.2's general
+# runtime and one for a single new device type, listed in no useful order. Each
+# device takes an available runtime of RUNTIME_VERSION that supports its type.
+runtimes_json="$(xcrun simctl list runtimes available -j)"
+device_runtime() {
+  printf '%s\n' "$runtimes_json" |
+    jq -r --arg version "$RUNTIME_VERSION" --arg type "$(device_type "$1")" \
+      '[.runtimes[] | select(.version == $version and .isAvailable == true and
+        any(.supportedDeviceTypes[]?; .identifier == $type))] | first | .identifier // empty'
 }
+for device in $DEVICES; do
+  [ -n "$(device_runtime "$device")" ] || {
+    echo "Error: no installed iOS $RUNTIME_VERSION simulator runtime supports $(device_type "$device")." >&2
+    echo "Install it in Xcode, or set IOS_SCREENSHOT_RUNTIME_VERSION." >&2
+    exit 1
+  }
+done
 
 # Find or create a simulator reserved for screenshots, so captures never
 # depend on (or disturb) whatever state a day-to-day simulator is in.
 dedicated_simulator() {
   name=$1
   type=$2
+  runtime=$3
   udid="$(
     xcrun simctl list devices available -j |
-      jq -r --arg name "$name" --arg runtime "$runtime_identifier" --arg type "$type" \
+      jq -r --arg name "$name" --arg runtime "$runtime" --arg type "$type" \
         '[.devices[$runtime][]? | select(.name == $name and .deviceTypeIdentifier == $type)] | first | .udid // empty'
   )"
   if [ -z "$udid" ]; then
-    udid="$(xcrun simctl create "$name" "$type" "$runtime_identifier")"
+    udid="$(xcrun simctl create "$name" "$type" "$runtime")"
   fi
   printf '%s\n' "$udid"
 }
@@ -103,8 +111,9 @@ capture() {
 mkdir -p "$MAESTRO_OUTPUT_DIR"
 
 for device in $DEVICES; do
-  udid=$(dedicated_simulator "Noise Connoisseur Screenshots ($device)" "$(device_type "$device")")
-  echo "Capturing $device on $udid..."
+  runtime=$(device_runtime "$device")
+  udid=$(dedicated_simulator "Noise Connoisseur Screenshots ($device)" "$(device_type "$device")" "$runtime")
+  echo "Capturing $device on $udid ($runtime)..."
 
   xcrun simctl boot "$udid" 2>/dev/null || true
   xcrun simctl bootstatus "$udid" -b >/dev/null
