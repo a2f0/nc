@@ -9,6 +9,9 @@ const root = resolve(import.meta.dir, "../..");
 // The image the recorder builds its AVD on unless ANDROID_EVIDENCE_SYSTEM_IMAGE says otherwise.
 const evidenceImage = "system-images;android-37.0;google_apis_playstore;arm64-v8a";
 const api35Image = "system-images;android-35;google_apis_playstore;arm64-v8a";
+// The interpreter that ruby on the operator's PATH runs, rather than a version-manager shim,
+// which would need the operator's HOME and PATH; the recorder runs with the sandbox's.
+const ruby = spawnSync("ruby", ["-e", "print RbConfig.ruby"], { encoding: "utf8" }).stdout;
 let output = "";
 
 beforeEach(() => {
@@ -70,9 +73,9 @@ exit 1`);
   script("avdmanager", `echo "$@" >"${avdmanagerArgs}"`);
   for (const tool of ["maestro", "scrcpy", "ffmpeg", "ffprobe", "java", "unzip"]) script(tool, "exit 1");
 
-  const result = spawnSync("ruby", [join(repo, "scripts/testing/recordAndroidForegroundVideo.rb"), aab, join(output, "bundletool.jar")], {
+  const result = spawnSync(ruby, [join(repo, "scripts/testing/recordAndroidForegroundVideo.rb"), aab, join(output, "bundletool.jar")], {
     encoding: "utf8",
-    env: { HOME: home, PATH: `${bin}:${dirname(Bun.which("ruby")!)}:/usr/bin:/bin`, ANDROID_HOME: join(output, "sdk") },
+    env: { HOME: home, PATH: `${bin}:${dirname(ruby)}:/usr/bin:/bin`, ANDROID_HOME: join(output, "sdk") },
   });
   const avdmanager = existsSync(avdmanagerArgs) ? readFileSync(avdmanagerArgs, "utf8").trim() : null;
   return { status: result.status, stdout: result.stdout, stderr: result.stderr, avdmanager };

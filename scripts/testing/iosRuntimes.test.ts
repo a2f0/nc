@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -57,8 +57,11 @@ esac`);
   stub("xcodebuild", `set -- xcodebuild "$@"; ${record}`);
   stub("maestro", "exit 1");
   stub("magick", ":");
+  // jq from the operator's PATH runs with their HOME and PATH: it may be a version-manager
+  // shim, which finds its configuration and installs through them. The script keeps the sandbox's.
   const jq = Bun.which("jq");
-  if (jq) symlinkSync(jq, join(bin, "jq"));
+  const quote = (value: string) => `'${value.replaceAll("'", `'\\''`)}'`;
+  if (jq) stub("jq", `HOME=${quote(homedir())} PATH=${quote(process.env.PATH ?? "")} exec ${quote(jq)} "$@"`);
   const result = spawnSync("sh", [join(root, "scripts/testing", script)], {
     encoding: "utf8",
     env: {
