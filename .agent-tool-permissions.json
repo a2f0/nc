@@ -33,6 +33,7 @@
       "Bash(bun run agent-tool push-gate hook *)",
       "Bash(bun run agent-tool push-gate check *)",
       "Bash(bun run agent-tool repo base-health *)",
+      "Bash(bun run agent-tool review carry *)",
       "Bash(bun run agent-tool images list *)",
       "Bash(bun run agent-tool graph check *)",
       "Bash(bun run agent-tool state-machines *)",
@@ -100,6 +101,7 @@
       "Bash(node_modules/.bin/agent-tool push-gate hook *)",
       "Bash(node_modules/.bin/agent-tool push-gate check *)",
       "Bash(node_modules/.bin/agent-tool repo base-health *)",
+      "Bash(node_modules/.bin/agent-tool review carry *)",
       "Bash(node_modules/.bin/agent-tool images list *)",
       "Bash(node_modules/.bin/agent-tool graph check *)",
       "Bash(node_modules/.bin/agent-tool state-machines *)",
@@ -167,6 +169,7 @@
       "Bash(agent-tool push-gate hook *)",
       "Bash(agent-tool push-gate check *)",
       "Bash(agent-tool repo base-health *)",
+      "Bash(agent-tool review carry *)",
       "Bash(agent-tool images list *)",
       "Bash(agent-tool graph check *)",
       "Bash(agent-tool state-machines *)",
@@ -208,6 +211,6 @@
   },
   "codex": {
     "file": ".codex/rules/agent-tool.rules",
-    "sha256": "5a92bd38c6c1cb860892379778a44362ca644b5c0390c02a36557d3b5a345111"
+    "sha256": "a56957b97f28386a6622a23d8545a29d3c71f920b5e1c23c3e4cef98100c4354"
   }
 }
