@@ -331,6 +331,67 @@
       }
     ]
   },
+  "pushGate": {
+    "steps": [
+      {
+        "label": "shellcheck",
+        "command": [
+          "bun",
+          "run",
+          "lint:scripts"
+        ]
+      },
+      {
+        "label": "rubocop",
+        "command": [
+          "bundle",
+          "exec",
+          "rubocop"
+        ]
+      },
+      {
+        "label": "ktlint",
+        "command": [
+          "bun",
+          "run",
+          "lint:kotlin"
+        ]
+      },
+      {
+        "label": "swift-lint",
+        "command": [
+          "bun",
+          "run",
+          "lint:swift"
+        ]
+      },
+      {
+        "label": "localization",
+        "command": [
+          "bun",
+          "run",
+          "l10n:check"
+        ]
+      },
+      {
+        "label": "module-graph",
+        "command": [
+          "bun",
+          "run",
+          "lint:module-graph"
+        ]
+      },
+      {
+        "label": "web-types",
+        "command": [
+          "bun",
+          "run",
+          "web:check"
+        ]
+      }
+    ],
+    "budgetSeconds": 60
+  },
   "graph": {
     "include": [
       "fastlane/**",

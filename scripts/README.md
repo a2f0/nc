@@ -2,7 +2,7 @@
 
 Run commands from the repository root. Existing package scripts in `package.json`
 remain the supported entrypoints for web, localization, release, and agent workflows.
-See [development](../docs/development.md) for the full local gate and generated assets,
+See [development](../docs/development.md) for Git hooks, local validation, and generated assets,
 and [releasing](../docs/releasing.md) for store workflows.
 
 | Directory | Purpose and entrypoints |
@@ -10,8 +10,8 @@ and [releasing](../docs/releasing.md) for store workflows.
 | `build/` | `buildImages.sh [target...] [--out directory]` supplies native build environments to agent-tool image rendering. |
 | `checks/` | Shell lint; Kotlin (`lintKotlin.sh`) and Swift (`lintSwift.sh`) lint, which fix what they can with `--format`; nc's stricter commit-header adapter; and the CI aggregate policy. Shared Git checks use agent-tool. |
 | `dev/` | `ensureGradleWrapper.sh` regenerates the gitignored Gradle wrapper jar. |
-| `git/hooks/` | Tracked hook bodies; agent-tool handles installation and drift checks. |
-| `testing/` | The full `check.json` validation group, workflow adapter tests, the module graph test, `takeScreenshots.sh [ios\|android]` (`bun run screenshots`), platform screenshot drivers, native iOS test runners, and Android evidence recording. |
+| `git/hooks/` | Tracked hook bodies; `pre-push` is the unchanged output of `agent-tool push-gate hook`, and agent-tool handles installation and drift checks. |
+| `testing/` | The `check.json` group that runs CI's checks locally, workflow adapter tests, the module graph test, `takeScreenshots.sh [ios\|android]` (`bun run screenshots`), platform screenshot drivers, native iOS test runners, and Android evidence recording. |
 | `testing/lib/` | Helpers used only by screenshot test drivers. |
 
 The Android evidence recorder is invoked by its fastlane lane; use that lane rather

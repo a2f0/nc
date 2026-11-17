@@ -54,6 +54,9 @@ jobs:
       - name: Check agent skills
         run: bun run agents:check
 
+      - name: Check push gate
+        run: bun run lint:push-gate
+
       - name: Check localization
         run: bun run l10n:check
 

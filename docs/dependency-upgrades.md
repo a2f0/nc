@@ -8,7 +8,7 @@ Use the managed `update-dependencies` skill and the repository's
 Inventory packages, the Ruby bundle, every `.mise.toml` tool, Android's version
 catalog and Gradle wrapper, and CI action pins. Ruby is pinned in `.ruby-version`,
 which the Gemfile and CI read; keep `.mise.toml`'s ruby equal to it. Check upstream
-compatibility matrices and migrations together, then run the full local gate and
+compatibility matrices and migrations together, then run `bun run check` and
 audit resolved dependencies. Keep intentional minimum OS versions and supported toolchains
 explicit. Bun owns `bun.lock`; Bundler owns `Gemfile.lock`.
 

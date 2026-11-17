@@ -70,7 +70,7 @@ test.each([true, false])("pre-commit validates attached branches (detached=%p)",
   }
 });
 
-test("pre-push checks unpublished commits for named and URL pushes", async () => {
+test("pre-push checks the commits a push adds for named and URL pushes", async () => {
   const directory = mkdtempSync(join(tmpdir(), "nc-push-hook-"));
   const run = (command: string, args: string[], input?: string) => spawnSync(command, args, {
     cwd: directory, encoding: "utf8", env: fixtureEnv, input,
@@ -85,20 +85,23 @@ test("pre-push checks unpublished commits for named and URL pushes", async () =>
     git("config", "user.name", "Hook fixture");
     git("config", "user.email", "fixture@example.com");
     const remote = join(directory, "remote.git");
+    git("init", "--quiet", "--bare", remote);
     git("remote", "add", "origin", remote);
     mkdirSync(join(directory, "scripts/git"), { recursive: true });
     cpSync(join(root, "scripts/git/hooks"), join(directory, "scripts/git/hooks"), { recursive: true });
-    cpSync(join(root, "agent-tool.json"), join(directory, "agent-tool.json"));
+    // Isolate nc's trust policy in the shared guards; the declared static steps run on real pushes.
+    const config = JSON.parse(readFileSync(join(root, "agent-tool.json"), "utf8"));
+    config.pushGate = { steps: [] };
+    writeFileSync(join(directory, "agent-tool.json"), JSON.stringify(config));
     symlinkSync(join(root, "node_modules"), join(directory, "node_modules"));
     const scripts = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts;
-    // Isolate the real ref checks; the full native gate runs separately.
-    scripts.check = "true";
     writeFileSync(join(directory, "package.json"), JSON.stringify({ scripts }));
     const tree = git("mktree");
     const base = git("commit-tree", tree, "-m", "historical base");
     const published = git("commit-tree", tree, "-p", base, "-m", "historical unsigned mainline");
-    git("update-ref", "refs/heads/main", base);
-    git("update-ref", "refs/remotes/origin/main", published);
+    git("update-ref", "refs/heads/main", published);
+    // The destination already has the unsigned mainline, so no push rechecks it.
+    expect(run("git", ["--git-dir", remote, "fetch", "--quiet", directory, "main:main"]).status).toBe(0);
     git("add", "scripts/git/hooks");
     expect(run(process.execPath, ["run", "--silent", "hooks:install"]).status).toBe(0);
 
@@ -120,8 +123,8 @@ test("pre-push checks unpublished commits for named and URL pushes", async () =>
         cwd: directory, env: fixtureEnv, stdout: "pipe", stderr: "pipe",
         stdin: new TextEncoder().encode(`refs/heads/chore/example ${local} ${destination} ${tip}\n`),
       });
-      const [stdout] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text()]);
-      return { status: await child.exited, stdout };
+      const [stdout, stderr] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text()]);
+      return { status: await child.exited, output: stdout + stderr };
     };
     const rejected = [[unsigned, "Signature does not meet"], [coauthored, "Co-authored-by trailer is forbidden"]] as const;
     const cases: { push: ReturnType<typeof push>, error?: string }[] = [];
@@ -130,6 +133,7 @@ test("pre-push checks unpublished commits for named and URL pushes", async () =>
       for (const [local, error] of rejected) cases.push({ push: push(local, tip), error });
     }
     for (const tip of [zero, published]) {
+      cases.push({ push: push(signed, tip, remote) });
       for (const [local, error] of rejected) cases.push({ push: push(local, tip, remote), error });
     }
     cases.push({ push: push(published, base, "origin", "refs/heads/invalid-name"), error: "" });
@@ -140,7 +144,7 @@ test("pre-push checks unpublished commits for named and URL pushes", async () =>
         expect(result.status).toBe(0);
       } else {
         expect(result.status).not.toBe(0);
-        expect(result.stdout).toContain(error);
+        expect(result.output).toContain(error);
       }
     }
   } finally {

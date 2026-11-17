@@ -110,7 +110,7 @@ history numbers/dates, accessibility labels, and media-session titles after a ch
 `web/test/languageView.test.ts` covers selection priority, device changes, storage failures,
 cross-tab updates, and clearing/invalidating a preference.
 
-The pre-push/CI iOS harness also compiles the real string catalog into a temporary app
+The CI iOS harness (`testIosAudio.sh`) also compiles the real string catalog into a temporary app
 bundle and checks English, German, and Spanish lookups through `LanguageSettings`.
 The Android service test changes the saved language on API 28 without a configuration
 callback and checks both the active notification and media-session title.
