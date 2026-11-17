@@ -21,10 +21,17 @@ hooks, then run `bun run hooks:install --adopt` once; see [development](docs/dev
 
 ## Validation
 
-`bun run check` (`scripts/testing/check.json`) is the full local gate. Pre-push checks
-its actual pushed refs and managed hook installation, then runs the same gate as CI.
-The group records each command, source fingerprint, and private log; run it directly
-to keep its structured receipt visible.
+Pre-push is agent-tool's push gate: the shared trust guards on the pushed commits, then
+the quick static checks that `pushGate` in `agent-tool.json` declares (ShellCheck,
+RuboCop, ktlint, SwiftFormat and SwiftLint, localization, module graph, web types). It runs
+no tests or builds. Before pushing, run the tests and builds that cover your change; CI runs
+everything and is the authority. When a CI job fails, read it with
+`bun run agent-tool pr logs --head <commit>` and push a reviewed fix. See
+[development](docs/development.md#git-hooks).
+
+`bun run check` (`scripts/testing/check.json`) runs CI's checks locally, native builds
+included. The group records each command, source fingerprint, and private log; run it
+directly to keep its structured receipt visible.
 
 Run individual pieces while iterating:
 
@@ -36,6 +43,7 @@ bundle exec rubocop                                   # Ruby: fastlane lanes and
 bun run lint:binary-files --all                       # no binary files
 bun run lint:module-graph                             # import cycles and layers (docs/development.md)
 bun run agents:check                                  # shared skills and permission rules are current
+bun run lint:push-gate                                # pre-push is canonical; its steps run no tests
 bun run l10n:check                                    # translations, generated strings, store listings
 bun run test                                          # fastlane, web, localization, and workflow tests
 bun run web:check && bun run web:build                # web typecheck and build
@@ -58,7 +66,7 @@ captures into the store every clone shares, and check its `status` before a list
 Run Bun tests through `bun run agent-tool bun test --log [-- args...]`, for example
 `bun run agent-tool bun test --log -- fastlane web l10n scripts/testing`, and other finite,
 noisy commands, such as installs, builds, linters, package scripts, and Git commands that
-run hooks, including pushes through the full pre-push gate, through
+run hooks, including pushes through the pre-push gate, through
 `bun run --silent agent:run --label <name> -- <command> [args...]`, for example
 `bun run --silent agent:run --label web-build -- bun run web:build`. Each keeps complete
 output in a private log, preserves the exit status, and prints a compact receipt, with a
@@ -71,8 +79,8 @@ their results stay visible, and run interactive tools and servers directly too. 
 narrow a suite or silence warnings to reduce output.
 
 `bun run check` is a run group: do not wrap it, or any other standalone group invocation,
-in another capture command. A captured push includes its hook's group receipt in the push
-log; inspect it there or with `agent-tool runs list --head <commit>`.
+in another capture command. A captured push includes the push gate's report in the push
+log; inspect it there, or its per-step timings with `agent-tool runs list --head <commit>`.
 
 ## Conventions
 

@@ -7,8 +7,8 @@ building it ([iOS](../ios/README.md), [Android](../android/README.md), [web](../
 
 ## Setup
 
-The quick start installs the pinned tools, dependencies, and Git hooks. The full local gate
-(`bun run check`) also builds both native apps, so it needs Xcode and the Android SDK. The web
+The quick start installs the pinned tools, dependencies, and Git hooks. The full local run of
+CI's checks (`bun run check`) also builds both native apps, so it needs Xcode and the Android SDK. The web
 integration tests need Playwright's Chromium, and the [screenshots](#screenshots) need
 ImageMagick and Maestro:
 
@@ -48,7 +48,7 @@ below it, and no module imports itself around a cycle, type-only imports include
 
 Tests (`*/test/`, `*.test.ts`) may import any layer, but no other module may import them.
 `bun run lint:module-graph` runs `agent-tool graph check` over the `graph` section of
-`agent-tool.json`, which holds these layers; `bun run check` and CI run it. A new production
+`agent-tool.json`, which holds these layers; pre-push, `bun run check`, and CI run it. A new production
 file outside every layer fails it too. Put a type or constant two modules share in a lower
 module both import, as `l10n/catalog.ts` does for `l10n/build.ts` and `l10n/languages.ts`.
 
@@ -83,7 +83,7 @@ the favicon, and the title logo leave out the mark's `unlit` group of dim segmen
 
 `bun run hooks:install` installs the three hook bodies declared in `agent-tool.json`;
 rerun it after hooks change. `bun run hooks:check` checks every managed file, and
-pre-push also compares its own copied body so stale hooks cannot gate a push.
+pre-push refuses to run from a stale installed copy.
 
 When migrating an existing clone from the old installer, inspect its effective hook
 directory (`git config --path core.hooksPath`, or the common Git directory's `hooks/`).
@@ -94,12 +94,14 @@ unknown hooks; resolve local hook edits before adoption. Later installs omit `--
 - **pre-commit:** branch name is `<type>/<name>` (or `main`); detached commits during
   a rebase skip the branch-name check; no binary files staged.
 - **commit-msg:** Conventional Commits, header at most 50 characters, lowercase subject.
-- **pre-push:** commits are signed with no `Co-authored-by` trailers; no binary files;
-  ShellCheck; RuboCop; ktlint; SwiftFormat and SwiftLint; shared agent skills and permission
-  rules are current; localization is current; fastlane helper, web, localization, and workflow
-  adapter tests; web typecheck, build, and deploy dry run; Android debug build, lint, unit tests,
-  and detekt; iOS simulator build, audio rendering checks, and player lifecycle tests on an
-  isolated simulator.
+- **pre-push:** agent-tool's push gate. `scripts/git/hooks/pre-push` is the output of
+  `agent-tool push-gate hook`, committed unchanged; `bun run lint:push-gate` checks it and
+  the declared steps. It first runs the shared trust guards: installed hooks, shared agent
+  skills and permission rules are current, branch names, and, for the commits the push adds,
+  signatures with no `Co-authored-by` trailers, commit subjects, and no binary files. Then it
+  runs the quick static checks that `pushGate` declares in `agent-tool.json`: ShellCheck;
+  RuboCop; ktlint; SwiftFormat and SwiftLint; localization is current; module graph; web
+  typecheck. Tests, builds, and native analysis run in CI.
 
 Branch names use the configured Conventional Commits types, with `main` exempt and no
 additional length cap. Native Git ref rules also apply. Commit headers keep the existing
@@ -109,22 +111,28 @@ counts the whole header including a PR suffix, and skips leading blank/comment l
 before applying shared policy. Signatures must be present and not provably bad;
 local key trust is not required.
 
-Pre-push validates every destination branch from Git's ref tuples. Trust checks exclude
-commits reachable from all of the named remote's tracking refs, including other published
-feature branches, even for an existing branch update,
-so integrating previously published mainline commits does not revalidate historical policy.
-New local commits still undergo signature, attribution, and subject checks. URL-only pushes
-use their remote tip, or local `main` for a new branch, because they have no named tracking refs.
+Pre-push checks every destination branch Git is pushing. The trust guards check only the
+commits the destination doesn't already have, from one `git ls-remote` of the push URL, so
+integrating published mainline commits does not revalidate historical policy, while new local
+commits still undergo signature, attribution, and subject checks. Named-remote and URL pushes
+work the same way; a destination that has none of this clone's commits gets the whole branch
+checked.
 
-`bun run check` keeps the full application gate in `scripts/testing/check.json` and records
-per-step logs and source fingerprints. A failed command or changed source fails the group.
-Use `bun run agent-tool runs list --head <commit>` to find stored receipts. CI passes the actual
-PR branch explicitly and runs the same checks; `CI gate` remains the single required check,
-with every lint, Android, iOS, and web job required to succeed.
+The push gate takes seconds, within its 60-second `budgetSeconds`; use
+`bun run agent-tool runs list --head <commit>` to see each push's step timings. CI is the
+authority: it runs on every pull request and every push to `main`, and `CI gate` remains the
+single required check, with every lint, Android, iOS, and web job required to succeed. CI
+passes the actual PR branch explicitly. When a job fails, read it with
+`bun run agent-tool pr logs --head <commit>` and push a reviewed fix to the same branch.
+
+`bun run check` runs CI's checks locally from `scripts/testing/check.json`, native builds
+included, and records per-step logs and source fingerprints. A failed command or changed
+source fails the group.
 
 ## Native code quality
 
-Every tool below fails the gate on any finding, warnings included, both in pre-push and in CI.
+Every tool below fails CI and `bun run check` on any finding, warnings included; pre-push also
+runs ktlint, SwiftFormat, and SwiftLint.
 
 | | Kotlin (`android/`) | Swift (`ios/`) |
 |---|---|---|

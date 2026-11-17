@@ -1,6 +1,6 @@
 {
   "name": "nc",
-  "version": "1.0.64",
+  "version": "1.0.65",
   "private": true,
   "license": "UNLICENSED",
   "packageManager": "bun@1.4.4",
@@ -34,9 +34,9 @@
     "hooks:check": "agent-tool hooks check",
     "lint:branch-name": "agent-tool branch check",
     "lint:commit-message": "sh scripts/checks/lintCommitMessage.sh",
-    "lint:commit-trust": "agent-tool commits check",
     "lint:binary-files": "agent-tool checks binaries",
     "lint:module-graph": "agent-tool graph check",
+    "lint:push-gate": "agent-tool push-gate check",
     "screenshots": "sh scripts/testing/takeScreenshots.sh",
     "lint:scripts": "sh scripts/checks/lintScripts.sh",
     "lint:kotlin": "sh scripts/checks/lintKotlin.sh",
@@ -46,7 +46,7 @@
     "web:deploy:preview": "wrangler deploy --config web/wrangler.jsonc --dry-run"
   },
   "devDependencies": {
-    "@a2f0/agent-tool": "0.1.51",
+    "@a2f0/agent-tool": "0.1.58",
     "@a2f0/ct-client": "0.1.7",
     "@types/bun": "1.4.4",
     "fake-indexeddb": "6.2.7",

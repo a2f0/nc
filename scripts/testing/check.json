@@ -42,6 +42,14 @@
       ]
     },
     {
+      "label": "push-gate",
+      "command": [
+        "bun",
+        "run",
+        "lint:push-gate"
+      ]
+    },
+    {
       "label": "localization",
       "command": [
         "bun",
