@@ -21,5 +21,6 @@ fi
 . ./scripts/checks/lib/lintFiles.sh
 files=$(mktemp)
 trap 'rm -f "$files"' EXIT
+trap 'exit 1' HUP INT TERM
 list_lint_files '*.kt' '*.kts' > "$files"
 [ ! -s "$files" ] || xargs -0 ktlint --relative "$@" < "$files"

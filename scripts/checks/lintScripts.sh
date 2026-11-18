@@ -14,5 +14,6 @@ command -v shellcheck >/dev/null 2>&1 || {
 . ./scripts/checks/lib/lintFiles.sh
 files=$(mktemp)
 trap 'rm -f "$files"' EXIT
+trap 'exit 1' HUP INT TERM
 list_lint_files '*.sh' 'scripts/git/hooks/*' > "$files"
 [ ! -s "$files" ] || xargs -0 shellcheck -x < "$files"
