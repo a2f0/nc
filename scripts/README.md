@@ -1,7 +1,9 @@
 # Repository scripts
 
-Run shell entrypoints by path from the checkout or its enclosing workspace. Package scripts in `package.json`
-remain the supported entrypoints for web, localization, release, and agent workflows.
+Run the shell, Kotlin and Swift lint scripts by path from the checkout or its enclosing
+workspace with the pinned linters on `PATH`. For package commands, use the checkout
+as the working directory. The package scripts in `package.json` are the supported
+entrypoints for web, localization, release, and agent workflows.
 See [development](../docs/development.md) for Git hooks, local validation, and generated assets,
 and [releasing](../docs/releasing.md) for store workflows.
 
