@@ -20,6 +20,10 @@ jar_ok() {
 # A truncated jar, such as one an interrupted copy left, is regenerated.
 jar_ok "$WRAPPER_JAR" && exit 0
 
+# A gradle executable on PATH can itself be a mise shim. Both forms select
+# the pinned tool from this checkout.
+cd "$REPO_ROOT"
+
 if command -v gradle >/dev/null 2>&1; then
   set -- gradle
 elif command -v mise >/dev/null 2>&1; then

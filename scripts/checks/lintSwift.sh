@@ -5,8 +5,7 @@ set -eu
 # (.swiftlint.yml) for the rest, where every warning fails. With --format, fix what
 # each can first.
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-cd "$REPO_ROOT"
+CDPATH='' cd -P -- "$(dirname -- "$0")/../.."
 
 for tool in swiftformat swiftlint; do
   command -v "$tool" >/dev/null 2>&1 || {

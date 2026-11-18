@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -61,7 +61,8 @@ function setUp(cp: string) {
   const source = join(root, "source.jar");
   writeFileSync(source, jar);
   const fakes = {
-    gradle: `/bin/mkdir -p "$2/gradle/wrapper" && /bin/cp "${source}" "$2/gradle/wrapper/gradle-wrapper.jar"`,
+    gradle: `[ "$(pwd -P)" = "${realpathSync(repo)}" ] || exit 3
+/bin/mkdir -p "$2/gradle/wrapper" && /bin/cp "${source}" "$2/gradle/wrapper/gradle-wrapper.jar"`,
     cp,
   };
   for (const [name, body] of Object.entries(fakes)) {
@@ -76,7 +77,7 @@ function setUp(cp: string) {
     encoding: "utf8",
     env: { PATH: bin, HOME: root, TMPDIR: temp },
   });
-  return { run, wrapperDir, wrapperJar: join(wrapperDir, "gradle-wrapper.jar") };
+  return { run, repo, bin, wrapperDir, wrapperJar: join(wrapperDir, "gradle-wrapper.jar") };
 }
 
 test("a failed copy leaves no partial jar", () => {
@@ -111,5 +112,19 @@ test("a complete jar is kept without running Gradle", () => {
   const result = run();
   expect(result.status).toBe(0);
   expect(result.stdout).toBe("");
+  expect(readFileSync(wrapperJar)).toEqual(jar);
+});
+
+test("the mise fallback resolves Gradle from the wrapper's checkout", () => {
+  const { run, repo, bin, wrapperJar } = setUp('/bin/cp "$@"');
+  renameSync(join(bin, "gradle"), join(bin, "fixture-gradle"));
+  writeFileSync(join(bin, "mise"), `#!/bin/sh
+[ "$(pwd -P)" = "${realpathSync(repo)}" ] && [ "$1" = exec ] && [ "$2" = -- ] && [ "$3" = gradle ] || exit 3
+shift 3
+exec fixture-gradle "$@"
+`, { mode: 0o755 });
+  const result = run();
+  expect(result.stderr).toBe("");
+  expect(result.status).toBe(0);
   expect(readFileSync(wrapperJar)).toEqual(jar);
 });
