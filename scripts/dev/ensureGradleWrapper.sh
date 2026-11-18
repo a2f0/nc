@@ -23,7 +23,7 @@ jar_ok "$WRAPPER_JAR" && exit 0
 if command -v gradle >/dev/null 2>&1; then
   set -- gradle
 elif command -v mise >/dev/null 2>&1; then
-  set -- mise exec -- gradle
+  set -- mise -C "$REPO_ROOT" exec -- gradle
 else
   echo "Error: Gradle is unavailable. Run \`mise install\` from the repo root." >&2
   exit 1

@@ -1,6 +1,6 @@
 # Repository scripts
 
-Run commands from the repository root. Existing package scripts in `package.json`
+Run shell entrypoints by path from the checkout or its enclosing workspace. Package scripts in `package.json`
 remain the supported entrypoints for web, localization, release, and agent workflows.
 See [development](../docs/development.md) for Git hooks, local validation, and generated assets,
 and [releasing](../docs/releasing.md) for store workflows.
