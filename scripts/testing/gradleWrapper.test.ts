@@ -61,7 +61,8 @@ function setUp(cp: string) {
   const source = join(root, "source.jar");
   writeFileSync(source, jar);
   const fakes = {
-    gradle: `/bin/mkdir -p "$2/gradle/wrapper" && /bin/cp "${source}" "$2/gradle/wrapper/gradle-wrapper.jar"`,
+    gradle: `[ "$(pwd -P)" = "${realpathSync(repo)}" ] || exit 3
+/bin/mkdir -p "$2/gradle/wrapper" && /bin/cp "${source}" "$2/gradle/wrapper/gradle-wrapper.jar"`,
     cp,
   };
   for (const [name, body] of Object.entries(fakes)) {
@@ -118,8 +119,8 @@ test("the mise fallback resolves Gradle from the wrapper's checkout", () => {
   const { run, repo, bin, wrapperJar } = setUp('/bin/cp "$@"');
   renameSync(join(bin, "gradle"), join(bin, "fixture-gradle"));
   writeFileSync(join(bin, "mise"), `#!/bin/sh
-[ "$1" = -C ] && [ "$2" = "${realpathSync(repo)}" ] && [ "$3" = exec ] && [ "$4" = -- ] && [ "$5" = gradle ] || exit 3
-shift 5
+[ "$(pwd -P)" = "${realpathSync(repo)}" ] && [ "$1" = exec ] && [ "$2" = -- ] && [ "$3" = gradle ] || exit 3
+shift 3
 exec fixture-gradle "$@"
 `, { mode: 0o755 });
   const result = run();
