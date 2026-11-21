@@ -52,9 +52,10 @@ rejection.
 ## Gather evidence, repair, and retest
 
 Trace important claims from listing/policy → source and dependencies → built
-artifact → runtime behavior. When the repository has readiness lanes, run them
-against the candidate for artifact and store-record evidence; their reports
-leave manual, declaration, and policy checks unverified by design. Inspect
+artifact → runtime behavior. Run the repository's documented readiness lanes
+(`docs/readiness.md`) when present against the candidate for artifact and
+store-record evidence; their reports leave manual, declaration, and policy
+checks unverified by design. Inspect
 public links and actual store configuration when access is available; never
 infer console completion from local metadata files. Keep credentials,
 reviewer contact details, user records, and private diagnostics out of reports
@@ -137,3 +138,11 @@ unrelated artifacts. When shipping is requested, hand the concrete fixes and
 unresolved release prerequisites to the repository's shipping workflow.
 Merging improvements is distinct from declaring the app ready for public store
 submission.
+
+## Ownership
+
+agent-tool (`a2f0/agent-tool`) owns this skill in `skills/app-store-readiness/`.
+Repositories get it from `agent-tool skills install --apply`; do not edit the
+installed copy. Change it in agent-tool by PR. A repository's readiness guide,
+lanes, devices, and store records belong in its own docs, such as
+`docs/readiness.md`.
