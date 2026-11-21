@@ -1,7 +1,7 @@
 # Release readiness lanes
 
-Use the [app-store-readiness skill](../skills/app-store-readiness/SKILL.md) for an iOS,
-Android, and web pre-release assessment, and record each candidate's findings and
+Use agent-tool's managed [app-store-readiness skill](../.claude/skills/app-store-readiness/SKILL.md)
+for an iOS, Android, and web pre-release assessment, and record each candidate's findings and
 remaining prerequisites in its PR. The readiness lanes below supply its artifact and
 store-record evidence.
 
@@ -97,10 +97,11 @@ source edits during builds. Build numbering still follows the existing release l
 ## Shared with balebase
 
 a2f0/balebase keeps byte-identical copies of `fastlane/lib/readiness.rb`,
-`readiness_artifacts.rb`, `readiness_stores.rb`, their library test
-`fastlane/test/readiness.test.ts`, and the `skills/app-store-readiness` skill. Change both
+`readiness_artifacts.rb`, `readiness_stores.rb`, and their library test
+`fastlane/test/readiness.test.ts`, in its `packages/app-capacitor/fastlane/`. Change both
 repositories together; the lanes, expectations, Play evidence, and this guide are each
-repository's own. Install the skill in a personal skill directory for Codex or Claude Code.
+repository's own. The `app-store-readiness` skill is agent-tool's: `bun run agents:sync`
+installs it from the pinned version, and changes to it go to a2f0/agent-tool.
 
 ## Device regression checks
 

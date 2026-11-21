@@ -150,10 +150,10 @@ other than the one that wrote the change. The required check is `CI gate`. `bun 
 updates the shared skills and the generated harness permission rules (`.claude/settings.json`,
 `.codex/rules/agent-tool.rules`, `.agent-tool-permissions.json`) after an `@a2f0/agent-tool`
 upgrade or a change to `permissions.executables` in `agent-tool.json`; don't edit them by hand.
-Repository-owned skills live in `skills/`; `app-store-readiness` and the
-readiness libraries are shared with balebase (see [readiness](docs/readiness.md#shared-with-balebase)).
-Use `app-store-readiness` for an iOS, Android, and web pre-release assessment, and record
-candidate findings and prerequisites in the release PR.
+Use agent-tool's managed `app-store-readiness` skill for an iOS, Android, and web
+pre-release assessment, and record candidate findings and prerequisites in the release PR.
+The readiness lanes supply its evidence; their libraries are shared with balebase (see
+[readiness](docs/readiness.md#shared-with-balebase)).
 
 Versions: the root `package.json` version is the website's version, shown in its About sheet.
 Every shipped change moves it one patch past the base. After each base integration or repair
