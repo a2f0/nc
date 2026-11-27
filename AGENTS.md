@@ -148,8 +148,9 @@ instructions.
 Use the `ship-pr` skill with `agent-tool` (`bun run agent-tool ...`). Review with an agent
 other than the one that wrote the change. The required check is `CI gate`. `bun run agents:sync`
 updates the shared skills and the generated harness permission rules (`.claude/settings.json`,
-`.codex/rules/agent-tool.rules`, `.agent-tool-permissions.json`) after an `@a2f0/agent-tool`
-upgrade or a change to `permissions.executables` in `agent-tool.json`; don't edit them by hand.
+`.codex/rules/agent-tool.rules`, `.gemini/policies/agent-tool.toml`,
+`.agent-tool-permissions.json`) after an `@a2f0/agent-tool` upgrade or a change to
+`permissions.executables` in `agent-tool.json`; don't edit them by hand.
 Use agent-tool's managed `app-store-readiness` skill for an iOS, Android, and web
 pre-release assessment, and record candidate findings and prerequisites in the release PR.
 The readiness lanes supply its evidence; their libraries are shared with balebase (see
